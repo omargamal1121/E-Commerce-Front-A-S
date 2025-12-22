@@ -5,10 +5,11 @@ import { useNavigate } from "react-router-dom";
 import { fetchWithTokenRefresh, getAuthHeaders } from "../utils/apiUtils";
 import wishlistService from "../services/wishlistService";
 import discountService from "../services/discountService";
+import authService from "../services/authService";
 export const ShopContext = createContext();
 
 const ShopContextProvider = (props) => {
-  const currency = "$";
+  const currency = "EGP ";
   const delivery_fee = 10;
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
   const [search, setSearch] = useState("");
@@ -36,54 +37,21 @@ const ShopContextProvider = (props) => {
 
   const refreshToken = async () => {
     try {
-      const refreshTokenValue = localStorage.getItem("refreshToken");
-      const userData = localStorage.getItem("user");
-
-      if (!refreshTokenValue) {
-        console.log("No refresh token available");
-        return false;
+      console.log("🔄 Initiating token refresh from ShopContext...");
+      const newToken = await authService.refreshToken();
+      if (newToken) {
+        localStorage.setItem("token", newToken);
+        setToken(newToken);
+        console.log("Token refreshed successfully via authService");
+        return true;
       }
-
-      if (!userData) {
-        console.log("No user data available");
-        return false;
-      }
-
-      const user = JSON.parse(userData);
-      const userId = user.id || user.userId;
-
-      if (!userId) {
-        console.log("No user ID available");
-        return false;
-      }
-
-      const response = await fetch(`${backendUrl}/api/Account/refresh-token`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          refreshToken: refreshTokenValue,
-          userId: userId,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.responseBody && data.responseBody.data) {
-          const tokenData = data.responseBody.data;
-          localStorage.setItem("token", tokenData.token);
-          localStorage.setItem("refreshToken", tokenData.refreshToken);
-          setToken(tokenData.token);
-          console.log("Token refreshed successfully");
-          return true;
-        }
-      }
-
-      console.log("Failed to refresh token");
       return false;
     } catch (error) {
-      console.error("Error refreshing token:", error);
+      console.error("Error refreshing token in ShopContext:", error);
+      // If refresh failed, we should handle logout
+      if (error.response?.status === 401 || (error.message && error.message.includes("401"))) {
+        authService.logout();
+      }
       return false;
     }
   };

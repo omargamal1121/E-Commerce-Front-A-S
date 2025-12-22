@@ -1,9 +1,8 @@
-export const formatCurrency = (amount, currency = '$') => {
-  return new Intl.NumberFormat('en-US', {
+export const formatCurrency = (amount, currency = 'EGP') => {
+  return new Intl.NumberFormat('en-EG', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'EGP',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount);
 };
-    

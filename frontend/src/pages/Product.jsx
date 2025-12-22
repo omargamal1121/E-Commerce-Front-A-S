@@ -17,7 +17,7 @@ import WishlistButton from "../components/WishlistButton";
 const Product = () => {
   const { t } = useTranslation();
   const { productId } = useParams();
-  const { products, loadingProducts, addToCart, backendUrl } =
+  const { products, loadingProducts, addToCart, backendUrl, currency } =
     useContext(ShopContext);
   const [productData, setProductData] = useState(null);
   const [image, setImage] = useState("");
@@ -35,6 +35,8 @@ const Product = () => {
   const { ref: scrollSectionRef, inView: isScrollSectionInView } = useInView({
     threshold: 0.3,
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
 
   // Function to update local stock when product is added to cart
   const updateLocalStock = (variantId, quantity) => {
@@ -399,17 +401,17 @@ const Product = () => {
                       <div className="flex items-center gap-1">
                         <span className="text-lg text-gray-500">Price: </span>
                         <span className="text-xl font-light line-through text-gray-500">
-                          {productData.currency || "$"}
+                          {currency}
                           {originalPrice}
                         </span>
                         <span className="text-xl font-light text-red-500 mr-1">
-                          {productData.currency || "$"}
+                          {currency}
                           {finalPrice}
                         </span>
                       </div>
                     ) : (
                       <span className="text-sm font-medium text-gray-900">
-                        {productData.currency || "$"}
+                        {currency}
                         {originalPrice}
                       </span>
                     )}
@@ -596,11 +598,11 @@ const Product = () => {
                                     {hasDiscount ? (
                                       <>
                                         <span className="text-sm font-medium">
-                                          {productData.currency || "$"}
+                                          {currency}
                                           {finalPrice}
                                         </span>
                                         <span className="text-xs line-through">
-                                          {productData.currency || "$"}
+                                          {currency}
                                           {originalPrice}
                                         </span>
                                         <span className="text-red-500 text-xs">
@@ -609,7 +611,7 @@ const Product = () => {
                                       </>
                                     ) : (
                                       <span className="text-sm font-medium">
-                                        {productData.currency || "$"}
+                                        {currency}
                                         {originalPrice}
                                       </span>
                                     )}
@@ -945,13 +947,14 @@ const Product = () => {
             {/* Action Buttons */}
             <div className="flex flex-col gap-3 mb-6">
               <button
-                className={`relative overflow-hidden group cursor-pointer px-8 py-3 text-sm border border-black ${(!size || !selectedVariant?.color) && "opacity-50 cursor-not-allowed"}`}
+                className={`relative overflow-hidden group cursor-pointer px-8 py-3 text-sm border border-black ${(isSubmitting || !size || !selectedVariant?.color) && "opacity-50 cursor-not-allowed"}`}
                 style={{
                   background: "white",
                   color: "black",
                   transition: "color 0.3s ease",
                 }}
-                onClick={() => {
+                onClick={async () => {
+                  if (isSubmitting) return;
                   if (!size) {
                     toast.warning("Please select a size", {
                       position: "top-right",
@@ -988,33 +991,45 @@ const Product = () => {
                     );
                     return;
                   }
-                  addToCart(
-                    productData._id,
-                    size,
-                    selectedVariant?.color,
-                    quantity
-                  );
-                  // Update local stock
-                  updateLocalStock(selectedVariant?.id, quantity);
+
+                  setIsSubmitting(true);
+                  try {
+                    await addToCart(
+                      productData._id,
+                      size,
+                      selectedVariant?.color,
+                      quantity
+                    );
+                    // Update local stock
+                    updateLocalStock(selectedVariant?.id, quantity);
+                  } catch (error) {
+                    console.error("Error adding to cart:", error);
+                  } finally {
+                    setIsSubmitting(false);
+                  }
                 }}
-                disabled={!size || !selectedVariant?.color}
+                disabled={isSubmitting || !size || !selectedVariant?.color}
               >
                 {/* Animated background */}
-                <div
-                  className="absolute inset-0 bg-black transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300 ease-out origin-bottom"
-                  style={{ zIndex: -1 }}
-                />
+                {!isSubmitting && (
+                  <div
+                    className="absolute inset-0 bg-black transform scale-y-0 group-hover:scale-y-100 transition-transform duration-300 ease-out origin-bottom"
+                    style={{ zIndex: -1 }}
+                  />
+                )}
                 {/* Button text */}
-                <span className="relative z-10 group-hover:text-white transition-colors duration-300">
-                  {t("ADD_TO_CART")}
+                <span className={`relative z-10 ${!isSubmitting ? "group-hover:text-white" : ""} transition-colors duration-300 flex items-center justify-center gap-2`}>
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                      <span>{t("ADDING...")}</span>
+                    </>
+                  ) : (
+                    t("ADD_TO_CART")
+                  )}
                 </span>
               </button>
-              <button
-                className={`cursor-pointer border border-black text-black px-8 py-3 text-sm hover:bg-black hover:text-white transition-colors ${(!size || !selectedVariant?.color) && "opacity-50 cursor-not-allowed"}`}
-                disabled={!size || !selectedVariant?.color}
-              >
-                BUY IT NOW
-              </button>
+
             </div>
 
             {/* Additional Links */}
@@ -1429,12 +1444,19 @@ const Product = () => {
                 color: "black",
                 border: "none",
                 padding: "8px 16px",
-                cursor: "pointer",
+                cursor: (isSubmitting || !size || !selectedVariant?.color) ? "not-allowed" : "pointer",
                 fontWeight: 100,
-                fontSize: "3rem",
+                fontSize: isSubmitting ? "1.5rem" : "3rem",
                 lineHeight: 1,
+                opacity: isSubmitting ? 0.7 : 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minWidth: "60px"
               }}
-              onClick={() => {
+              disabled={isSubmitting || !size || !selectedVariant?.color}
+              onClick={async () => {
+                if (isSubmitting) return;
                 if (!size) {
                   toast.warning("Please select a size", {
                     position: "top-right",
@@ -1468,18 +1490,30 @@ const Product = () => {
                   });
                   return;
                 }
-                // Add to cart immediately when both size and color are selected
-                addToCart(
-                  productData._id,
-                  size,
-                  selectedVariant?.color,
-                  quantity
-                );
-                // Update local stock
-                updateLocalStock(selectedVariant?.id, quantity);
+
+                setIsSubmitting(true);
+                try {
+                  // Add to cart immediately when both size and color are selected
+                  await addToCart(
+                    productData._id,
+                    size,
+                    selectedVariant?.color,
+                    quantity
+                  );
+                  // Update local stock
+                  updateLocalStock(selectedVariant?.id, quantity);
+                } catch (error) {
+                  console.error("Error adding to cart from sticky bar:", error);
+                } finally {
+                  setIsSubmitting(false);
+                }
               }}
             >
-              +
+              {isSubmitting ? (
+                <div className="w-6 h-6 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                "+"
+              )}
             </button>
           </motion.div>
         )}
