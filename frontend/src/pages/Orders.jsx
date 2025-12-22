@@ -78,9 +78,53 @@ const Orders = () => {
       return 'bg-red-100 text-red-800';
     } else if (statusStr.includes('confirmed') || statusStr.includes('processing')) {
       return 'bg-yellow-100 text-yellow-800';
-    } else {
-      return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  // Helper function to compare statuses robustly
+  const compareStatus = (orderStatus, filterValue) => {
+    if (filterValue === 'All') return true;
+
+    const filterId = parseInt(filterValue);
+
+    // If orderStatus is a numeric string like "0", coerce it
+    const normalizedOrderStatus = (typeof orderStatus === 'string' && !isNaN(orderStatus) && orderStatus.trim() !== '')
+      ? Number(orderStatus)
+      : orderStatus;
+
+    // Numeric check
+    if (normalizedOrderStatus === filterId) return true;
+
+    // String name check with normalization
+    if (typeof orderStatus === 'string') {
+      const normalizedOrder = orderStatus.toLowerCase().replace(/\s+/g, '');
+      const normalizedMap = (statusMap[filterId] || '').toLowerCase().replace(/\s+/g, '');
+
+      if (normalizedOrder === normalizedMap) return true;
+
+      // Robust matching for common status names
+      if (filterId === 0) { // Pending Payment
+        return ['pending', 'pendingpayment', 'waiting', 'unpaid'].includes(normalizedOrder);
+      }
+      if (filterId === 1) { // Confirmed
+        return ['confirmed', 'approved', 'paid', 'success'].includes(normalizedOrder);
+      }
+      if (filterId === 2) { // Processing
+        return ['processing', 'inprogress', 'preparing'].includes(normalizedOrder);
+      }
+      if (filterId === 3) { // Shipped
+        return ['shipped', 'outfordelivery', 'intransit'].includes(normalizedOrder);
+      }
+      if (filterId === 4) { // Delivered
+        return ['delivered', 'received', 'complete', 'completed'].includes(normalizedOrder);
+      }
+      if (filterId === 5) { // Cancelled by User
+        return ['cancelled', 'canceled', 'usercancelled'].includes(normalizedOrder);
+      }
+    }
+
+    // Direct comparison as fallback
+    return String(orderStatus) === String(filterValue);
   };
 
   const loadOrderData = async (status = statusFilter) => {
@@ -126,27 +170,34 @@ const Orders = () => {
               : null;
 
             // Transform order items to display format using the correct API structure
-            const orderItems = (orderDetail?.items || []).map(item => ({
-              id: orderDetail?.id || order.id,
-              orderNumber: orderDetail?.orderNumber || order.orderNumber,
-              customerName: orderDetail?.customer?.fullName || order.customerName,
-              status: orderDetail?.status || order.status, // Keep original status (string or number)
-              statusDisplay: getStatusDisplay(orderDetail?.status || order.status), // Add display text
-              total: orderDetail?.total || order.total,
-              date: orderDetail?.createdAt || order.createdAt,
-              // Use actual product image from mainImageUrl
-              image: item.product?.mainImageUrl
-                ? [item.product.mainImageUrl]
-                : ['/api/placeholder/80/80'], // Fallback to placeholder if no image
-              name: item.product?.name || `Order #${orderDetail?.orderNumber || order.orderNumber}`,
-              price: item.unitPrice || item.product?.finalPrice || item.product?.price || item.totalPrice,
-              quantity: item.quantity || 1,
-              size: item.product?.productVariantForCartDto?.size || 'N/A',
-              color: item.product?.productVariantForCartDto?.color || 'N/A',
-              paymentMethod: lastPayment?.paymentMethod?.paymentMethod || lastPayment?.paymentMethod || 'N/A',
-              paymentStatus: lastPayment?.status,
-              canBeCancelled: orderDetail?.canBeCancelled
-            }));
+            const orderItems = (orderDetail?.items || []).map(item => {
+              const rawStatus = orderDetail?.status !== undefined ? orderDetail.status : order.status;
+              // Coerce to number if it's a numeric string or number
+              const status = (typeof rawStatus === 'number' || (typeof rawStatus === 'string' && !isNaN(rawStatus) && rawStatus.trim() !== ''))
+                ? Number(rawStatus)
+                : rawStatus;
+
+              return {
+                id: orderDetail?.id || order.id,
+                orderNumber: orderDetail?.orderNumber || order.orderNumber,
+                customerName: orderDetail?.customer?.fullName || order.customerName,
+                status: status,
+                statusDisplay: getStatusDisplay(status),
+                total: orderDetail?.total || order.total,
+                date: orderDetail?.createdAt || order.createdAt,
+                image: item.product?.mainImageUrl
+                  ? [item.product.mainImageUrl]
+                  : ['/api/placeholder/80/80'],
+                name: item.product?.name || `Order #${orderDetail?.orderNumber || order.orderNumber}`,
+                price: item.unitPrice || item.product?.finalPrice || item.product?.price || item.totalPrice,
+                quantity: item.quantity || 1,
+                size: item.product?.productVariantForCartDto?.size || 'N/A',
+                color: item.product?.productVariantForCartDto?.color || 'N/A',
+                paymentMethod: lastPayment?.paymentMethod?.paymentMethod || lastPayment?.paymentMethod || 'N/A',
+                paymentStatus: lastPayment?.status,
+                canBeCancelled: orderDetail?.canBeCancelled
+              };
+            });
 
             return orderItems;
           } catch (error) {
@@ -304,12 +355,8 @@ const Orders = () => {
       // Apply status filter
       if (statusFilter !== 'All') {
         console.log('Filtering by status:', statusFilter);
-        console.log('Sample order status before filtering:', orderData[0].status, typeof orderData[0].status);
-        result = result.filter(order => {
-          const matches = order.status === parseInt(statusFilter);
-          return matches;
-        });
-        console.log('Filtered results count:', result.length);
+        result = result.filter(order => compareStatus(order.status, statusFilter));
+        console.log(`Filtered result count for ${statusFilter}:`, result.length);
       }
 
       // Apply sorting
