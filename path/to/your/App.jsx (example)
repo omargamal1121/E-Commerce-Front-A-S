@@ -1,0 +1,17 @@
+// ... existing code ...
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import ViewCategory from './components/category/ViewCategory'; // Adjust path as needed
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        {/* ... other routes ... */}
+        <Route path="/category/:id" element={<ViewCategory />} />
+        {/* ... other routes ... */}
+      </Routes>
+    </Router>
+  );
+}
+
+export default App;
