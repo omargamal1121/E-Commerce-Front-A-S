@@ -244,6 +244,19 @@ const Navbar = () => {
             <p>{t("POLICY")}</p>
             <span className="w-2/4 h-[2px] transition-all duration-300 bg-gray-700 group-hover:w-full group-hover:bg-gray-300 group-hover:opacity-100 opacity-0"></span>
           </NavLink>
+
+          {user && (
+            <NavLink
+              to="/orders"
+              className={({ isActive }) =>
+                `flex flex-col items-center gap-1 group ${isActive ? "font-bold" : ""
+                }`
+              }
+            >
+              <p>{t("ORDERS")}</p>
+              <span className="w-2/4 h-[2px] transition-all duration-300 bg-gray-700 group-hover:w-full group-hover:bg-gray-300 group-hover:opacity-100 opacity-0"></span>
+            </NavLink>
+          )}
         </ul>
 
         {/* --- اللوجو --- */}
@@ -312,12 +325,6 @@ const Navbar = () => {
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       My Profile
-                    </Link>
-                    <Link
-                      to="/orders"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      Orders
                     </Link>
                     <Link
                       to="/change-email"
@@ -426,6 +433,15 @@ const Navbar = () => {
             >
               {t("POLICY")}
             </NavLink>
+            {user && (
+              <NavLink
+                onClick={() => setvisible(false)}
+                to="/orders"
+                className="py-2 pl-6 border-b-2"
+              >
+                {t("ORDERS")}
+              </NavLink>
+            )}
             <NavLink
               onClick={() => setvisible(false)}
               to="/wishlist"
