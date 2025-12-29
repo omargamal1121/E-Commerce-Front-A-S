@@ -141,9 +141,8 @@ const ScrollSection = ({ scroll1, scroll2 }) => {
                 <motion.div
                     className='inline-flex items-center'
                     key={idx}
-                    variants={itemVariants}
+                    variants={{ ...itemVariants, ...hoverVariants }}
                     whileHover="hover"
-                    hoverVariants={hoverVariants}
                 >
                     <motion.img
                         src={item.img}

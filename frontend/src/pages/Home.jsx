@@ -2,6 +2,7 @@ import React from "react";
 import Hero from "../components/Hero";
 import LatestCollection from "../components/LatestCollection";
 import BestSeller from "../components/BestSeller";
+import MostWanted from "../components/MostWanted";
 import OurPolicy from "../components/OurPolicy";
 import NewLetterBox from '../components/NewLetterBox';
 import { motion } from "framer-motion";
@@ -28,7 +29,7 @@ const Home = () => {
         whileInView="visible"
         viewport={{ once: true, amount: 0.3 }}
         variants={itemVariants}>
-        <HeroImage height={100}/>
+        <HeroImage height={100} />
       </motion.div>
       <motion.div
         initial="hidden"
@@ -49,15 +50,15 @@ const Home = () => {
         whileInView="visible"
         viewport={{ once: true, amount: 0.3 }}
         variants={itemVariants}>
-        <ScrollSection scroll1={assets.scroll1_max} scroll2={assets.scroll2_max} />
+        <MostWanted />
       </motion.div>
-      {/* <motion.div
+      <motion.div
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.3 }}
         variants={itemVariants}>
-        <TypeProduct />
-      </motion.div> */}
+        <ScrollSection scroll1={assets.scroll1_max} scroll2={assets.scroll2_max} />
+      </motion.div>
       <motion.div
         initial="hidden"
         whileInView="visible"
@@ -72,7 +73,7 @@ const Home = () => {
         variants={itemVariants}>
         {/* HeroBanner full width */}
         <div className="w-screen relative left-1/2 right-1/2 -mx-[50vw]">
-          <HeroBanner collectionId={1} />
+          <HeroBanner />
         </div>
       </motion.div>
       <motion.div

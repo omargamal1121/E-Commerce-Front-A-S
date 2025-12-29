@@ -62,6 +62,21 @@ export const fetchWithTokenRefresh = async (url, options = {}, refreshTokenFn) =
 };
 
 /**
+ * Safely parses JSON response, returning empty object if body is empty or malformed
+ * @param {Response} response - The fetch Response object
+ * @returns {Promise<Object>} - The parsed data or an empty object
+ */
+export const safeParseJson = async (response) => {
+  try {
+    const text = await response.text();
+    return text ? JSON.parse(text) : {};
+  } catch (error) {
+    console.error("Error parsing JSON:", error);
+    return {};
+  }
+};
+
+/**
  * Prepares headers with authentication token
  * @param {Object} additionalHeaders - Additional headers to include
  * @returns {Object} - Headers object with authentication

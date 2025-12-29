@@ -80,16 +80,16 @@ const ScrollSection = ({ scroll1, scroll2 }) => {
     };
 
     const itemVariants = {
-        hidden: { 
-            opacity: 0, 
+        hidden: {
+            opacity: 0,
             y: 50,
             scale: 0.8
         },
-        visible: { 
-            opacity: 1, 
+        visible: {
+            opacity: 1,
             y: 0,
             scale: 1,
-            transition: { 
+            transition: {
                 duration: 0.6,
                 ease: "easeOut"
             }
@@ -107,9 +107,9 @@ const ScrollSection = ({ scroll1, scroll2 }) => {
     };
 
     return (
-        <motion.div 
-            className='mt-10 py-20 border-t border-gray-200 overflow-x-auto whitespace-nowrap bg-[#1b1c26] px-4 sm:px-[2vw] md:px-[2vw] lg:px-[3vw] text-white' 
-            ref={scrollRef} 
+        <motion.div
+            className='mt-10 py-20 border-t border-gray-200 overflow-x-auto whitespace-nowrap bg-[#1b1c26] px-4 sm:px-[2vw] md:px-[2vw] lg:px-[3vw] text-white'
+            ref={scrollRef}
             style={{ scrollBehavior: 'smooth' }}
             variants={containerVariants}
             initial="hidden"
@@ -117,23 +117,22 @@ const ScrollSection = ({ scroll1, scroll2 }) => {
             viewport={{ once: true, amount: 0.3 }}
         >
             {items.map((item, idx) => (
-                <motion.div 
-                    className='inline-flex items-center' 
+                <motion.div
+                    className='inline-flex items-center'
                     key={idx}
-                    variants={itemVariants}
+                    variants={{ ...itemVariants, ...hoverVariants }}
                     whileHover="hover"
-                    hoverVariants={hoverVariants}
                 >
-                    <motion.img 
-                        src={item.img} 
-                        alt={item.text + idx} 
+                    <motion.img
+                        src={item.img}
+                        alt={item.text + idx}
                         className={imgClass}
                         whileHover={{
                             rotate: [0, -5, 5, 0],
                             transition: { duration: 0.5 }
                         }}
                     />
-                    <motion.p 
+                    <motion.p
                         className={textClass}
                     >
                         {item.text}

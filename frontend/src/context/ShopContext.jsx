@@ -2,7 +2,7 @@ import { createContext, useState, useEffect } from "react";
 // import { products } from "../assets/frontend_assets/assets";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
-import { fetchWithTokenRefresh, getAuthHeaders } from "../utils/apiUtils";
+import { fetchWithTokenRefresh, getAuthHeaders, safeParseJson } from "../utils/apiUtils";
 import wishlistService from "../services/wishlistService";
 import discountService from "../services/discountService";
 import authService from "../services/authService";
@@ -191,7 +191,7 @@ const ShopContextProvider = (props) => {
           refreshToken
         );
 
-        const data = await response.json();
+        const data = await safeParseJson(response);
         console.log("Add to cart response:", data);
 
         if (response.ok && data.responseBody) {
@@ -285,7 +285,7 @@ const ShopContextProvider = (props) => {
     try {
       // 🟢 Try to get products directly from backend API
       const res = await fetch(`${backendUrl}/api/Products?page=1&pageSize=100`);
-      const data = await res.json();
+      const data = await safeParseJson(res);
       const list = data?.responseBody?.data || [];
 
       // 🧩 Transform response to match UI shape
@@ -478,7 +478,7 @@ const ShopContextProvider = (props) => {
       );
 
       if (response.ok) {
-        const data = await response.json();
+        const data = await safeParseJson(response);
         console.log("Cart fetch response:", data);
 
         if (data.responseBody && data.responseBody.data) {
@@ -531,38 +531,22 @@ const ShopContextProvider = (props) => {
     }
   };
 
-  // Fetch user's cart data from the backend
+  // Initial data fetch
   useEffect(() => {
     getProducts();
     clearLocalStorageCart();
   }, []);
 
+  // Fetch user's cart and wishlist data when token changes
   useEffect(() => {
     if (token) {
-      console.log("Token available, fetching user cart...");
+      console.log("Token available, fetching user cart & wishlist...");
       fetchUserCart();
+      fetchWishlist();
     } else {
-      console.log("No token, clearing cart");
+      console.log("No token, clearing cart & wishlist");
       setCartItems({});
-    }
-
-    // 👇 هذا سيُنفَّذ دائمًا (سواء عند وجود أو عدم وجود token)
-    // Add debugging logs to fetchWishlist to identify the issue
-    async function fetchWishlist() {
-      try {
-        console.log("Fetching wishlist...");
-        const response = await wishlistService.getWishlist(1, 20, refreshToken);
-        console.log("Wishlist API response:", response);
-
-        if (response.success) {
-          setWishlist(response.data);
-          console.log("Wishlist updated successfully:", response.data);
-        } else {
-          console.error("Error fetching wishlist:", response.error);
-        }
-      } catch (error) {
-        console.error("Unexpected error fetching wishlist:", error);
-      }
+      setWishlistItems([]);
     }
   }, [token]);
 
@@ -574,25 +558,18 @@ const ShopContextProvider = (props) => {
           method: "DELETE",
           headers: getAuthHeaders(),
         });
+        const data = await safeParseJson(res);
         if (res.ok) {
           setCartItems({});
-          toast.success("Cart cleared successfully");
+          toast.success(data.responseBody?.message || "Cart cleared successfully");
         } else {
-          toast.error("Failed to clear cart");
+          toast.error(data.responseBody?.message || "Failed to clear cart");
         }
       } catch (error) {
         console.log("Error clearing cart:", error.message);
-        if (error.response) {
-          console.log(
-            "Error response:",
-            error.response.status,
-            error.response.data
-          );
-        }
         toast.error("Failed to clear cart");
       }
     } else {
-      // Clear local cart if not logged in
       setCartItems({});
       toast.success("Cart cleared successfully");
     }
@@ -610,22 +587,12 @@ const ShopContextProvider = (props) => {
     }
 
     try {
-      const response = await fetchWithTokenRefresh(
-        `${backendUrl}/api/Wishlist/${productId}`,
-        {
-          method: "POST",
-          headers: getAuthHeaders(),
-          body: JSON.stringify({ productId }),
-        },
-        refreshToken
-      );
-
-      if (response.ok) {
+      const result = await wishlistService.addToWishlist(productId, refreshToken);
+      if (result.success) {
         toast.success("Item added to wishlist.");
         await fetchWishlist(); // Refresh wishlist
       } else {
-        const errorData = await response.json();
-        toast.error(errorData.message || "Failed to add item to wishlist.");
+        toast.error(result.error || "Failed to add item to wishlist.");
       }
     } catch (error) {
       console.error("Error adding to wishlist:", error);
@@ -641,24 +608,9 @@ const ShopContextProvider = (props) => {
 
     setWishlistLoading(true);
     try {
-      const response = await fetchWithTokenRefresh(
-        `https://localhost:7288/api/Wishlist/1`,
-        {
-          method: "DELETE",
-          headers: {
-            ...getAuthHeaders(),
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ productId }),
-        },
-        refreshToken
-      );
-
-      const result = await response.json();
-
+      const result = await wishlistService.removeFromWishlist(productId, refreshToken);
       if (result.success) {
         toast.success(result.message);
-        // Refresh wishlist to get updated data
         await fetchWishlist();
         return true;
       } else {
@@ -682,43 +634,12 @@ const ShopContextProvider = (props) => {
 
     setWishlistLoading(true);
     try {
-      const response = await fetchWithTokenRefresh(
-        `${backendUrl}/api/Wishlist?all=false&page=1&pageSize=20`,
-        {
-          method: "GET",
-          headers: getAuthHeaders(),
-        },
-        refreshToken
-      );
-
-      const result = await response.json();
-
+      const result = await wishlistService.getWishlist(1, 100, refreshToken);
       if (result.success) {
-        console.log("Wishlist data received:", result.data);
-
-        // Check if data is an array and has items
-        if (Array.isArray(result.data) && result.data.length > 0) {
-          console.log("Setting wishlist items:", result.data);
-          setWishlistItems(result.data);
-        } else {
-          console.warn("Wishlist data is empty or not an array:", result.data);
-          // Force refresh token and try again if data is empty
-          if (Array.isArray(result.data) && result.data.length === 0) {
-            console.log("Attempting to refresh token and fetch wishlist again");
-            await refreshToken();
-            // Try fetching again after token refresh
-            const retryResult = await wishlistService.getWishlist(1, 100, refreshToken);
-            if (retryResult.success && Array.isArray(retryResult.data)) {
-              console.log("Retry successful, setting wishlist items:", retryResult.data);
-              setWishlistItems(retryResult.data);
-            } else {
-              console.error("Retry failed, setting empty wishlist");
-              setWishlistItems([]);
-            }
-          } else {
-            setWishlistItems([]);
-          }
-        }
+        console.log("Wishlist data received in ShopContext:", result.data);
+        // Sometimes the backend returns an array of simple IDs, sometimes Objects with .product
+        // We ensure we normalize this for the UI
+        setWishlistItems(result.data || []);
       } else {
         console.error("Error fetching wishlist:", result.error);
         setWishlistItems([]);
@@ -789,7 +710,7 @@ const ShopContextProvider = (props) => {
           refreshToken
         );
 
-        const data = await response.json();
+        const data = await safeParseJson(response);
         if (response.ok && data.responseBody) {
           // Instead of just clearing locally, fetch the actual cart state from server
           await fetchUserCart();

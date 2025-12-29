@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ShopContext } from "../context/ShopContext";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Title from "../components/Title";
-import { FaChevronDown, FaTimes } from "react-icons/fa";
+import { FaChevronDown, FaTimes, FaFilter, FaThLarge, FaList } from "react-icons/fa";
 
 const CategoryPage = () => {
   const { categoryId } = useParams();
@@ -13,9 +13,7 @@ const CategoryPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [sortOption, setSortOption] = useState("featured");
-  const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [showFilterPanel, setShowFilterPanel] = useState(false);
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 500 });
   const [inStock, setInStock] = useState(false);
 
   useEffect(() => {
@@ -23,17 +21,11 @@ const CategoryPage = () => {
       try {
         setLoading(true);
         setError("");
-
-        // Fetch category details
-        const response = await fetch(
-          `${backendUrl}/api/categories/${categoryId}?isActive=true&includeDeleted=false`
-        );
+        const response = await fetch(`${backendUrl}/api/categories/${categoryId}?isActive=true&includeDeleted=false`);
         const data = await response.json();
 
         if (response.ok && data.responseBody) {
           setCategory(data.responseBody.data);
-
-          // Get subcategories from category response
           if (data.responseBody.data.subCategories) {
             setSubcategories(data.responseBody.data.subCategories.filter(sub => sub.isActive));
           } else {
@@ -43,301 +35,208 @@ const CategoryPage = () => {
           setError(data.message || "Failed to load category");
         }
       } catch (err) {
-        console.error("Error fetching category:", err);
         setError("Network error. Please try again.");
       } finally {
         setLoading(false);
       }
     };
 
-    if (categoryId) {
-      fetchCategoryAndSubcategories();
-    }
+    if (categoryId) fetchCategoryAndSubcategories();
   }, [categoryId, backendUrl]);
 
-  // Filter and sort subcategories based on selected options
-  const filteredAndSortedSubcategories = [...subcategories]
-    .filter((subcat) => {
-      // Apply in-stock filter if enabled
-      if (inStock) {
-        return subcat.inStock === true;
-      }
-      return true;
-    })
+  const sortedSubcategories = [...subcategories]
+    .filter(sub => !inStock || sub.inStock)
     .sort((a, b) => {
-      switch (sortOption) {
-        case "nameAZ":
-          return a.name.localeCompare(b.name);
-        case "nameZA":
-          return b.name.localeCompare(a.name);
-        case "dateOld":
-          return new Date(a.createdAt) - new Date(b.createdAt);
-        case "dateNew":
-          return new Date(b.createdAt) - new Date(a.createdAt);
-        case "bestSelling":
-          // Assuming there's a popularity field, fallback to featured if not
-          return (b.popularity || 0) - (a.popularity || 0);
-        default:
-          return 0; // featured
-      }
+      if (sortOption === "nameAZ") return a.name.localeCompare(b.name);
+      if (sortOption === "nameZA") return b.name.localeCompare(a.name);
+      if (sortOption === "dateNew") return new Date(b.createdAt) - new Date(a.createdAt);
+      return 0;
     });
 
-  // For display in the UI
-  const sortedSubcategories = filteredAndSortedSubcategories;
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
+  };
+
+  if (loading) return (
+    <div className="min-h-screen flex flex-col items-center justify-center">
+      <div className="w-12 h-12 border-4 border-gray-100 border-t-black rounded-full animate-spin"></div>
+      <p className="mt-4 text-xs font-black uppercase tracking-[0.3em] text-gray-400">Loading Collection</p>
+    </div>
+  );
 
   return (
-    <motion.div
-      className="max-w-screen-2xl mx-auto px-4 py-8 mt-25"
-      initial="hidden"
-      animate="visible"
-      variants={{
-        hidden: { opacity: 0, y: 60 },
-        visible: {
-          opacity: 1,
-          y: 0,
-          transition: { duration: 0.7, ease: "easeOut" },
-        },
-      }}
-    >
-      {loading ? (
-        <div className="flex justify-center items-center h-40">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
+    <div className="bg-white min-h-screen">
+      {/* Dynamic Luxury Hero */}
+      <section className="relative h-[40vh] md:h-[60vh] overflow-hidden flex items-center justify-center mt-16 group">
+        <div className="absolute inset-0 z-0">
+          <img
+            src={category?.images?.[0]?.url || "https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?auto=format&fit=crop&q=80&w=2000"}
+            className="w-full h-full object-cover scale-105 group-hover:scale-100 transition-transform duration-10000 ease-out"
+            alt={category?.name}
+          />
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"></div>
         </div>
-      ) : error ? (
-        <div className="text-center text-red-600 p-4 bg-red-100 rounded-md">
-          {error}
-        </div>
-      ) : category ? (
-        <>
-          {/* Breadcrumb */}
-          <div className="text-sm text-gray-600 mb-6">
-            <Link to="/" className="hover:underline">
-              Home
-            </Link>
-            <span className="mx-2">/</span>
-            <Link to="/collection" className="hover:underline">
-              Shop
-            </Link>
-            <span className="mx-2">/</span>
-            <span className="font-medium text-gray-900">{category?.name}</span>
-          </div>
-          {/* Category Header with Name and Description */}
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold tracking-wide mb-4 uppercase">
-              {category.name}
-            </h1>
-            <p className="text-gray-600 max-w-3xl mx-auto">
-              {category.description ||
-                "Explore our collection of subcategories in this category."}
-            </p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative z-10 text-center px-4"
+        >
+          <span className="text-white/60 text-xs font-black uppercase tracking-[0.5em] mb-4 block">Store Directory</span>
+          <h1 className="text-5xl md:text-8xl font-black text-white tracking-tighter uppercase mb-6 drop-shadow-2xl">{category?.name}</h1>
+          <div className="w-20 h-1 bg-white mx-auto shadow-2xl"></div>
+        </motion.div>
+      </section>
+
+      <div className="max-w-screen-2xl mx-auto px-4 md:px-12 py-12">
+        {/* Navigation / Filter Bar */}
+        <div className="sticky top-20 z-30 bg-white/80 backdrop-blur-md border-b border-gray-100 py-4 flex flex-col md:flex-row justify-between items-center gap-6 mb-12 rounded-2xl px-6 shadow-sm">
+          <div className="flex items-center gap-4 text-xs font-bold text-gray-400">
+            <Link to="/" className="hover:text-black">HOME</Link>
+            <span>/</span>
+            <Link to="/collection" className="hover:text-black">SHOP</Link>
+            <span>/</span>
+            <span className="text-black">{category?.name}</span>
           </div>
 
-          {/* Filter and Sort Section */}
-          <div className="flex flex-col md:flex-row justify-between items-center mb-8 border-t border-b border-gray-300 py-4">
-            <div className="flex items-center mb-4 md:mb-0">
-              <button
-                onClick={() => setShowFilterPanel(!showFilterPanel)}
-                className="flex items-center gap-2 border border-gray-300 rounded px-4 py-2 hover:bg-gray-100"
-              >
-                <span>FILTER AND SORT</span>
-                <FaChevronDown size={12} />
-              </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowFilterPanel(true)}
+              className="flex items-center gap-3 bg-black text-white px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl"
+            >
+              <FaFilter /> Customize View
+            </button>
+            <div className="hidden md:flex items-center bg-gray-100 p-1 rounded-full text-gray-400">
+              <button className="p-2 rounded-full hover:bg-white hover:text-black transition-all"><FaThLarge size={12} /></button>
+              <button className="p-2 rounded-full transition-all text-black bg-white shadow-sm"><FaList size={12} /></button>
             </div>
+          </div>
+        </div>
 
-            <div className="flex items-center justify-between w-full md:w-auto">
-              <p className="text-gray-600 mr-4">
-                {sortedSubcategories.length} Subcategories
-              </p>
-
-              <div className="relative">
-                <button
-                  onClick={() => setShowSortDropdown(!showSortDropdown)}
-                  className="flex items-center gap-2 border border-gray-300 rounded px-4 py-2 hover:bg-gray-100"
-                >
-                  <span>FEATURED</span>
-                  <FaChevronDown size={12} />
-                </button>
-
-                {showSortDropdown && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded shadow-lg z-10">
-                    <div className="py-1">
-                      <button
-                        onClick={() => {
-                          setSortOption("featured");
-                          setShowSortDropdown(false);
-                        }}
-                        className={`block px-4 py-2 text-sm w-full text-left hover:bg-gray-100 ${sortOption === "featured" ? "bg-gray-100" : ""}`}
-                      >
-                        FEATURED
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSortOption("bestSelling");
-                          setShowSortDropdown(false);
-                        }}
-                        className={`block px-4 py-2 text-sm w-full text-left hover:bg-gray-100 ${sortOption === "bestSelling" ? "bg-gray-100" : ""}`}
-                      >
-                        BEST SELLING
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSortOption("nameAZ");
-                          setShowSortDropdown(false);
-                        }}
-                        className={`block px-4 py-2 text-sm w-full text-left hover:bg-gray-100 ${sortOption === "nameAZ" ? "bg-gray-100" : ""}`}
-                      >
-                        ALPHABETICALLY, A-Z
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSortOption("nameZA");
-                          setShowSortDropdown(false);
-                        }}
-                        className={`block px-4 py-2 text-sm w-full text-left hover:bg-gray-100 ${sortOption === "nameZA" ? "bg-gray-100" : ""}`}
-                      >
-                        ALPHABETICALLY, Z-A
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSortOption("dateOld");
-                          setShowSortDropdown(false);
-                        }}
-                        className={`block px-4 py-2 text-sm w-full text-left hover:bg-gray-100 ${sortOption === "dateOld" ? "bg-gray-100" : ""}`}
-                      >
-                        DATE, OLD TO NEW
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSortOption("dateNew");
-                          setShowSortDropdown(false);
-                        }}
-                        className={`block px-4 py-2 text-sm w-full text-left hover:bg-gray-100 ${sortOption === "dateNew" ? "bg-gray-100" : ""}`}
-                      >
-                        DATE, NEW TO OLD
-                      </button>
-                    </div>
+        {/* Subcategories Grid */}
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12"
+        >
+          {sortedSubcategories.map((sub) => (
+            <motion.div key={sub.id} variants={itemVariants} className="group">
+              <Link to={`/subcategory/${sub.id}`} className="block relative">
+                <div className="aspect-[3/4] overflow-hidden rounded-3xl bg-gray-50 relative">
+                  {sub.images?.[0] ? (
+                    <img
+                      src={sub.images[0].url}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      alt={sub.name}
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center font-black text-xs text-gray-300">NO VISUAL</div>
+                  )}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-500"></div>
+                  <div className="absolute inset-x-4 bottom-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
+                    <button className="w-full py-3 bg-white text-black font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-2xl">
+                      Explore Sub-Selection
+                    </button>
                   </div>
-                )}
-              </div>
-            </div>
+                </div>
+
+                <div className="mt-6 px-2">
+                  <div className="flex justify-between items-start mb-1">
+                    <h3 className="text-lg font-black tracking-tighter text-gray-900 leading-none">{sub.name}</h3>
+                    <span className="text-[10px] font-bold text-gray-300 uppercase">Featured</span>
+                  </div>
+                  <p className="text-xs text-gray-400 font-medium line-clamp-1 italic">{sub.description || "Discover high-end curated items"}</p>
+                </div>
+              </Link>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {sortedSubcategories.length === 0 && (
+          <div className="py-32 text-center border-2 border-dashed border-gray-100 rounded-[3rem]">
+            <p className="text-xs font-black uppercase tracking-[0.5em] text-gray-300">Collection Empty</p>
           </div>
+        )}
+      </div>
 
-          {/* Filter Panel */}
-          {showFilterPanel && (
-            <div className="fixed inset-0 bg-black/50 bg-opacity-50 z-50 flex justify-center items-start pt-20">
-              <div className="bg-white w-full max-w-md p-6 rounded-lg shadow-lg">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-medium">FILTER AND SORT</h2>
+      {/* Luxury Filter Sidebar Overlay */}
+      <AnimatePresence>
+        {showFilterPanel && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowFilterPanel(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100]"
+            />
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white z-[101] shadow-2xl p-12 flex flex-col"
+            >
+              <div className="flex justify-between items-center mb-12">
+                <h2 className="text-3xl font-black tracking-tighter">REFINE VIEW</h2>
+                <button onClick={() => setShowFilterPanel(false)} className="h-12 w-12 rounded-full bg-gray-50 flex items-center justify-center hover:scale-110 transition-transform">
+                  <FaTimes />
+                </button>
+              </div>
+
+              <div className="space-y-10 flex-1">
+                <div>
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 mb-6">Stock Availability</h4>
                   <button
-                    onClick={() => setShowFilterPanel(false)}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    <FaTimes size={20} />
-                  </button>
-                </div>
-
-                <p className="text-sm text-gray-600 mb-4">
-                  {sortedSubcategories.length} SUBCATEGORIES
-                </p>
-
-                {/* Availability Filter */}
-                <div className="mb-6">
-                  <h3 className="text-md font-medium mb-3">AVAILABILITY</h3>
-                  <label
-                    className="flex items-center gap-2 cursor-pointer"
                     onClick={() => setInStock(!inStock)}
+                    className={`flex items-center gap-4 w-full p-4 rounded-2xl border transition-all ${inStock ? 'border-black bg-black text-white' : 'border-gray-100 text-gray-500'}`}
                   >
-                    <div
-                      className={`w-10 h-6 rounded-full p-1 ${inStock ? "bg-green-500" : "bg-gray-300"} transition-colors duration-300 ease-in-out`}
-                    >
-                      <div
-                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ease-in-out ${inStock ? "translate-x-4" : ""}`}
-                      ></div>
+                    <div className={`w-5 h-5 rounded flex items-center justify-center border ${inStock ? 'border-white' : 'border-gray-300'}`}>
+                      {inStock && <div className="w-2.5 h-2.5 bg-white rounded-sm" />}
                     </div>
-                    <span>In stock</span>
-                  </label>
-                </div>
-
-                {/* Sort By */}
-                <div className="mb-6">
-                  <h3 className="text-md font-medium mb-3">SORT BY</h3>
-                  <select
-                    value={sortOption}
-                    onChange={(e) => setSortOption(e.target.value)}
-                    className="w-full border rounded p-2"
-                  >
-                    <option value="featured">Featured</option>
-                    <option value="bestSelling">Best Selling</option>
-                    <option value="nameAZ">Alphabetically, A-Z</option>
-                    <option value="nameZA">Alphabetically, Z-A</option>
-                    <option value="dateOld">Date, Old to New</option>
-                    <option value="dateNew">Date, New to Old</option>
-                  </select>
-                </div>
-
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => {
-                      setInStock(false);
-                      setSortOption("featured");
-                    }}
-                    className="flex-1 py-2 border border-gray-300 rounded hover:bg-gray-100"
-                  >
-                    CLEAR
-                  </button>
-                  <button
-                    onClick={() => setShowFilterPanel(false)}
-                    className="flex-1 py-2 bg-black text-white rounded hover:bg-gray-800"
-                  >
-                    APPLY
+                    <span className="font-bold text-sm">Strictly In-Stock Only</span>
                   </button>
                 </div>
+
+                <div>
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 mb-6">Sort Arrangement</h4>
+                  <div className="space-y-2">
+                    {[
+                      { id: 'featured', label: 'Featured Suggestions' },
+                      { id: 'nameAZ', label: 'Alphabetical (A-Z)' },
+                      { id: 'nameZA', label: 'Alphabetical (Z-A)' },
+                      { id: 'dateNew', label: 'Latest Arrivals' }
+                    ].map(opt => (
+                      <button
+                        key={opt.id}
+                        onClick={() => setSortOption(opt.id)}
+                        className={`w-full text-left p-4 rounded-2xl font-bold text-sm transition-all ${sortOption === opt.id ? 'bg-gray-100 text-black' : 'text-gray-400 hover:text-black'}`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
-          {sortedSubcategories.length > 0 ? (
-            <div className="mb-12">
-              <h2 className="text-2xl font-medium mb-4">SUBCATEGORIES</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {sortedSubcategories.map((subcategory) => (
-                  <Link
-                    key={subcategory.id}
-                    to={`/subcategory/${subcategory.id}`}
-                    className="block border border-gray-200 rounded-lg hover:shadow-lg transition-all"
-                  >
-                    <div className="overflow-hidden rounded-t-lg h-100 bg-gray-100 flex items-center justify-center">
-                      {subcategory.images && subcategory.images.length > 0 ? (
-                        <img
-                          src={subcategory.images[0].url}
-                          alt={subcategory.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="text-gray-400">No Image</div>
-                      )}
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-medium text-lg">
-                        {subcategory.name}
-                      </h3>
-                      <p className="text-sm text-gray-500 mt-1">
-                        {subcategory.description || "View products"}
-                      </p>
-                    </div>
-                  </Link>
-                ))}
+
+              <div className="pt-8 border-t space-y-3">
+                <button onClick={() => setShowFilterPanel(false)} className="w-full py-5 bg-black text-white font-black uppercase text-xs tracking-widest rounded-3xl shadow-2xl">Apply Customization</button>
+                <button
+                  onClick={() => { setInStock(false); setSortOption('featured'); }}
+                  className="w-full py-4 text-xs font-black uppercase tracking-widest text-gray-300 hover:text-black transition-colors"
+                >Reset Filters</button>
               </div>
-            </div>
-          ) : (
-            <div className="text-center text-gray-500 my-8">
-              No subcategories available for this category.
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="text-center text-gray-500">Category not found.</div>
-      )}
-    </motion.div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
   );
 };
 

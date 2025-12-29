@@ -1,4 +1,4 @@
-import { fetchWithTokenRefresh, getAuthHeaders } from '../utils/apiUtils';
+import { fetchWithTokenRefresh, getAuthHeaders, safeParseJson } from '../utils/apiUtils';
 
 class WishlistService {
   constructor() {
@@ -22,13 +22,13 @@ class WishlistService {
         refreshTokenFn
       );
 
-      const data = await response.json();
-      
-      if (response.ok && data.responseBody) {
+      const data = await safeParseJson(response);
+
+      if (response.ok) {
         return {
           success: true,
-          data: data.responseBody.data,
-          message: data.responseBody.message || 'Product added to wishlist'
+          data: data.responseBody?.data || data.data || data,
+          message: data.responseBody?.message || data.message || 'Product added to wishlist'
         };
       } else {
         return {
@@ -62,13 +62,13 @@ class WishlistService {
         refreshTokenFn
       );
 
-      const data = await response.json();
-      
-      if (response.ok && data.responseBody) {
+      const data = await safeParseJson(response);
+
+      if (response.ok) {
         return {
           success: true,
-          data: data.responseBody.data,
-          message: data.responseBody.message || 'Product removed from wishlist'
+          data: data.responseBody?.data || data.data || data,
+          message: data.responseBody?.message || data.message || 'Product removed from wishlist'
         };
       } else {
         return {
@@ -92,32 +92,26 @@ class WishlistService {
    * @param {Function} refreshTokenFn - Function to refresh the token
    * @returns {Promise<Object>} - API response
    */
-  async getWishlist(page = 1, pageSize = 20, refreshTokenFn,all=false) {
+  async getWishlist(page = 1, pageSize = 20, refreshTokenFn, all = false) {
     try {
-      let url=`${this.backendUrl}/api/Wishlist?all=${all}&page=${page}&pageSize=${pageSize}`
+      let url = `${this.backendUrl}/api/Wishlist?all=${all}&page=${page}&pageSize=${pageSize}`
       const response = await fetchWithTokenRefresh(
         url,
-
         {
           method: 'GET',
           headers: getAuthHeaders(),
         },
         refreshTokenFn
       );
-      console.log(url)
 
-      const data = await response.json();
-      console.log("Raw wishlist API response:", data);
-      
-      if (response.ok && data.responseBody) {
-        console.log("Wishlist responseBody:", data.responseBody);
-        // Ensure we're properly extracting the data array from the response
-        const wishlistData = data.responseBody.data || [];
-        console.log("Extracted wishlist data:", wishlistData);
+      const data = await safeParseJson(response);
+
+      if (response.ok) {
+        const wishlistData = data.responseBody?.data || data.data || (Array.isArray(data) ? data : []);
         return {
           success: true,
           data: wishlistData,
-          message: data.responseBody.message || 'Wishlist retrieved successfully'
+          message: data.responseBody?.message || data.message || 'Wishlist retrieved successfully'
         };
       } else {
         return {
@@ -134,13 +128,39 @@ class WishlistService {
     }
   }
 
-  /**
-   * Check if a product is in wishlist
-   * @param {number} productId - The product ID to check
-   * @param {Function} refreshTokenFn - Function to refresh the token
-   * @returns {Promise<Object>} - API response
-   */
+  async isInWishlist(productId, refreshTokenFn) {
+    try {
+      const response = await fetchWithTokenRefresh(
+        `${this.backendUrl}/api/Wishlist/${productId}`,
+        {
+          method: 'GET',
+          headers: getAuthHeaders(),
+        },
+        refreshTokenFn
+      );
 
+      const data = await safeParseJson(response);
+
+      if (response.ok) {
+        return {
+          success: true,
+          data: data.responseBody?.data ?? data.data ?? data,
+          message: data.responseBody?.message || data.message
+        };
+      } else {
+        return {
+          success: false,
+          error: data.responseBody?.message || data.message || 'Failed to check wishlist'
+        };
+      }
+    } catch (error) {
+      console.error('Error checking wishlist:', error);
+      return {
+        success: false,
+        error: 'Error checking wishlist'
+      };
+    }
+  }
 
   /**
    * Clear entire wishlist
@@ -158,13 +178,13 @@ class WishlistService {
         refreshTokenFn
       );
 
-      const data = await response.json();
-      
-      if (response.ok && data.responseBody) {
+      const data = await safeParseJson(response);
+
+      if (response.ok) {
         return {
           success: true,
-          data: data.responseBody.data,
-          message: data.responseBody.message || 'Wishlist cleared successfully'
+          data: data.responseBody?.data || data.data || data,
+          message: data.responseBody?.message || data.message || 'Wishlist cleared successfully'
         };
       } else {
         return {

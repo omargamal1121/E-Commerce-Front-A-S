@@ -1,423 +1,215 @@
 import React, { useState, useEffect, useContext } from "react";
 import { useParams, Link } from "react-router-dom";
 import { ShopContext } from "../context/ShopContext";
-import { motion } from "framer-motion";
-import Title from "../components/Title";
-import ProductCard from "../components/ProductCard";
-import { FaChevronDown, FaTimes } from "react-icons/fa";
+import { motion, AnimatePresence } from "framer-motion";
+import ProductItem from "../components/ProductItem";
+import { FaFilter, FaTimes, FaSortAmountDown } from "react-icons/fa";
 
 const SubcategoryPage = () => {
   const { subcategoryId } = useParams();
-  const { backendUrl } = useContext(ShopContext);
+  const { backendUrl, currency } = useContext(ShopContext);
   const [subcategory, setSubcategory] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [sortOption, setSortOption] = useState("featured");
-  const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [showFilterPanel, setShowFilterPanel] = useState(false);
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 10000 });
   const [inStock, setInStock] = useState(false);
+  const [priceRange, setPriceRange] = useState({ min: 0, max: 20000 });
 
   useEffect(() => {
     const fetchSubcategoryAndProducts = async () => {
       try {
         setLoading(true);
         setError("");
-
-        // جلب بيانات الـ Subcategory
-        const subcategoryResponse = await fetch(
-          `${backendUrl}/api/subcategories/${subcategoryId}?isActive=true&isDeleted=false`
-        );
-        const subcategoryData = await subcategoryResponse.json();
-
-        if (subcategoryResponse.ok && subcategoryData.responseBody) {
-          setSubcategory(subcategoryData.responseBody.data);
-
-          // Get products from subcategory response
-          if (subcategoryData.responseBody.data.products) {
-            setProducts(subcategoryData.responseBody.data.products.filter(product => product.isActive));
-          } else {
-            setProducts([]);
-          }
+        const res = await fetch(`${backendUrl}/api/subcategories/${subcategoryId}?isActive=true&isDeleted=false`);
+        const data = await res.json();
+        if (res.ok && data.responseBody) {
+          setSubcategory(data.responseBody.data);
+          setProducts((data.responseBody.data.products || []).filter(p => p.isActive));
         } else {
-          setError(subcategoryData.message || "Failed to load subcategory");
+          setError(data.message || "Failed to load subcategory");
         }
       } catch (err) {
-        console.error("Error fetching subcategory and products:", err);
         setError("Network error. Please try again.");
       } finally {
         setLoading(false);
       }
     };
-
-    if (subcategoryId) {
-      fetchSubcategoryAndProducts();
-    }
+    if (subcategoryId) fetchSubcategoryAndProducts();
   }, [subcategoryId, backendUrl]);
 
-  // Filter and sort products based on selected options
-  const filteredAndSortedProducts = [...products]
-    .filter((product) => {
-      // Apply in-stock filter if enabled
-      if (inStock && !product.inStock) {
-        return false;
-      }
-
-      // Apply price range filter
-      if (product.price < priceRange.min || product.price > priceRange.max) {
-        return false;
-      }
-
-      return true;
-    })
+  const sortedProducts = [...products]
+    .filter(p => (!inStock || p.inStock) && p.price >= priceRange.min && p.price <= priceRange.max)
     .sort((a, b) => {
-      switch (sortOption) {
-        case "priceLow":
-          return a.price - b.price;
-        case "priceHigh":
-          return b.price - a.price;
-        case "nameAZ":
-          return a.name.localeCompare(b.name);
-        case "nameZA":
-          return b.name.localeCompare(a.name);
-        case "dateOld":
-          return new Date(a.createdAt) - new Date(b.createdAt);
-        case "dateNew":
-          return new Date(b.createdAt) - new Date(a.createdAt);
-        case "bestSelling":
-          // Assuming there's a sales or popularity field, fallback to featured if not
-          return (b.sales || 0) - (a.sales || 0);
-        default:
-          return 0; // featured
-      }
+      if (sortOption === "priceLow") return a.price - b.price;
+      if (sortOption === "priceHigh") return b.price - a.price;
+      if (sortOption === "nameAZ") return a.name.localeCompare(b.name);
+      if (sortOption === "dateNew") return new Date(b.createdAt) - new Date(a.createdAt);
+      return 0;
     });
 
-  // For display in the UI
-  const sortedProducts = filteredAndSortedProducts;
+  if (loading) return (
+    <div className="min-h-screen flex flex-col items-center justify-center">
+      <div className="w-12 h-12 border-4 border-gray-100 border-t-black rounded-full animate-spin"></div>
+      <p className="mt-4 text-xs font-black uppercase tracking-[0.3em] text-gray-400">Curating Products</p>
+    </div>
+  );
 
   return (
-    <motion.div
-      className="max-w-screen-2xl mx-auto px-4 py-8 mt-25"
-      initial="hidden"
-      animate="visible"
-      variants={{
-        hidden: { opacity: 0, y: 60 },
-        visible: {
-          opacity: 1,
-          y: 0,
-          transition: { duration: 0.7, ease: "easeOut" },
-        },
-      }}
-    >
-      {loading ? (
-        <div className="flex justify-center items-center h-40">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
-        </div>
-      ) : error ? (
-        <div className="text-center text-red-600 p-4 bg-red-100 rounded-md">
-          {error}
-        </div>
-      ) : subcategory ? (
-        <>
-          {/* Breadcrumb */}
-          <div className="text-sm text-gray-600 mb-6">
-            <Link to="/" className="hover:underline">
-              Home
-            </Link>
-            <span className="mx-2">/</span>
-            <Link to="/collection" className="hover:underline">
-              Shop
-            </Link>
-            <span className="mx-2">/</span>
-            <span className="font-medium text-gray-900">
-              {subcategory?.name}
-            </span>
-          </div>
-
-          {/* Subcategory Header with Name and Description */}
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold tracking-wide mb-4 uppercase">
-              {subcategory.name}
-            </h1>
-            <p className="text-gray-600 max-w-3xl mx-auto">
-              {subcategory.description ||
-                "Explore our collection of products in this subcategory."}
-            </p>
-          </div>
-
-          {/* Filter and Sort Section */}
-          <div className="flex flex-col md:flex-row justify-between items-center mb-8 border-t border-b border-gray-300 py-4">
-            <div className="flex items-center mb-4 md:mb-0">
-              <button
-                onClick={() => setShowFilterPanel(!showFilterPanel)}
-                className="flex items-center gap-2 border border-gray-300 rounded px-4 py-2 hover:bg-gray-100"
-              >
-                <span>FILTER AND SORT</span>
-                <FaChevronDown size={12} />
-              </button>
+    <div className="bg-white min-h-screen">
+      {/* Cinematic Header */}
+      <section className="bg-gray-50 pt-32 pb-20 px-4 md:px-12 border-b border-gray-100">
+        <div className="max-w-screen-2xl mx-auto flex flex-col md:flex-row justify-between items-end gap-8">
+          <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }}>
+            <div className="flex items-center gap-3 text-[10px] font-black tracking-[0.3em] text-gray-400 uppercase mb-4">
+              <Link to="/" className="hover:text-black transition-colors">Home</Link>
+              <span>/</span>
+              <Link to="/collection" className="hover:text-black transition-colors">Shop</Link>
+              <span>/</span>
+              <span className="text-black">{subcategory?.name}</span>
             </div>
+            <h1 className="text-6xl md:text-8xl font-black tracking-tighter uppercase mb-4 leading-[0.8]">{subcategory?.name}</h1>
+            <p className="text-gray-400 font-medium italic max-w-xl">{subcategory?.description || "A masterfully curated selection of high-end fashion pieces for the discerning eye."}</p>
+          </motion.div>
 
-            <div className="flex items-center justify-between w-full md:w-auto">
-              <p className="text-gray-600 mr-4">
-                {sortedProducts.length} Products
-              </p>
+          <div className="flex flex-col items-end gap-4">
+            <span className="text-[10px] font-black bg-black text-white px-4 py-1 rounded-full uppercase tracking-widest">{products.length} Items Found</span>
+            <button
+              onClick={() => setShowFilterPanel(true)}
+              className="group flex items-center gap-4 bg-white border border-gray-200 px-8 py-4 rounded-full text-xs font-black uppercase tracking-widest hover:border-black transition-all shadow-sm hover:shadow-xl"
+            >
+              <FaFilter className="group-hover:rotate-180 transition-transform duration-500" />
+              Open Filter Desk
+            </button>
+          </div>
+        </div>
+      </section>
 
-              <div className="relative">
-                <button
-                  onClick={() => setShowSortDropdown(!showSortDropdown)}
-                  className="flex items-center gap-2 border border-gray-300 rounded px-4 py-2 hover:bg-gray-100"
-                >
-                  <span>FEATURED</span>
-                  <FaChevronDown size={12} />
+      {/* Main Grid Section */}
+      <main className="max-w-screen-2xl mx-auto px-4 md:px-12 py-12">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-12">
+          {sortedProducts.map((p, idx) => (
+            <motion.div
+              key={p.id || idx}
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: (idx % 4) * 0.1 }}
+            >
+              <ProductItem
+                id={p.id || p._id}
+                image={p.images?.map(img => img.url) || [p.mainImageUrl]}
+                name={p.name}
+                price={p.price}
+                finalPrice={p.finalPrice}
+                discountPrecentage={p.discountPrecentage}
+              />
+            </motion.div>
+          ))}
+        </div>
+
+        {sortedProducts.length === 0 && (
+          <div className="py-40 text-center rounded-[3rem] border-2 border-dashed border-gray-100">
+            <div className="mb-6 opacity-20"><FaSortAmountDown size={40} className="mx-auto" /></div>
+            <p className="text-xs font-black uppercase tracking-[0.4em] text-gray-300">Null Set Matching Criteria</p>
+            <button onClick={() => { setInStock(false); setPriceRange({ min: 0, max: 20000 }); }} className="mt-8 text-xs font-black underline hover:text-gray-500">Reset System</button>
+          </div>
+        )}
+      </main>
+
+      {/* Modern Filter Sidebar */}
+      <AnimatePresence>
+        {showFilterPanel && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowFilterPanel(false)} className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100]" />
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white z-[101] shadow-2xl p-12 flex flex-col"
+            >
+              <div className="flex justify-between items-center mb-16">
+                <div>
+                  <h2 className="text-4xl font-black tracking-tighter">FILTERS</h2>
+                  <div className="h-1 w-12 bg-black mt-2"></div>
+                </div>
+                <button onClick={() => setShowFilterPanel(false)} className="h-12 w-12 rounded-full bg-gray-50 flex items-center justify-center hover:scale-110 transition-transform">
+                  <FaTimes />
                 </button>
-
-                {showSortDropdown && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded shadow-lg z-10">
-                    <div className="py-1">
-                      <button
-                        onClick={() => {
-                          setSortOption("featured");
-                          setShowSortDropdown(false);
-                        }}
-                        className={`block px-4 py-2 text-sm w-full text-left hover:bg-gray-100 ${sortOption === "featured" ? "bg-gray-100" : ""}`}
-                      >
-                        FEATURED
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSortOption("bestSelling");
-                          setShowSortDropdown(false);
-                        }}
-                        className={`block px-4 py-2 text-sm w-full text-left hover:bg-gray-100 ${sortOption === "bestSelling" ? "bg-gray-100" : ""}`}
-                      >
-                        BEST SELLING
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSortOption("nameAZ");
-                          setShowSortDropdown(false);
-                        }}
-                        className={`block px-4 py-2 text-sm w-full text-left hover:bg-gray-100 ${sortOption === "nameAZ" ? "bg-gray-100" : ""}`}
-                      >
-                        ALPHABETICALLY, A-Z
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSortOption("nameZA");
-                          setShowSortDropdown(false);
-                        }}
-                        className={`block px-4 py-2 text-sm w-full text-left hover:bg-gray-100 ${sortOption === "nameZA" ? "bg-gray-100" : ""}`}
-                      >
-                        ALPHABETICALLY, Z-A
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSortOption("priceLow");
-                          setShowSortDropdown(false);
-                        }}
-                        className={`block px-4 py-2 text-sm w-full text-left hover:bg-gray-100 ${sortOption === "priceLow" ? "bg-gray-100" : ""}`}
-                      >
-                        PRICE, LOW TO HIGH
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSortOption("priceHigh");
-                          setShowSortDropdown(false);
-                        }}
-                        className={`block px-4 py-2 text-sm w-full text-left hover:bg-gray-100 ${sortOption === "priceHigh" ? "bg-gray-100" : ""}`}
-                      >
-                        PRICE, HIGH TO LOW
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSortOption("dateOld");
-                          setShowSortDropdown(false);
-                        }}
-                        className={`block px-4 py-2 text-sm w-full text-left hover:bg-gray-100 ${sortOption === "dateOld" ? "bg-gray-100" : ""}`}
-                      >
-                        DATE, OLD TO NEW
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSortOption("dateNew");
-                          setShowSortDropdown(false);
-                        }}
-                        className={`block px-4 py-2 text-sm w-full text-left hover:bg-gray-100 ${sortOption === "dateNew" ? "bg-gray-100" : ""}`}
-                      >
-                        DATE, NEW TO OLD
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
-            </div>
-          </div>
 
-          {/* Filter Panel */}
-          {showFilterPanel && (
-            <div className="fixed inset-0 bg-black/50 bg-opacity-50 z-50 flex justify-center items-start pt-20">
-              <div className="bg-white w-full max-w-md p-6 rounded-lg shadow-lg">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-medium">FILTER AND SORT</h2>
-                  <button
-                    onClick={() => setShowFilterPanel(false)}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    <FaTimes size={20} />
-                  </button>
-                </div>
-
-                <p className="text-sm text-gray-600 mb-4">
-                  {sortedProducts.length} PRODUCTS
-                </p>
-
-                {/* Availability Filter */}
-                <div className="mb-6">
-                  <h3 className="text-md font-medium mb-3">AVAILABILITY</h3>
-                  <label
-                    className="flex items-center gap-2 cursor-pointer"
-                    onClick={() => setInStock(!inStock)}
-                  >
-                    <div
-                      className={`w-10 h-6 rounded-full p-1 ${inStock ? "bg-green-500" : "bg-gray-300"} transition-colors duration-300 ease-in-out`}
-                    >
-                      <div
-                        className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ease-in-out ${inStock ? "translate-x-4" : ""}`}
-                      ></div>
-                    </div>
-                    <span>In stock</span>
+              <div className="space-y-12 flex-1 custom-scrollbar overflow-y-auto pr-4">
+                {/* Stock Section */}
+                <section>
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 mb-6 font-bold">Inventory Status</h4>
+                  <label className="flex items-center justify-between cursor-pointer group">
+                    <span className="font-bold text-sm group-hover:tracking-widest transition-all">Available Only</span>
+                    <input
+                      type="checkbox"
+                      checked={inStock}
+                      onChange={() => setInStock(!inStock)}
+                      className="w-5 h-5 accent-black border-2 border-gray-200 rounded cursor-pointer"
+                    />
                   </label>
-                </div>
+                </section>
 
-                {/* Price Range Filter */}
-                <div className="mb-6">
-                  <h3 className="text-md font-medium mb-3">PRICE</h3>
-                  <p className="text-sm text-gray-600 mb-2">
-                    The highest price is LE 10000.00
-                  </p>
-
+                {/* Price Section */}
+                <section>
+                  <div className="flex justify-between items-center mb-6">
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 font-bold">Price Ceiling</h4>
+                    <span className="text-sm font-black">{currency}{priceRange.max}</span>
+                  </div>
                   <input
                     type="range"
                     min="0"
-                    max="2000"
+                    max="20000"
+                    step="500"
                     value={priceRange.max}
-                    onChange={(e) =>
-                      setPriceRange({
-                        ...priceRange,
-                        max: parseInt(e.target.value),
-                      })
-                    }
-                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                    onChange={(e) => setPriceRange(prev => ({ ...prev, max: parseInt(e.target.value) }))}
+                    className="w-full h-1 bg-gray-100 appearance-none cursor-ew-resize accent-black"
                   />
-
-                  <div className="flex gap-4 mt-4">
-                    <div className="flex-1">
-                      <label className="text-xs text-gray-500 mb-1 block">
-                        Min
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                          LE
-                        </span>
-                        <input
-                          type="number"
-                          value={priceRange.min}
-                          onChange={(e) =>
-                            setPriceRange({
-                              ...priceRange,
-                              min: parseInt(e.target.value),
-                            })
-                          }
-                          className="w-full border rounded py-2 pl-8 pr-2"
-                        />
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <label className="text-xs text-gray-500 mb-1 block">
-                        Max
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">
-                          LE
-                        </span>
-                        <input
-                          type="number"
-                          value={priceRange.max}
-                          onChange={(e) =>
-                            setPriceRange({
-                              ...priceRange,
-                              max: parseInt(e.target.value),
-                            })
-                          }
-                          className="w-full border rounded py-2 pl-8 pr-2"
-                        />
-                      </div>
-                    </div>
+                  <div className="flex justify-between mt-4 text-[10px] font-black text-gray-300 uppercase tracking-widest">
+                    <span>{currency}0</span>
+                    <span>{currency}20,000</span>
                   </div>
-                </div>
+                </section>
 
-                {/* Sort By */}
-                <div className="mb-6">
-                  <h3 className="text-md font-medium mb-3">SORT BY</h3>
-                  <select
-                    value={sortOption}
-                    onChange={(e) => setSortOption(e.target.value)}
-                    className="w-full border rounded p-2"
-                  >
-                    <option value="featured">Featured</option>
-                    <option value="bestSelling">Best Selling</option>
-                    <option value="nameAZ">Alphabetically, A-Z</option>
-                    <option value="nameZA">Alphabetically, Z-A</option>
-                    <option value="priceLow">Price, Low to High</option>
-                    <option value="priceHigh">Price, High to Low</option>
-                    <option value="dateOld">Date, Old to New</option>
-                    <option value="dateNew">Date, New to Old</option>
-                  </select>
-                </div>
-
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => {
-                      setPriceRange({ min: 0, max: 2000 });
-                      setInStock(false);
-                      setSortOption("featured");
-                    }}
-                    className="flex-1 py-2 border border-gray-300 rounded hover:bg-gray-100"
-                  >
-                    CLEAR
-                  </button>
-                  <button
-                    onClick={() => setShowFilterPanel(false)}
-                    className="flex-1 py-2 bg-black text-white rounded hover:bg-gray-800"
-                  >
-                    APPLY
-                  </button>
-                </div>
+                {/* Sort Section */}
+                <section>
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 mb-6 font-bold">Visual Ordering</h4>
+                  <div className="grid grid-cols-1 gap-2">
+                    {[
+                      { id: 'featured', label: 'Curated Picks' },
+                      { id: 'priceLow', label: 'Price: Low-High' },
+                      { id: 'priceHigh', label: 'Price: High-Low' },
+                      { id: 'nameAZ', label: 'Name: A-Z' },
+                      { id: 'dateNew', label: 'Latest Drop' }
+                    ].map(opt => (
+                      <button
+                        key={opt.id}
+                        onClick={() => setSortOption(opt.id)}
+                        className={`text-left p-4 rounded-2xl text-xs font-bold transition-all ${sortOption === opt.id ? 'bg-black text-white shadow-lg' : 'bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-black'}`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </section>
               </div>
-            </div>
-          )}
 
-          {/* عرض المنتجات */}
-          {sortedProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {sortedProducts.map((product) => (
-                <ProductCard 
-                  key={product.id} 
-                  product={product} 
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center text-gray-500 my-8">
-              No products available in this subcategory.
-            </div>
-          )}
-        </>
-      ) : (
-        <div className="text-center text-gray-500">Subcategory not found.</div>
-      )}
-    </motion.div>
+              <div className="pt-8 border-t space-y-4">
+                <button onClick={() => setShowFilterPanel(false)} className="w-full py-5 bg-black text-white font-black uppercase text-xs tracking-widest rounded-[2rem] shadow-2xl hover:scale-[1.02] transition-transform">Confirm Refinement</button>
+                <button
+                  onClick={() => { setInStock(false); setPriceRange({ min: 0, max: 20000 }); setSortOption('featured'); }}
+                  className="w-full text-xs font-black uppercase tracking-widest text-gray-300 hover:text-black"
+                >Reset All</button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
   );
 };
 

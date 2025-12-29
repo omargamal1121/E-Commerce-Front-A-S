@@ -3,144 +3,137 @@ import { assets } from '../assets/frontend_assets/assets.js'
 import { Link } from 'react-router-dom';
 import { ShopContext } from '../context/ShopContext';
 import axios from 'axios';
+import { Swiper, SwiperSlide } from "swiper/react";
+import "swiper/css";
+import "swiper/css/autoplay";
+import "swiper/css/pagination";
+import "swiper/css/navigation";
+import "swiper/css/effect-coverflow";
+import { Autoplay, Pagination, Navigation, EffectCoverflow } from "swiper/modules";
+import { motion, AnimatePresence } from "framer-motion";
 
-const HeroBanner = ({ collectionId  }) => {
+const HeroBanner = () => {
   const { backendUrl } = useContext(ShopContext);
-  const [collection, setCollection] = useState(null);
+  const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [viewMode, setViewMode] = useState('none');
+  const [activeIndex, setActiveIndex] = useState(0);
 
-  // Fetch collection data
   useEffect(() => {
-    const fetchCollectionData = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        setError(null);
-
-        // Fetch collection details (includes images array)
-        const collectionResponse = await axios.get(`${backendUrl}/api/Collection/${collectionId}`);
-        
-        if (collectionResponse.data?.responseBody?.data) {
-          const collectionData = collectionResponse.data.responseBody.data;
-          setCollection(collectionData);
-        }
-      } catch (err) {
-        console.error('Error fetching collection data:', err);
-        setError('Failed to load collection');
-      } finally {
-        setLoading(false);
-      }
+        try {
+          const collResponse = await axios.get(`${backendUrl}/api/Collection?page=1&pageSize=10`);
+          let collData = collResponse.data?.responseBody?.data || collResponse.data?.data || [];
+          if (collData.length > 0) {
+            setCollections(collData);
+            setViewMode('collections');
+            setLoading(false);
+            return;
+          }
+        } catch (err) { }
+        setViewMode('static');
+      } finally { setLoading(false); }
     };
+    if (backendUrl) fetchData();
+  }, [backendUrl]);
 
-    if (collectionId) {
-      fetchCollectionData();
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.15, delayChildren: 0.2 }
     }
-  }, [collectionId, backendUrl]);
-
-  // Normalize image URL (handles absolute Cloudinary URLs and relative backend paths)
-  const resolveImageUrl = (url) => {
-    if (!url) return null;
-    const lower = String(url).toLowerCase();
-    if (lower.startsWith('http://') || lower.startsWith('https://')) return url;
-    if (url.startsWith('/')) return `${backendUrl}${url}`;
-    return url;
   };
 
-  const isValidUrl = (url) => {
-    try {
-      if (!url) return false;
-      // Allow data/blob/http/https
-      return /^(https?:|data:|blob:)/i.test(String(url));
-    } catch { return false; }
+  const textVariants = {
+    hidden: { opacity: 0, y: 30, letterSpacing: "0.2em" },
+    visible: {
+      opacity: 1,
+      y: 0,
+      letterSpacing: "0em",
+      transition: { duration: 0.8, ease: "easeOut" }
+    }
   };
 
-  // Loading state
   if (loading) {
     return (
-      <div className="relative w-full h-[400px] md:h-[520px] flex items-center justify-center bg-gray-200">
-        <div className="flex items-center space-x-2">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-          <span className="text-gray-600">Loading collection...</span>
-        </div>
+      <div className="w-full h-[60vh] bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-black"></div>
       </div>
     );
   }
 
-  // Error state - fallback to default banner
-  if (error || !collection) {
-    return (
-      <div
-        className="relative w-full h-[400px] md:h-[520px] flex items-center justify-center"
-        style={{
-          backgroundImage: `url(${assets.hero_banner_img})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      >
-        <div className="absolute inset-0 bg-black bg-opacity-30"></div>
-        <div className="relative z-10 flex flex-col items-center text-center text-white">
-          <span className="tracking-widest text-sm mb-2">New Arrivals</span>
-          <h1 className="text-3xl md:text-5xl font-bold mb-4">Shop Now</h1>
-          <Link to="/collection">
-            <button className="bg-white text-black px-6 py-2 font-semibold hover:bg-gray-200 transition">
-              SHOP NOW
-            </button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  // Get main image from collection images array
-  const rawBackgroundImage =
-    collection?.images?.find((img) => img.isMain === true)?.url ||
-    collection?.images?.[0]?.url ||
-    assets.hero_banner_img;
-  const backgroundImage = resolveImageUrl(rawBackgroundImage);
-
-  // Debug logs to help diagnose missing image issues
-  if (import.meta.env.DEV) {
-    // eslint-disable-next-line no-console
-    console.log('[HeroBanner] collection:', collection);
-    // eslint-disable-next-line no-console
-    console.log('[HeroBanner] rawBackgroundImage:', rawBackgroundImage, 'resolved:', backgroundImage);
-    // eslint-disable-next-line no-console
-    console.log('[HeroBanner] main image found:', collection?.images?.find((img) => img.isMain === true));
-  }
+  const slidesData = viewMode === 'collections' ? collections : [
+    { name: "Winter Collection", subtitle: "Luxury Outerwear", image: assets.Winter_collection_img, link: "/collection" },
+    { name: "Streetwear Culture", subtitle: "Modern Essentials", image: assets.hero_banner_img, link: "/collection" },
+    { name: "Baggie Trends", subtitle: "Relaxed Fit", image: assets.baggey3, link: "/collection" }
+  ];
 
   return (
-    <div
-      className="relative w-full h-[400px] md:h-[520px] flex items-center justify-center overflow-hidden"
-    >
-      {/* Background Image */}
-      <img
-        src={isValidUrl(backgroundImage) ? backgroundImage : assets.hero_banner_img}
-        alt="Collection Background"
-        className="absolute inset-0 w-full h-full object-cover object-center z-0"
-        onError={(e) => {
-          console.error('[HeroBanner] Image failed to load, using fallback');
-          e.target.src = assets.hero_banner_img;
-        }}
-        onLoad={() => console.log('[HeroBanner] Image loaded successfully')}
-      />
-      
-      {/* Overlay for better text contrast */}
-      <div className="absolute inset-0 bg-black/30 bg-opacity-40 z-10"></div>
-      
-      <div className="relative z-20 flex flex-col items-center text-center text-white">
-        <span className="tracking-widest text-sm mb-2">Collection</span>
-        <h1 className="text-3xl md:text-5xl font-bold mb-6 drop-shadow-lg">
-          {collection.name || 'Shop Now'}
-        </h1>
-        <Link to={`/collection-products/${collectionId}`}>
-          <button className="relative overflow-hidden bg-transparent text-white px-8 py-3 border border-white font-semibold shadow-lg transition-colors duration-300 group">
-            <span className="relative z-10 transition-colors duration-300 group-hover:text-black">
-              SHOP COLLECTION
-            </span>
-            <span className="absolute inset-0 bg-white transform translate-y-full transition-transform duration-300 ease-out group-hover:translate-y-0"></span>
-          </button>
-        </Link>
-      </div>
+    <div className="w-full h-[65vh] md:h-[85vh] relative overflow-hidden bg-black">
+      <Swiper
+        modules={[Autoplay, Pagination, Navigation, EffectCoverflow]}
+        effect="coverflow"
+        loop={true}
+        speed={1200}
+        autoplay={{ delay: 6000, disableOnInteraction: false }}
+        pagination={{ clickable: true, dynamicBullets: true }}
+        onSlideChange={(swiper) => setActiveIndex(swiper.realIndex)}
+        coverflowEffect={{ rotate: 10, stretch: 0, depth: 100, modifier: 1, slideShadows: false }}
+        className="w-full h-full hero-banner-swiper"
+      >
+        {slidesData.map((item, index) => {
+          const imgUrl = item.images ? (item.images.find(img => img.isMain)?.url || item.images[0]?.url) : item.image;
+          const finalLink = item.id ? `/collection-products/${item.id}` : item.link;
+
+          return (
+            <SwiperSlide key={index} className="w-full h-full overflow-hidden">
+              <div className="group relative w-full h-full cursor-pointer">
+                <img
+                  src={imgUrl || assets.hero_banner_img}
+                  alt={item.name}
+                  className="w-full h-full object-cover object-center scale-100 transition-transform duration-[12000ms] ease-out swiper-zoom-in"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-80"></div>
+
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white px-4">
+                  <AnimatePresence mode="wait">
+                    {activeIndex === index && (
+                      <motion.div
+                        variants={containerVariants}
+                        initial="hidden"
+                        animate="visible"
+                        className="flex flex-col items-center"
+                      >
+                        <motion.span variants={textVariants} className="text-sm uppercase tracking-[0.5em] mb-6 font-bold text-white/70">
+                          {item.subtitle || "Featured Selection"}
+                        </motion.span>
+                        <motion.h2 variants={textVariants} className="text-5xl md:text-8xl font-black mb-12 tracking-tighter drop-shadow-2xl">
+                          {item.name}
+                        </motion.h2>
+                        <motion.div variants={textVariants}>
+                          <Link to={finalLink}>
+                            <button className="btn-premium px-16 py-5 bg-white text-black font-black text-xs uppercase tracking-[0.3em] rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all">
+                              {viewMode === 'collections' ? "See Collection" : "Discover Now"}
+                            </button>
+                          </Link>
+                        </motion.div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </SwiperSlide>
+          );
+        })}
+      </Swiper>
+      <style>{`
+        .hero-banner-swiper .swiper-pagination-bullet { background: #fff !important; width: 10px; height: 10px; transition: all 0.3s; }
+        .hero-banner-swiper .swiper-pagination-bullet-active { width: 30px; border-radius: 5px; opacity: 1 !important; }
+        .hero-banner-swiper .swiper-slide-active img { transform: scale(1.1); }
+      `}</style>
     </div>
   );
 };
