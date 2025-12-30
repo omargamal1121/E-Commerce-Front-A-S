@@ -22,7 +22,7 @@ const SubcategoryPage = () => {
       try {
         setLoading(true);
         setError("");
-        const res = await fetch(`${backendUrl}/api/subcategories/${subcategoryId}?isActive=true&isDeleted=false`);
+        const res = await fetch(`${backendUrl}/api/subcategories/${subcategoryId}?isActive=true&isDeleted=false`, { credentials: 'include' });
         const data = await res.json();
         if (res.ok && data.responseBody) {
           setSubcategory(data.responseBody.data);

@@ -62,7 +62,8 @@ const ShopContextProvider = (props) => {
     if (!sizeLabel) return null;
     try {
       const response = await fetch(
-        `${backendUrl}/api/Products/${productId}/Variants`
+        `${backendUrl}/api/Products/${productId}/Variants`,
+        { credentials: 'include' }
       );
       if (!response.ok) return null;
       const data = await response.json();
@@ -284,7 +285,7 @@ const ShopContextProvider = (props) => {
   const getProducts = async () => {
     try {
       // 🟢 Try to get products directly from backend API
-      const res = await fetch(`${backendUrl}/api/Products?page=1&pageSize=100`);
+      const res = await fetch(`${backendUrl}/api/Products?page=1&pageSize=100`, { credentials: 'include' });
       const data = await safeParseJson(res);
       const list = data?.responseBody?.data || [];
 
@@ -557,6 +558,7 @@ const ShopContextProvider = (props) => {
         const res = await fetch(`${backendUrl}/api/Cart/clear`, {
           method: "DELETE",
           headers: getAuthHeaders(),
+          credentials: "include",
         });
         const data = await safeParseJson(res);
         if (res.ok) {
@@ -722,18 +724,12 @@ const ShopContextProvider = (props) => {
         }
       } catch (error) {
         console.log("Error during checkout:", error.message);
-        if (error.response) {
-          console.log(
-            "Error response:",
-            error.response.status,
-            error.response.data
-          );
-        }
         toast.error("Checkout failed");
         return false;
       }
     } else {
-      toast.error("Please log in to checkout");
+      // toast.error("Please log in to checkout"); // Removed as per request
+      navigate("/login");
       return false;
     }
   };

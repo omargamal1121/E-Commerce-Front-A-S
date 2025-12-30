@@ -21,7 +21,7 @@ const CategoryPage = () => {
       try {
         setLoading(true);
         setError("");
-        const response = await fetch(`${backendUrl}/api/categories/${categoryId}?isActive=true&includeDeleted=false`);
+        const response = await fetch(`${backendUrl}/api/categories/${categoryId}?isActive=true&includeDeleted=false`, { credentials: 'include' });
         const data = await response.json();
 
         if (response.ok && data.responseBody) {

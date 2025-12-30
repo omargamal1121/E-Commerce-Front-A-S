@@ -4,6 +4,7 @@ class AuthService {
   constructor() {
     this.isRefreshing = false;
     this.failedQueue = [];
+    axios.defaults.withCredentials = true;
     this.setupInterceptors();
   }
 
