@@ -42,7 +42,7 @@ const TypeCollection = () => {
         setError(null);
 
         const response = await fetch(
-          `${backendUrl}/api/categories?isActive=true&isDeleted=false&page=1&pageSize=50`
+          `${backendUrl}/api/Collection?page=1&pageSize=10&isActive=true&isDeleted=false&searchTerm=`
         );
 
         if (!response.ok) {
@@ -57,12 +57,12 @@ const TypeCollection = () => {
               // Extract the main image from the images array
               const mainImage = category.images?.find(img => img.isMain) || category.images?.[0];
               const imageUrl = mainImage?.url || assets.eniem;
-              
+
               return {
                 id: category.id,
                 name: category.name,
                 image: imageUrl,
-                link: `/category/${category.id}`,
+                link: `/collection-products/${category.id}`,
                 description: category.description || "",
               };
             }

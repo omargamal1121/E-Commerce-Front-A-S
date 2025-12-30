@@ -74,33 +74,37 @@ const Cart = () => {
     setErrorMessage("");
     setLoading(true);
     try {
-      await axios.delete(
-        `${backendUrl}/api/Cart/items`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json-patch+json"
-          },
-          data: {
-            productId: Number(productId),
-            productVariantId: Number(productVariantId) || 0
+      // Only make API call if user is logged in
+      if (token) {
+        await axios.delete(
+          `${backendUrl}/api/Cart/items`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json-patch+json"
+            },
+            withCredentials: true, // 🆕 Send cookies with request
+            data: {
+              productId: Number(productId),
+              productVariantId: Number(productVariantId) || 0
+            }
           }
-        }
-      );
+        );
+      }
 
-      // تحديث الـ state بعد الحذف
+      // تحديث الـ state بعد الحذف - Fix: compare variantId with variantId
       setCartData((prev) =>
         prev.filter(
-          (item) => !(item._id === productId && item.size === productVariantId)
+          (item) => !(item._id === productId && item.variantId === productVariantId)
         )
       );
 
       setCartItems((prev) => {
         const next = structuredClone(prev);
         if (next[productId]) {
-          // Find the item key that matches the size and color
+          // Find the item key that matches the variantId
           const itemToDelete = cartData.find(item =>
-            item._id === productId && item.size === productVariantId
+            item._id === productId && item.variantId === productVariantId
           );
           if (itemToDelete) {
             // Handle both old format (just size) and new format (size_color)
@@ -115,6 +119,9 @@ const Cart = () => {
         }
         return next;
       });
+
+      // Show success message
+      toast.success("Item removed from cart");
     } catch (error) {
       console.error("Failed to delete item:", error);
       setErrorMessage(
@@ -132,14 +139,20 @@ const Cart = () => {
     setErrorMessage("");
     setLoading(true);
     try {
-      await axios.delete(`${backendUrl}/api/Cart/items/clear`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      // Only make API call if user is logged in
+      if (token) {
+        await axios.delete(`${backendUrl}/api/Cart/items/clear`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true, // 🆕 Send cookies with request
+        });
+      }
+
+      // Clear local state for both guest and logged-in users
       setCartData([]);
-      // Also clear global cart state
       setCartItems({});
+      toast.success("Cart cleared successfully");
     } catch (error) {
       console.error("Failed to clear cart:", error);
       setErrorMessage(
@@ -178,30 +191,28 @@ const Cart = () => {
   };
 
   return (
-    <div className="mt-[100px] sm:mt-[120px] mb-10 px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw]">
+    <div className="mt-[120px] mb-5 px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw]">
       {/* Title Section */}
       <motion.div
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, amount: 0.3 }}
         variants={sectionVariants}
-        className="w-full"
+        className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 gap-3"
       >
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-          <div className="text-2xl sm:text-3xl">
-            <Title text1={"YOUR"} text2={"CART"} />
-          </div>
-          {cartData.length > 0 && (
-            <button
-              disabled={loading}
-              onClick={handleClearCart}
-              className={`bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-500 px-5 py-2 text-xs font-bold rounded-full transition-all duration-300 uppercase tracking-widest border border-gray-200
-                ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
-            >
-              {loading ? "Clearing..." : "Clear Cart"}
-            </button>
-          )}
+        <div className="text-xl sm:text-2xl">
+          <Title text1={"YOUR"} text2={"CART"} />
         </div>
+        {cartData.length > 0 && (
+          <button
+            disabled={loading}
+            onClick={handleClearCart}
+            className={`bg-red-500 text-white px-3 sm:px-4 py-2 text-xs sm:text-sm rounded transition-all duration-300 w-full sm:w-auto
+              ${loading ? "opacity-50 cursor-not-allowed" : "hover:bg-red-600"}`}
+          >
+            {loading ? "Clearing..." : "Clear Cart"}
+          </button>
+        )}
       </motion.div>
 
       {/* Error Message */}
@@ -229,80 +240,74 @@ const Cart = () => {
             <motion.div
               key={index}
               variants={itemVariants}
-              className="py-6 border-t border-gray-100 text-gray-700 flex flex-col sm:grid sm:grid-cols-[4fr_1.5fr_0.5fr] items-start sm:items-center gap-4 group"
+              className="py-4 border-t border-gray-200 text-gray-700 grid grid-cols-1 sm:grid-cols-[3fr_1fr_0.5fr] md:grid-cols-[4fr_1.5fr_0.5fr] items-start sm:items-center gap-3 sm:gap-4"
             >
-              <div className="flex items-start gap-4 sm:gap-6 w-full">
-                <div className="relative overflow-hidden rounded-lg bg-gray-50 border border-gray-100 min-w-[80px]">
-                  <img
-                    src={item.image || (productData.image && productData.image[0]) || ""}
-                    alt={productData.name}
-                    className="w-20 sm:w-24 aspect-[3/4] object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm sm:text-lg font-bold text-gray-900 truncate">
+              <div className="flex items-start gap-3 sm:gap-6">
+                <img
+                  src={item.image || (productData.image && productData.image[0]) || ""}
+                  alt={productData.name}
+                  className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded"
+                />
+                <div className="flex-1">
+                  <p className="text-sm sm:text-base md:text-lg font-medium line-clamp-2">
                     {productData.name}
                   </p>
-                  <div className="flex flex-wrap items-center gap-3 mt-2">
-                    <p className="text-base font-semibold text-black">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2">
+                    <p className="font-semibold text-sm sm:text-base">
                       {currency}
                       {item.price || productData.finalPrice || productData.price}
                     </p>
-                    <span className="text-gray-300">|</span>
-                    <div className="flex items-center gap-2">
-                      <p className="px-2 py-0.5 text-xs font-medium border border-gray-200 bg-gray-50 rounded text-gray-600">
-                        {item.size}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="px-2 py-1 text-xs sm:text-sm border border-gray-300 bg-slate-50 rounded">
+                        Size: {item.size}
                       </p>
-                      {item.color && item.color !== 'Unknown' && (
-                        <div className="flex items-center gap-1.5 ml-1">
-                          <div
-                            className="w-3.5 h-3.5 rounded-full border border-gray-200 shadow-sm"
-                            style={{ backgroundColor: item.color?.toLowerCase() || '#000000' }}
-                            title={item.color}
-                          ></div>
-                          <span className="text-xs text-gray-500 capitalize">{item.color}</span>
+                      <div className="flex items-center gap-1 sm:gap-2">
+                        <span className="text-xs sm:text-sm">Color:</span>
+                        <div
+                          className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border border-gray-300 flex items-center justify-center"
+                          style={{
+                            backgroundColor: item.color?.toLowerCase() || '#000000',
+                            minWidth: '20px',
+                            minHeight: '20px'
+                          }}
+                          title={item.color || 'Unknown'}
+                        >
+                          {!item.color || item.color === 'Unknown' ? (
+                            <span className="text-xs text-gray-500">?</span>
+                          ) : null}
                         </div>
-                      )}
+                        {item.color && item.color !== 'Unknown' && (
+                          <span className="text-xs text-gray-600 hidden sm:inline">{item.color}</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-
-              <div className="flex items-center justify-between w-full sm:w-auto gap-4 mt-2 sm:mt-0">
-                <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm">
-                  <input
-                    type="number"
-                    min={1}
-                    max={99}
-                    defaultValue={item.quantity}
-                    disabled={loading}
-                    onChange={(e) =>
-                      e.target.value === "" || e.target.value === "0"
-                        ? handleDeleteItem(item._id, item.variantId || item.size)
-                        : updataQuantity(
-                          item._id,
-                          item.size,
-                          item.color !== 'Unknown' ? item.color : undefined,
-                          Number(e.target.value)
-                        )
-                    }
-                    className="w-12 sm:w-16 px-2 py-2 text-center text-sm font-bold focus:outline-none"
-                  />
-                </div>
-
-                <div className="sm:hidden">
-                  <button
-                    onClick={() => !loading && handleDeleteItem(item._id, item.variantId || item.size)}
-                    className="p-2 text-red-500 bg-red-50 rounded-full"
-                  >
-                    <img className="w-4" src={assets.bin_icon} alt="Delete" />
-                  </button>
-                </div>
+              <div className="flex items-center gap-3 sm:gap-0 sm:block">
+                <label className="text-xs sm:text-sm text-gray-600 sm:hidden">Quantity:</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={99}
+                  defaultValue={item.quantity}
+                  disabled={loading}
+                  onChange={(e) =>
+                    e.target.value === "" || e.target.value === "0"
+                      ? handleDeleteItem(item._id, item.variantId || item.size)
+                      : updataQuantity(
+                        item._id,
+                        item.size,
+                        item.color !== 'Unknown' ? item.color : undefined,
+                        Number(e.target.value)
+                      )
+                  }
+                  className="border border-gray-300 w-16 sm:max-w-20 px-2 py-1 sm:py-2 rounded text-center"
+                />
               </div>
-
-              <div className="hidden sm:flex justify-end pr-4">
+              <div className="flex justify-end sm:justify-center">
                 <img
-                  className={`w-5 cursor-pointer hover:scale-110 transition-transform ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+                  className={`w-5 sm:w-5 cursor-pointer ${loading ? "opacity-50 cursor-not-allowed" : "hover:opacity-70"}`}
                   src={assets.bin_icon}
                   alt="Delete"
                   onClick={() =>
@@ -321,17 +326,25 @@ const Cart = () => {
         whileInView="visible"
         viewport={{ once: true, amount: 0.3 }}
         variants={sectionVariants}
-        className="flex justify-end my-12 sm:my-20"
+        className="flex justify-center sm:justify-end my-10 sm:my-20"
       >
         <div className="w-full sm:w-[450px]">
           <CartTotal />
-          <div className="w-full text-end">
+          <div className="w-full text-center sm:text-end">
             <button
               onClick={async () => {
+                // 🆕 Check if user is logged in first
+                if (!token) {
+                  toast.info("Please log in to proceed with checkout.");
+                  navigate("/login");
+                  return;
+                }
+
                 if (cartData.length === 0) {
                   toast.error("Your cart is empty. Please add items before checkout.");
                   return;
                 }
+
                 setLoading(true);
                 try {
                   const success = await checkout();
@@ -347,9 +360,9 @@ const Cart = () => {
                 }
               }}
               disabled={loading || cartData.length === 0}
-              className="bg-black text-white px-8 py-3 my-8 uppercase font-medium cursor-pointer 
+              className="bg-black text-white px-6 sm:px-8 py-3 my-8 uppercase font-medium cursor-pointer 
                          hover:bg-white hover:text-black border border-black transition-all duration-300
-                         disabled:opacity-50 disabled:cursor-not-allowed"
+                         disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto text-sm sm:text-base"
             >
               {loading ? "Processing..." : cartData.length === 0 ? "Cart is Empty" : "Proceed to Checkout"}
             </button>

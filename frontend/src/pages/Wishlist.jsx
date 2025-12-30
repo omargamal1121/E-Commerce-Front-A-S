@@ -32,7 +32,7 @@ const Wishlist = () => {
       const fetchMostWishlisted = async () => {
         try {
           setLoadingMostWishlisted(true);
-          const response = await axios.get(`${backendUrl}/api/Products/most-wishlisted?page=1&pageSize=8`);
+          const response = await axios.get(`${backendUrl}/api/Products/most-wishlisted?isActive=true&includeDeleted=false&page=1&pageSize=8`);
           if (response.data?.responseBody?.data) {
             setMostWishlisted(response.data.responseBody.data);
           } else if (response.data?.items) {

@@ -4,7 +4,6 @@ class AuthService {
   constructor() {
     this.isRefreshing = false;
     this.failedQueue = [];
-    axios.defaults.withCredentials = true;
     this.setupInterceptors();
   }
 
@@ -38,6 +37,13 @@ class AuthService {
 
         // If status is 401 Unauthorized
         if (error.response?.status === 401) {
+          // 🆕 Check if user has a token - if not, they're a guest, don't redirect to login
+          const currentToken = localStorage.getItem("token");
+
+          // If no token exists, user is a guest - just return the error without redirecting
+          if (!currentToken) {
+            return Promise.reject(error);
+          }
 
           // If the request that failed WAS the refresh token request, we must login again
           if (originalRequest.url?.includes("/api/Account/refresh-token")) {

@@ -8,7 +8,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import WishlistButton from "../components/WishlistButton";
 import MostWanted from "../components/MostWanted";
-import { FaChevronLeft, FaChevronRight, FaPlus, FaMinus, FaRulerCombined, FaTruck, FaShieldAlt, FaUndo } from "react-icons/fa";
+import { FaChevronLeft, FaChevronRight, FaPlus, FaMinus, FaRulerCombined, FaTruck, FaShieldAlt, FaUndo, FaTimes } from "react-icons/fa";
 
 const Product = () => {
   const { t } = useTranslation();
@@ -58,7 +58,7 @@ const Product = () => {
 
   const fetchVariantDetails = async (variantId) => {
     try {
-      const res = await axios.get(`${backendUrl}/api/Products/${productId}/Variants/${variantId}`);
+      const res = await axios.get(`${backendUrl}/api/Products/${productId}/Variants/${variantId}?isActive=true&includeDeleted=false`);
       return res.data?.responseBody?.data;
     } catch (err) {
       console.error("Error fetching variant details", err);
@@ -80,7 +80,7 @@ const Product = () => {
     const fetchVariants = async () => {
       if (!productId) return;
       try {
-        const res = await axios.get(`${backendUrl}/api/Products/${productId}/Variants`);
+        const res = await axios.get(`${backendUrl}/api/Products/${productId}/Variants?isActive=true&includeDeleted=false`);
         if (res.data?.responseBody?.data) {
           const vData = res.data.responseBody.data;
           setVariants(vData);
@@ -114,9 +114,9 @@ const Product = () => {
 
     setIsSubmitting(true);
     try {
+      // addToCart already shows success/error messages, no need to duplicate
       await addToCart(productData._id || productData.id, size, selectedVariant.color, quantity);
       updateLocalStock(selectedVariant.id, quantity);
-      toast.success(t("ADDED_TO_CART"));
     } finally {
       setIsSubmitting(false);
     }

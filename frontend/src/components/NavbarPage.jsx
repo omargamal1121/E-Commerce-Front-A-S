@@ -66,7 +66,7 @@ const NavbarPage = () => {
     const fetchCategories = async () => {
       try {
         const res = await fetch(
-          `${backendUrl}/api/categories?isActive=true&isDeleted=false&page=1&pageSize=50`
+          `${backendUrl}/api/categories?isActive=true&includeDeleted=false&page=1&pageSize=50`
         );
         const data = await res.json();
 

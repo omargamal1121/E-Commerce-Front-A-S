@@ -24,7 +24,7 @@ const HeroBanner = () => {
       try {
         setLoading(true);
         try {
-          const collResponse = await axios.get(`${backendUrl}/api/Collection?page=1&pageSize=10`);
+          const collResponse = await axios.get(`${backendUrl}/api/Collection?page=1&pageSize=10&isActive=true&isDeleted=false&searchTerm=`);
           let collData = collResponse.data?.responseBody?.data || collResponse.data?.data || [];
           if (collData.length > 0) {
             setCollections(collData);

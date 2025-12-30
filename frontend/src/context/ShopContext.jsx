@@ -62,8 +62,7 @@ const ShopContextProvider = (props) => {
     if (!sizeLabel) return null;
     try {
       const response = await fetch(
-        `${backendUrl}/api/Products/${productId}/Variants`,
-        { credentials: 'include' }
+        `${backendUrl}/api/Products/${productId}/Variants?isActive=true&includeDeleted=false`
       );
       if (!response.ok) return null;
       const data = await response.json();
@@ -183,6 +182,7 @@ const ShopContextProvider = (props) => {
               ...getAuthHeaders(),
               "Content-Type": "application/json-patch+json",
             },
+            withCredentials: true, // 🆕 Send cookies with request
             body: JSON.stringify({
               productId: Number(itemId),
               quantity: quantity,
@@ -196,7 +196,9 @@ const ShopContextProvider = (props) => {
         console.log("Add to cart response:", data);
 
         if (response.ok && data.responseBody) {
+          // Show success message only once
           toast.success(data.responseBody.message || "Product added to cart");
+          // Silently update cart without showing another message
           await fetchUserCart();
         } else {
           const errorMessage =
@@ -257,6 +259,7 @@ const ShopContextProvider = (props) => {
           {
             method: "PUT",
             headers: getAuthHeaders(),
+            withCredentials: true, // 🆕 Send cookies with request
             body: JSON.stringify({ quantity: Number(quantity) }),
           },
           refreshToken
@@ -285,7 +288,7 @@ const ShopContextProvider = (props) => {
   const getProducts = async () => {
     try {
       // 🟢 Try to get products directly from backend API
-      const res = await fetch(`${backendUrl}/api/Products?page=1&pageSize=100`, { credentials: 'include' });
+      const res = await fetch(`${backendUrl}/api/Products?isActive=true&includeDeleted=false&page=1&pageSize=100`);
       const data = await safeParseJson(res);
       const list = data?.responseBody?.data || [];
 
@@ -474,6 +477,7 @@ const ShopContextProvider = (props) => {
         {
           method: "GET",
           headers: getAuthHeaders(),
+          withCredentials: true, // 🆕 Send cookies with request
         },
         refreshToken
       );
@@ -558,7 +562,6 @@ const ShopContextProvider = (props) => {
         const res = await fetch(`${backendUrl}/api/Cart/clear`, {
           method: "DELETE",
           headers: getAuthHeaders(),
-          credentials: "include",
         });
         const data = await safeParseJson(res);
         if (res.ok) {
@@ -724,12 +727,18 @@ const ShopContextProvider = (props) => {
         }
       } catch (error) {
         console.log("Error during checkout:", error.message);
+        if (error.response) {
+          console.log(
+            "Error response:",
+            error.response.status,
+            error.response.data
+          );
+        }
         toast.error("Checkout failed");
         return false;
       }
     } else {
-      // toast.error("Please log in to checkout"); // Removed as per request
-      navigate("/login");
+      toast.error("Please log in to checkout");
       return false;
     }
   };

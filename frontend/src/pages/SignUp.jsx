@@ -240,8 +240,8 @@ const SignUp = () => {
                 type="submit"
                 disabled={loading}
                 className={`w-full font-light py-2 px-8 mt-4 border border-black transition-all duration-300 cursor-pointer ${loading
-                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : 'bg-black text-white hover:bg-white hover:text-black'
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-black text-white hover:bg-white hover:text-black'
                     }`}
             >
                 {loading ? 'Registering...' : 'Sign Up'}

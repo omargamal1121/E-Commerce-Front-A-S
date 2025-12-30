@@ -16,7 +16,7 @@ const MostWanted = () => {
         const fetchMostWanted = async () => {
             try {
                 setLoading(true);
-                const response = await axios.get(`${backendUrl}/api/Products/most-wishlisted?page=1&pageSize=8`);
+                const response = await axios.get(`${backendUrl}/api/Products/most-wishlisted?isActive=true&includeDeleted=false&page=1&pageSize=8`);
 
                 let products = [];
                 if (response.data?.responseBody?.data) {
@@ -110,8 +110,11 @@ const MostWanted = () => {
                         ? item.images.map(img => img.url || img.imageUrl).filter(Boolean)
                         : (item.image || item.mainImageUrl ? [item.image || item.mainImageUrl] : []);
 
+                    // Create unique key using both id and index to avoid duplicates
+                    const uniqueKey = `${item.productId || item.id || item._id || 'unknown'}-${index}`;
+
                     return (
-                        <motion.div key={item.productId || item.id || item._id || index} variants={itemVariants} className="card-luxury">
+                        <motion.div key={uniqueKey} variants={itemVariants} className="card-luxury">
                             <ProductItem
                                 id={item.productId || item.id || item._id}
                                 image={productImages}

@@ -42,7 +42,7 @@ const VerifyEmail = () => {
                 setError(data.message || 'Verification failed. Please try again.');
             }
         } catch (err) {
-            setError('Network error. Please try again.' , err);
+            setError('Network error. Please try again.', err);
         } finally {
             setLoading(false);
         }

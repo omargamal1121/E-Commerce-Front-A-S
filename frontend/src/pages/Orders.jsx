@@ -216,6 +216,29 @@ const Orders = () => {
   };
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const success = params.get('success');
+    const pending = params.get('pending');
+    const errorMessage = params.get('data.message');
+    const orderNumber = params.get('merchant_order_id');
+
+    if (success === 'true') {
+      toast.success(`Payment successful! ${orderNumber ? `Order: ${orderNumber}` : ''}`);
+      loadOrderData(); // Refresh to show updated status
+    } else if (success === 'false' || params.get('error_occured') === 'true') {
+      const msg = errorMessage ? decodeURIComponent(errorMessage).replace(/\+/g, ' ') : 'Payment failed or was cancelled';
+      toast.error(`${msg} ${orderNumber ? `(${orderNumber})` : ''}`);
+    } else if (pending === 'true') {
+      toast.info(`Payment is pending review. ${orderNumber ? `Order: ${orderNumber}` : ''}`);
+    }
+
+    // Clean up the URL to prevent showing the toast again on refresh
+    if (success || pending || errorMessage || params.get('error_occured')) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+  useEffect(() => {
     loadOrderData();
   }, [token]);
 

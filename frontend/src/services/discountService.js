@@ -14,7 +14,7 @@ class DiscountService {
   async getProductDiscount(productId, refreshTokenFn) {
     try {
       const response = await fetchWithTokenRefresh(
-        `${this.backendUrl}/api/Products/${productId}/Discount`,
+        `${this.backendUrl}/api/Products/${productId}/Discount?isActive=true&includeDeleted=false`,
         {
           method: 'GET',
           headers: getAuthHeaders(),
@@ -23,7 +23,7 @@ class DiscountService {
       );
 
       const data = await response.json();
-      
+
       if (response.ok && data.responseBody) {
         return {
           success: true,
@@ -63,7 +63,7 @@ class DiscountService {
       );
 
       const data = await response.json();
-      
+
       if (response.ok && data.responseBody) {
         return {
           success: true,
@@ -104,7 +104,7 @@ class DiscountService {
       );
 
       const data = await response.json();
-      
+
       if (response.ok && data.responseBody) {
         return {
           success: true,

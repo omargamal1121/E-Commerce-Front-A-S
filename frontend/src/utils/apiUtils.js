@@ -16,7 +16,7 @@ export const fetchWithTokenRefresh = async (url, options = {}, refreshTokenFn) =
   const headers = options.headers || {};
 
   // First attempt with current token
-  let response = await fetch(url, { ...options, credentials: 'include' });
+  let response = await fetch(url, options);
 
   // If unauthorized, try to refresh token and retry
   if (response.status === 401) {
@@ -43,11 +43,11 @@ export const fetchWithTokenRefresh = async (url, options = {}, refreshTokenFn) =
           'Authorization': `Bearer ${newToken}`
         };
 
-        // Retry the request with new token
+        // Retry the request with new token, preserving withCredentials
         return fetch(url, {
           ...options,
           headers: newHeaders,
-          credentials: 'include'
+          credentials: options.credentials || (options.withCredentials ? 'include' : undefined)
         });
       } else {
         // If refresh failed (returned null/false)

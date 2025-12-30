@@ -7,36 +7,30 @@ import { useTranslation } from 'react-i18next';
 
 const ReelBaggey = () => {
     const { t } = useTranslation();
-    const { backendUrl } = useContext(ShopContext);
+    const { backendUrl, token } = useContext(ShopContext);
 
     const [wishlistProducts, setWishlistProducts] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
     // Function to fetch wishlist products
     const fetchWishlistProducts = async () => {
-        try {
-            const authToken = localStorage.getItem("token");
-            
-            if (!authToken) {
-                setError("Please log in to view your wishlist");
-                setWishlistProducts([]);
-                return;
-            }
+        if (!token) return;
 
+        try {
             const headers = {
                 "Content-Type": "application/json",
                 "Accept": "text/plain",
-                "Authorization": `Bearer ${authToken}`
+                "Authorization": `Bearer ${token}`
             };
 
             console.log("Fetching wishlist from:", `${backendUrl}/api/Wishlist`);
             const response = await fetch(`${backendUrl}/api/Wishlist`, { headers });
-            
+
             if (response.ok) {
                 const data = await response.json();
                 console.log("Wishlist API response:", data);
-                
+
                 if (data.responseBody?.data && Array.isArray(data.responseBody.data)) {
                     // Extract product data from wishlist items
                     const products = data.responseBody.data.map(wishlistItem => {
@@ -47,7 +41,7 @@ const ReelBaggey = () => {
                         // If wishlist item is the product itself, use it directly
                         return wishlistItem;
                     }).filter(product => product && product.id); // Filter out invalid products
-                    
+
                     console.log("Extracted products:", products);
                     setWishlistProducts(products);
                 } else {
@@ -55,7 +49,6 @@ const ReelBaggey = () => {
                     setWishlistProducts([]);
                 }
             } else if (response.status === 401) {
-                setError("Please log in to view your wishlist");
                 setWishlistProducts([]);
             } else {
                 console.error("Wishlist API error:", response.status, response.statusText);
@@ -70,6 +63,11 @@ const ReelBaggey = () => {
     };
 
     useEffect(() => {
+        if (!token) {
+            setLoading(false);
+            return;
+        }
+
         const loadWishlistProducts = async () => {
             try {
                 setLoading(true);
@@ -84,7 +82,10 @@ const ReelBaggey = () => {
         };
 
         loadWishlistProducts();
-    }, [backendUrl]);
+    }, [backendUrl, token]);
+
+    // If no token, or if we've finished loading and there are no products, don't display anything
+    if (!token || (!loading && wishlistProducts.length === 0)) return null;
 
     return (
         <motion.div
@@ -121,45 +122,21 @@ const ReelBaggey = () => {
                         </p>
                     </div>
 
-                    {/* Debug Info */}
-                    <div className="text-center text-xs text-gray-400 mb-4">
-                        Debug: {wishlistProducts.length} products found
-                    </div>
-
                     {/* Products Grid */}
-                    {wishlistProducts.length > 0 ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-                            {wishlistProducts.slice(0, 8).map((product) => {
-                                console.log("Rendering product:", product);
-                                return (
-                                    <ProductCard
-                                        key={product.id}
-                                        product={product}
-                                    />
-                                );
-                            })}
-                        </div>
-                    ) : (
-                        <div className="text-center text-gray-500 my-8">
-                            <div className="max-w-md mx-auto">
-                                <div className="text-6xl mb-4">💝</div>
-                                <h3 className="text-lg font-medium mb-2">Your wishlist is empty</h3>
-                                <p className="text-sm sm:text-base mb-4">
-                                    {t('NO_WISHLIST_PRODUCTS') || 'Start adding products to your wishlist to see them here.'}
-                                </p>
-                                <a 
-                                    href="/" 
-                                    className="inline-block bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800 transition-colors"
-                                >
-                                    Continue Shopping
-                                </a>
-                            </div>
-                        </div>
-                    )}
+                    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
+                        {wishlistProducts.slice(0, 8).map((product) => {
+                            return (
+                                <ProductCard
+                                    key={product.id}
+                                    product={product}
+                                />
+                            );
+                        })}
+                    </div>
                 </>
             )}
         </motion.div>
-    )
-}
+    );
+};
 
-export default ReelBaggey
+export default ReelBaggey;
