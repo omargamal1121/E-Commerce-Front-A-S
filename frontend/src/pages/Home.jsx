@@ -12,6 +12,7 @@ import ScrollSection from "../components/ScrollSection";
 import TypeCollection from "../components/TypeCollection";
 import ReelBaggey from "../components/ReelBaggey";
 import TypeProduct from "../components/TypeProduct";
+import CollectionSection from "../components/CollectionSection";
 import { useTranslation } from 'react-i18next';
 import HeroBanner from "../components/HeroBanner";
 
@@ -58,6 +59,13 @@ const Home = () => {
         viewport={{ once: true, amount: 0.3 }}
         variants={itemVariants}>
         <ScrollSection scroll1={assets.scroll1_max} scroll2={assets.scroll2_max} />
+      </motion.div>
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.3 }}
+        variants={itemVariants}>
+        <CollectionSection />
       </motion.div>
       <motion.div
         initial="hidden"

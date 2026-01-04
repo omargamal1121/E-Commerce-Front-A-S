@@ -126,6 +126,9 @@ const resources = {
       DISCOUNTS: 'DISCOUNTS',
       ORDERS: 'ORDERS',
       DISCOVER_BIGGEST_SAVINGS: 'Discover our biggest savings and limited-time offers',
+      OUR: 'OUR',
+      SPECIAL: 'SPECIAL',
+      COLLECTIONS: 'COLLECTIONS',
     },
   },
   ar: {
@@ -252,6 +255,9 @@ const resources = {
       DISCOUNTS: 'الخصومات',
       ORDERS: 'طلباتي',
       DISCOVER_BIGGEST_SAVINGS: 'اكتشف أكبر التوفيرات والعروض المحدودة الوقت',
+      OUR: 'أقسام',
+      SPECIAL: 'مجموعات',
+      COLLECTIONS: 'مميزة',
     },
   },
 };
