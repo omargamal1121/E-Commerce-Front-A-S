@@ -41,7 +41,13 @@ const ListCollection = ({
       const totalCount = res.data?.responseBody?.totalCount || cols.length;
 
       const normalized = cols.map((col) => {
-        const mainImage = col.images?.find((i) => i.isMain) || col.images?.[0] || null;
+        let mainImage = col.images?.find((i) => i.isMain) || col.images?.[0] || null;
+        if (mainImage && mainImage.url) {
+          mainImage = {
+            ...mainImage,
+            url: mainImage.url.startsWith("http") ? mainImage.url : `${backendUrl}/${mainImage.url}`
+          };
+        }
         return { ...col, mainImage, wasDeleted: col.isDeleted || false };
       });
 

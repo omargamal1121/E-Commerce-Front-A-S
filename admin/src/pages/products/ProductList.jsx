@@ -59,7 +59,7 @@ const ProductList = ({ token }) => {
 
   return (
     <div className="flex flex-col gap-10 animate-in slide-in-from-bottom-6 duration-700">
-      {/* Product Search & Actions */}
+      {/* Search Products */}
       <div className="bg-white/80 backdrop-blur-md p-8 rounded-[40px] border border-gray-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="relative w-full max-w-xl group">
           <input

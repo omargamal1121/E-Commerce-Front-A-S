@@ -106,6 +106,25 @@ class AuthService {
         }
 
         // ⛔ For all other errors (403, 404, 500, etc.)
+        if (error.response?.status !== 401 && error.response?.status !== 409) {
+          const serverData = error.response?.data;
+          const serverMsg =
+            serverData?.responseBody?.message ||
+            serverData?.message ||
+            (serverData?.errors && Object.values(serverData.errors).flat()[0]) ||
+            (typeof serverData === 'string' ? serverData : null) ||
+            error.message ||
+            "An unexpected error occurred.";
+
+          console.warn(`⚠️ API Error (${error.response?.status || 'Network'}):`, serverMsg);
+
+          if (window?.toast) {
+            window.toast.error(`❌ ${serverMsg}`);
+          } else if (window?.showToast) {
+            window.showToast(serverMsg, "error");
+          }
+        }
+
         return Promise.reject(error);
       }
     );

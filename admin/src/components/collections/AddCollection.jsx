@@ -48,8 +48,12 @@ const AddCollection = ({
           setDisplayOrder(col.displayOrder || 1);
 
           if (col.images?.length > 0) {
-            setOldImages(col.images.filter((img) => !img.isMain));
-            setOldMainImage(col.images.find((img) => img.isMain));
+            const normalizedImages = col.images.map(img => ({
+              ...img,
+              url: img.url?.startsWith("http") ? img.url : `${backendUrl}/${img.url}`
+            }));
+            setOldImages(normalizedImages.filter((img) => !img.isMain));
+            setOldMainImage(normalizedImages.find((img) => img.isMain));
           }
         } catch (err) {
           console.error("❌ Error fetching collection details:", err);

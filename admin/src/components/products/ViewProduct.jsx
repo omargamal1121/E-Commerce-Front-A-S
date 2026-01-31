@@ -17,7 +17,7 @@ const ViewProduct = ({ token, productId }) => {
     try {
       const res = await API.products.getById(productId, token);
       setProduct(res?.responseBody?.data || null);
-    } catch (err) { toast.error("Failed to extract asset details"); }
+    } catch (err) { toast.error("Failed to load product details"); }
     finally { setLoading(false); }
   }, [productId, token]);
 
@@ -26,7 +26,7 @@ const ViewProduct = ({ token, productId }) => {
     try {
       const res = await API.variants.getByProductId(productId, token);
       setVariants(res?.responseBody?.data || []);
-    } catch (err) { console.error("Variants sync failed"); }
+    } catch (err) { console.error("Failed to load variants"); }
   }, [productId, token]);
 
   useEffect(() => {
@@ -42,7 +42,7 @@ const ViewProduct = ({ token, productId }) => {
     </div>
   );
 
-  if (!product) return <div className="p-20 text-center text-gray-300 font-black uppercase tracking-widest">Asset Not Found</div>;
+  if (!product) return <div className="p-20 text-center text-gray-300 font-black uppercase tracking-widest">Product Not Found</div>;
 
   const images = product.images || [];
   const discountPercent = Number((product.discount && (product.discount.discountPercent ?? product.discount.percentage)) ?? product.discountPercentage ?? 0);
@@ -70,11 +70,11 @@ const ViewProduct = ({ token, productId }) => {
             {/* Status & Overlays */}
             <div className="absolute top-10 left-10 flex flex-col gap-3">
               <span className={`px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest backdrop-blur-xl border ${product.isActive ? "bg-emerald-500/80 text-white border-emerald-400" : "bg-rose-500/80 text-white border-rose-400"}`}>
-                {product.isActive ? "Operational" : "Offline"}
+                {product.isActive ? "Active" : "Inactive"}
               </span>
               {hasDiscount && (
                 <span className="px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest bg-emerald-400 text-gray-900 border border-emerald-300 backdrop-blur-xl">
-                  -{discountPercent}% Campaign
+                  -{discountPercent}% Discount
                 </span>
               )}
             </div>
@@ -98,7 +98,7 @@ const ViewProduct = ({ token, productId }) => {
         <div className="lg:col-span-5 flex flex-col gap-8">
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-4">
-              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500">Asset Ref: {product.id}</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500">ID: {product.id}</span>
               <div className="h-px flex-1 bg-gray-100" />
             </div>
             <h1 className="text-5xl font-black text-gray-900 leading-[0.9] uppercase tracking-tighter">
@@ -112,7 +112,7 @@ const ViewProduct = ({ token, productId }) => {
           {/* Financial Summary */}
           <div className="bg-gray-900 p-10 rounded-[48px] text-white shadow-2xl shadow-emerald-900/20">
             <div className="flex flex-col gap-2 mb-8">
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Market Settlement</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Price Info</span>
               <div className="flex items-baseline gap-4">
                 <span className="text-5xl font-black tracking-tighter">{currency} {product.price}</span>
                 {hasDiscount && <span className="text-xl text-gray-500 line-through font-bold">{currency} {product.price}</span>}
@@ -121,25 +121,25 @@ const ViewProduct = ({ token, productId }) => {
 
             <div className="grid grid-cols-2 gap-4 pb-8 border-b border-white/10">
               <div className="flex flex-col gap-1">
-                <span className="text-[9px] font-bold uppercase text-gray-500 tracking-widest">Inventory Load</span>
+                <span className="text-[9px] font-bold uppercase text-gray-500 tracking-widest">Current Stock</span>
                 <span className={`text-lg font-black ${product.availableQuantity > 0 ? "text-emerald-400" : "text-rose-400"}`}>
-                  {product.availableQuantity} Units Available
+                  {product.availableQuantity} Units
                 </span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-[9px] font-bold uppercase text-gray-500 tracking-widest">Structural Node</span>
+                <span className="text-[9px] font-bold uppercase text-gray-500 tracking-widest">Category ID</span>
                 <span className="text-lg font-black uppercase tracking-tighter">
-                  {product.subCategoryId || "Unbound"}
+                  {product.subCategoryId || "N/A"}
                 </span>
               </div>
             </div>
 
             <div className="flex flex-col gap-4 mt-8">
               <button onClick={() => navigate(`/add?edit=${product.id}`)} className="w-full py-5 bg-emerald-500 hover:bg-emerald-400 text-gray-900 rounded-[32px] text-xs font-black uppercase tracking-[0.2em] transition-all shadow-xl hover:scale-[1.02]">
-                Re-Forge Manifest
+                Edit Product
               </button>
               <button onClick={() => navigate(`/products/${product.id}/variants`)} className="w-full py-5 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-[32px] text-xs font-black uppercase tracking-[0.2em] transition-all">
-                Configure Variants
+                Manage Variants
               </button>
             </div>
           </div>
@@ -147,9 +147,9 @@ const ViewProduct = ({ token, productId }) => {
           {/* Technical Specs */}
           <div className="grid grid-cols-2 gap-4">
             {[
-              { icon: "🧶", label: "Material", value: product.material || "Technical Synth" },
-              { icon: "🧼", label: "Protocol", value: product.careInstructions || "Standard Care" },
-              { icon: "📦", label: "Logistic", value: product.shippingInfo || "Global Link" },
+              { icon: "🧶", label: "Material", value: product.material || "Standard" },
+              { icon: "🧼", label: "Care", value: product.careInstructions || "Standard" },
+              { icon: "📦", label: "Shipping", value: product.shippingInfo || "Standard" },
               { icon: "🕰️", label: "Modified", value: new Date(product.modifiedAt || product.createdAt).toLocaleDateString() },
             ].map((spec, i) => (
               <div key={i} className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm flex flex-col gap-2">
@@ -169,10 +169,10 @@ const ViewProduct = ({ token, productId }) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
             <div className="w-12 h-12 bg-emerald-50 rounded-[20px] flex items-center justify-center text-2xl">🧩</div>
-            <h3 className="text-3xl font-black text-gray-900 uppercase tracking-tighter">Variant Matrix</h3>
+            <h3 className="text-3xl font-black text-gray-900 uppercase tracking-tighter">Product Variants</h3>
           </div>
           <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-6 py-2 rounded-full">
-            {variants.length} Active Vectors
+            {variants.length} Variants Available
           </span>
         </div>
 
@@ -181,7 +181,7 @@ const ViewProduct = ({ token, productId }) => {
             <div key={v.id} className="p-6 bg-gray-50 rounded-[32px] border border-gray-100 flex flex-col gap-4 transition-all hover:bg-white hover:shadow-xl hover:shadow-gray-900/5 group">
               <div className="flex justify-between items-start">
                 <div className="flex flex-col">
-                  <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Spectrum</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Color</span>
                   <span className="text-lg font-black text-gray-900 uppercase">{v.color || "Static"}</span>
                 </div>
                 <div className={`w-3 h-3 rounded-full ${v.isActive ? "bg-emerald-500 shadow-lg shadow-emerald-200" : "bg-gray-300"}`} />
@@ -189,11 +189,11 @@ const ViewProduct = ({ token, productId }) => {
 
               <div className="flex items-center gap-6 border-t border-gray-200 pt-4">
                 <div className="flex flex-col">
-                  <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Scale</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Size</span>
                   <span className="text-sm font-black text-gray-900">{v.size || "Universal"}</span>
                 </div>
                 <div className="flex flex-col border-l border-gray-200 pl-6">
-                  <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Quant</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Qty</span>
                   <span className="text-sm font-black text-emerald-600 underline decoration-2 underline-offset-4">{v.quantity} Units</span>
                 </div>
               </div>

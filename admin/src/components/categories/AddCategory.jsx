@@ -55,8 +55,12 @@ const AddCategory = ({
           setDisplayOrder(cat.displayOrder || 1);
 
           if (cat.images?.length > 0) {
-            setOldImages(cat.images.filter((img) => !img.isMain));
-            setOldMainImage(cat.images.find((img) => img.isMain));
+            const normalizedImages = cat.images.map(img => ({
+              ...img,
+              url: img.url?.startsWith("http") ? img.url : `${backendUrl}/${img.url}`
+            }));
+            setOldImages(normalizedImages.filter((img) => !img.isMain));
+            setOldMainImage(normalizedImages.find((img) => img.isMain));
           }
         } catch (err) {
           console.error("❌ Error fetching category:", err);

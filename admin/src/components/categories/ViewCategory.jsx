@@ -37,7 +37,23 @@ const ViewCategory = ({ token, categoryId, isActive = null, includeDeleted = nul
       );
 
       if (response.status === 200) {
-        setCategory(response.data?.responseBody?.data || null);
+        const cat = response.data?.responseBody?.data || null;
+        if (cat && cat.images) {
+          cat.images = cat.images.map(img => ({
+            ...img,
+            url: img.url?.startsWith("http") ? img.url : `${backendUrl}/${img.url}`
+          }));
+        }
+        if (cat && cat.subCategories) {
+          cat.subCategories = cat.subCategories.map(sub => ({
+            ...sub,
+            images: sub.images?.map(img => ({
+              ...img,
+              url: img.url?.startsWith("http") ? img.url : `${backendUrl}/${img.url}`
+            }))
+          }));
+        }
+        setCategory(cat);
         setError(null);
       } else {
         setCategory(null);

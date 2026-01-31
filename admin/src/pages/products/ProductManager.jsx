@@ -33,19 +33,19 @@ const ProductManager = ({ token }) => {
                         🏬
                     </div>
                     <div>
-                        <h1 className="text-3xl font-black text-gray-900 tracking-tighter">
-                            Product Forge
+                        <h1 className="text-3xl font-black text-gray-900 tracking-tighter uppercase">
+                            Product Management
                         </h1>
-                        <p className="text-gray-500 font-bold text-xs uppercase tracking-widest mt-1">
-                            Centralized Inventory & Asset Management
+                        <p className="text-gray-500 font-bold text-[10px] uppercase tracking-[0.3em] mt-1">
+                            Manage your store's inventory and assets
                         </p>
                     </div>
                 </div>
 
                 <div className="flex bg-gray-100 p-1.5 rounded-[24px]">
                     {[
-                        { id: "inventory", label: "Registry", icon: "📦" },
-                        { id: "forge", label: "Initialize", icon: "🔨" }
+                        { id: "inventory", label: "Product List", icon: "📦" },
+                        { id: "forge", label: "Add Product", icon: "➕" }
                     ].map((tab) => (
                         <button
                             key={tab.id}

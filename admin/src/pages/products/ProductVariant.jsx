@@ -82,6 +82,24 @@ const ProductVariant = ({ token }) => {
     } catch (e) { toast.error("Failed to update quantity"); }
   };
 
+  const handleToggleStatus = async (variant) => {
+    setLoading(true);
+    try {
+      if (variant.isActive) {
+        await API.variants.deactivate(productId, variant.id, token);
+        toast.success("Variant deactivated");
+      } else {
+        await API.variants.activate(productId, variant.id, token);
+        toast.success("Variant activated");
+      }
+      fetchVariants();
+    } catch (error) {
+      toast.error("Failed to update status");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-10 max-w-[1400px] mx-auto animate-in fade-in duration-700 pb-20">
 
@@ -93,7 +111,7 @@ const ProductVariant = ({ token }) => {
           </div>
           <div>
             <h1 className="text-3xl font-black text-gray-900 tracking-tighter uppercase">{product?.name || "Product"} Variants</h1>
-            <p className="text-gray-400 font-bold text-[10px] uppercase tracking-[0.3em] mt-1">Manage product sizes, colors, and stock</p>
+            <p className="text-gray-400 font-bold text-[10px] uppercase tracking-[0.3em] mt-1">Manage variations and stock levels</p>
           </div>
         </div>
         <button onClick={() => navigate('/products')} className="px-8 py-3 bg-gray-50 border border-gray-100 rounded-[22px] text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 transition-all">
@@ -107,7 +125,7 @@ const ProductVariant = ({ token }) => {
           <div className="bg-gray-900 p-10 rounded-[56px] text-white shadow-2xl shadow-blue-900/20 border border-blue-900/30 flex flex-col gap-8">
             <div className="flex items-center gap-4">
               <div className="w-1.5 h-8 bg-blue-500 rounded-full" />
-              <h3 className="text-xl font-black uppercase tracking-tighter">Add Variant</h3>
+              <h3 className="text-xl font-black uppercase tracking-tighter">Add New Variant</h3>
             </div>
 
             <form onSubmit={handleAddVariant} className="flex flex-col gap-6">
@@ -154,7 +172,7 @@ const ProductVariant = ({ token }) => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="w-2 h-10 bg-blue-500 rounded-full" />
-                <h3 className="text-xl font-black uppercase tracking-tighter">Variant List</h3>
+                <h3 className="text-xl font-black uppercase tracking-tighter">All Variants</h3>
               </div>
               <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 bg-blue-50 px-6 py-2 rounded-full">
                 {variants.length} Variants Found
@@ -169,9 +187,13 @@ const ProductVariant = ({ token }) => {
                       <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Color</span>
                       <span className="text-xl font-black text-gray-900 uppercase tracking-tight">{v.color || "Static"}</span>
                     </div>
-                    <div className={`px-4 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${v.isActive ? "bg-emerald-50 text-emerald-600 border border-emerald-100" : "bg-rose-50 text-rose-600 border border-rose-100"}`}>
-                      {v.isActive ? "Active" : "Inactive"}
-                    </div>
+                    <button
+                      onClick={() => handleToggleStatus(v)}
+                      className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${v.isActive ? "bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-100" : "bg-rose-50 text-rose-600 border border-rose-100 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-100"}`}
+                      title={v.isActive ? "Click to Deactivate" : "Click to Activate"}
+                    >
+                      {v.isActive ? "Live" : "Inactive"}
+                    </button>
                   </div>
 
                   <div className="grid grid-cols-3 gap-4 py-6 border-y border-gray-200/60">
@@ -215,7 +237,7 @@ const ProductVariant = ({ token }) => {
             <div className="flex flex-col items-center gap-4 text-center">
               <div className="w-20 h-20 bg-blue-50 rounded-[32px] flex items-center justify-center text-4xl shadow-inner border border-blue-100">⚖️</div>
               <h3 className="text-3xl font-black text-gray-900 tracking-tighter uppercase">Adjust Stock</h3>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Update stock level for this variant</p>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Update current inventory level</p>
             </div>
 
             <div className="flex flex-col gap-2">

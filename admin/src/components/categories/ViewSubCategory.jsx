@@ -31,8 +31,28 @@ const ViewSubCategory = ({ token, subCategoryId, isActive = null, includeDeleted
         const responseData = response.data?.responseBody?.data;
         if (responseData) {
           const { products: subCategoryProducts, ...subCategoryData } = responseData;
+
+          // Normalize subcategory images
+          if (subCategoryData.images) {
+            subCategoryData.images = subCategoryData.images.map(img => ({
+              ...img,
+              url: img.url?.startsWith("http") ? img.url : `${backendUrl}/${img.url}`
+            }));
+          }
+
           setSubCategory(subCategoryData);
-          if (Array.isArray(subCategoryProducts)) setProducts(subCategoryProducts);
+
+          if (Array.isArray(subCategoryProducts)) {
+            // Normalize product images
+            const normalizedProducts = subCategoryProducts.map(p => ({
+              ...p,
+              images: p.images?.map(img => ({
+                ...img,
+                url: img.url?.startsWith("http") ? img.url : `${backendUrl}/${img.url}`
+              }))
+            }));
+            setProducts(normalizedProducts);
+          }
         } else {
           setSubCategory(null);
         }

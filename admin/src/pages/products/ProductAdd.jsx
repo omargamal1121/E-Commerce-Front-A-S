@@ -97,7 +97,7 @@ const ProductAdd = ({ token }) => {
           <div className="bg-white p-10 rounded-[48px] border border-gray-100 shadow-sm flex flex-col gap-10">
             <div className="flex items-center gap-4">
               <div className="w-2 h-10 bg-emerald-500 rounded-full" />
-              <h3 className="text-2xl font-black text-gray-900 tracking-tighter uppercase">Core Specification</h3>
+              <h3 className="text-2xl font-black text-gray-900 tracking-tighter uppercase">Product Details</h3>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -191,7 +191,7 @@ const ProductAdd = ({ token }) => {
         <div className="lg:col-span-4 flex flex-col gap-8">
           {/* Main Visual Uplink */}
           <div className="bg-emerald-900 p-10 rounded-[48px] shadow-2xl shadow-emerald-900/20 text-white flex flex-col gap-8">
-            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400">Main Photo</h4>
+            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400">Primary Image</h4>
             <div className="relative aspect-square rounded-[40px] bg-white/5 border-2 border-dashed border-white/10 flex items-center justify-center overflow-hidden group">
               {previews.main ? (
                 <img src={previews.main} className="w-full h-full object-cover" alt="" />
@@ -210,7 +210,7 @@ const ProductAdd = ({ token }) => {
 
           {/* Additional Asset Matrix */}
           <div className="bg-white p-8 rounded-[48px] border border-gray-100 shadow-sm flex flex-col gap-6">
-            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 px-2">Additional Photos</h4>
+            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 px-2">Gallery Images</h4>
             <div className="grid grid-cols-3 gap-3">
               {previews.additional.map((src, idx) => (
                 <div key={idx} className="aspect-square rounded-[24px] overflow-hidden bg-gray-50 border border-gray-100 shadow-inner">
@@ -226,7 +226,7 @@ const ProductAdd = ({ token }) => {
 
           {/* Status Protocols */}
           <div className="bg-gray-50 p-8 rounded-[48px] border border-gray-100 flex flex-col gap-8">
-            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 px-2">Settings</h4>
+            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 px-2">Availability & Visibility</h4>
             <div className="flex flex-col gap-4">
               {[
                 { label: "Is Product Active", name: "isActive" },

@@ -40,8 +40,15 @@ const ListCategory = ({
       const totalCount = res.data?.responseBody?.totalCount || cats.length;
 
       const normalized = cats.map((cat) => {
-        const mainImage =
-          cat.images?.find((i) => i.isMain) || cat.images?.[0] || null;
+        let mainImage = cat.images?.find((i) => i.isMain) || cat.images?.[0] || null;
+
+        if (mainImage && mainImage.url) {
+          mainImage = {
+            ...mainImage,
+            url: mainImage.url.startsWith("http") ? mainImage.url : `${backendUrl}/${mainImage.url}`
+          };
+        }
+
         return {
           ...cat,
           mainImage,

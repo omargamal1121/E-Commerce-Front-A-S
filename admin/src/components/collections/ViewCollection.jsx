@@ -27,7 +27,33 @@ const ViewCollection = ({ token, collectionId, isActive = null, includeDeleted =
       });
 
       if (response.status === 200) {
-        setCollection(response.data?.responseBody?.data || null);
+        const col = response.data?.responseBody?.data || null;
+        if (col) {
+          if (col.images) {
+            col.images = col.images.map(img => ({
+              ...img,
+              url: img.url?.startsWith("http") ? img.url : `${backendUrl}/${img.url}`
+            }));
+          }
+          if (col.products) {
+            col.products = col.products.map(p => ({
+              ...p,
+              productImages: p.productImages?.map(img => ({
+                ...img,
+                url: img.url?.startsWith("http") ? img.url : `${backendUrl}/${img.url}`
+              })) || [],
+              mainImage: p.mainImage ? {
+                ...p.mainImage,
+                url: p.mainImage.url?.startsWith("http") ? p.mainImage.url : `${backendUrl}/${p.mainImage.url}`
+              } : null,
+              images: p.images?.map(img => ({
+                ...img,
+                url: img.url?.startsWith("http") ? img.url : `${backendUrl}/${img.url}`
+              })) || []
+            }));
+          }
+        }
+        setCollection(col);
         setError(null);
       }
     } catch (err) {

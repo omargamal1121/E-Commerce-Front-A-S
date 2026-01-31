@@ -20,7 +20,7 @@ const ProductDiscountPage = ({ token }) => {
         ]);
         setProducts(pRes?.responseBody?.data || []);
         setAvailableDiscounts(dRes?.responseBody?.data || []);
-      } catch (e) { toast.error("Asset sync failed"); }
+      } catch (e) { toast.error("Failed to load products and discounts"); }
       finally { setLoading(false); }
     })();
   }, [token]);
@@ -38,20 +38,20 @@ const ProductDiscountPage = ({ token }) => {
   }, [selectedProductId, token]);
 
   const handleApply = async () => {
-    if (!selectedProductId || !selectedDiscountId) return toast.error("Incomplete Mapping Parameters");
+    if (!selectedProductId || !selectedDiscountId) return toast.error("Please select both a product and a discount");
     try {
       await API.products.applyDiscount(selectedProductId, selectedDiscountId, token);
-      toast.success("Protocol Applied");
+      toast.success("Discount applied successfully");
       fetchProductDiscount(selectedProductId);
-    } catch (e) { toast.error("Mapping Failed"); }
+    } catch (e) { toast.error("Failed to apply discount"); }
   };
 
   const handleRemove = async () => {
     try {
       await API.products.removeDiscount(selectedProductId, token);
-      toast.success("Protocol Severed");
+      toast.success("Discount removed successfully");
       setCurrentDiscount(null);
-    } catch (e) { toast.error("Excision Failed"); }
+    } catch (e) { toast.error("Failed to remove discount"); }
   };
 
   const activeProduct = products.find(p => p.id === Number(selectedProductId));
@@ -66,8 +66,8 @@ const ProductDiscountPage = ({ token }) => {
           📍
         </div>
         <div>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tighter uppercase">Protocol Mapping</h1>
-          <p className="text-gray-400 font-bold text-[10px] uppercase tracking-[0.3em] mt-1">Single-Target Campaign Association</p>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tighter uppercase">Apply Product Discount</h1>
+          <p className="text-gray-400 font-bold text-[10px] uppercase tracking-[0.3em] mt-1">Connect a discount to a specific product</p>
         </div>
       </div>
 
@@ -77,30 +77,30 @@ const ProductDiscountPage = ({ token }) => {
           <div className="bg-white p-10 rounded-[48px] border border-gray-100 shadow-sm flex flex-col gap-10">
             <div className="flex items-center gap-4">
               <div className="w-2 h-10 bg-emerald-500 rounded-full" />
-              <h3 className="text-xl font-black text-gray-900 tracking-tighter uppercase">Association Matrix</h3>
+              <h3 className="text-xl font-black text-gray-900 tracking-tighter uppercase">Link Discount</h3>
             </div>
 
             <div className="flex flex-col gap-8">
               <div className="flex flex-col gap-3">
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Target Asset (Product)</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Select Product</label>
                 <select
                   className="w-full bg-gray-50 border border-gray-100 rounded-[24px] px-8 py-4 outline-none focus:ring-8 focus:ring-emerald-50 focus:border-emerald-300 transition-all font-bold"
                   value={selectedProductId}
                   onChange={(e) => setSelectedProductId(e.target.value)}
                 >
-                  <option value="">Select Target Asset</option>
-                  {products.map(p => <option key={p.id} value={p.id}>{p.name} (Ref: {p.id})</option>)}
+                  <option value="">Choose a product</option>
+                  {products.map(p => <option key={p.id} value={p.id}>{p.name} (ID: {p.id})</option>)}
                 </select>
               </div>
 
               <div className="flex flex-col gap-3">
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Proposed Protocol (Discount)</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Select Discount</label>
                 <select
                   className="w-full bg-gray-50 border border-gray-100 rounded-[24px] px-8 py-4 outline-none focus:ring-8 focus:ring-emerald-50 focus:border-emerald-300 transition-all font-bold"
                   value={selectedDiscountId}
                   onChange={(e) => setSelectedDiscountId(e.target.value)}
                 >
-                  <option value="">Select Protocol</option>
+                  <option value="">Choose a discount</option>
                   {availableDiscounts.map(d => <option key={d.id} value={d.id}>{d.name} (-{d.discountPercent}%)</option>)}
                 </select>
               </div>
@@ -110,7 +110,7 @@ const ProductDiscountPage = ({ token }) => {
                 disabled={!selectedProductId || !selectedDiscountId}
                 className="w-full py-6 bg-gray-900 text-white rounded-[32px] text-xs font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-xl hover:scale-[1.02] disabled:opacity-20"
               >
-                Establish Association
+                Apply Discount
               </button>
             </div>
           </div>
@@ -121,8 +121,8 @@ const ProductDiscountPage = ({ token }) => {
               <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
               <div className="relative flex flex-col gap-6">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-200">Active Association Node</span>
-                  <button onClick={handleRemove} className="text-[10px] font-black uppercase tracking-widest bg-white/10 hover:bg-white/20 px-6 py-2 rounded-full transition-all border border-white/10">Sever Mapping</button>
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-200">Active Discount</span>
+                  <button onClick={handleRemove} className="text-[10px] font-black uppercase tracking-widest bg-white/10 hover:bg-white/20 px-6 py-2 rounded-full transition-all border border-white/10">Remove Discount</button>
                 </div>
                 <div className="flex items-end justify-between">
                   <div className="flex flex-col gap-1">
@@ -139,7 +139,7 @@ const ProductDiscountPage = ({ token }) => {
         {/* Engagement Intel */}
         <div className="lg:col-span-4 flex flex-col gap-8">
           <div className="bg-white p-10 rounded-[48px] border border-gray-100 shadow-sm flex flex-col gap-8 items-center text-center">
-            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400">Target Asset Preview</h4>
+            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400">Product Preview</h4>
             <div className="w-40 h-56 rounded-[32px] overflow-hidden bg-gray-50 border border-gray-100 shadow-inner">
               {activeProduct ? (
                 <img src={activeProduct.images?.[0]?.url || activeProduct.mainImage} className="w-full h-full object-cover" alt="" />
@@ -148,7 +148,7 @@ const ProductDiscountPage = ({ token }) => {
               )}
             </div>
             <div>
-              <h5 className="text-xl font-black text-gray-900 uppercase tracking-tighter truncate w-full max-w-[200px]">{activeProduct?.name || "No Asset"}</h5>
+              <h5 className="text-xl font-black text-gray-900 uppercase tracking-tighter truncate w-full max-w-[200px]">{activeProduct?.name || "No Product"}</h5>
               <p className="text-[10px] font-black text-emerald-500 tracking-widest uppercase mt-1">EGP {activeProduct?.price || "0.00"}</p>
             </div>
           </div>
@@ -156,10 +156,10 @@ const ProductDiscountPage = ({ token }) => {
           <div className="bg-gray-50 p-8 rounded-[48px] border border-gray-100 flex flex-col gap-4">
             <div className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-gray-900">Protocol Analytics</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-gray-900">Discount Information</span>
             </div>
             <p className="text-[11px] font-medium text-gray-400 leading-relaxed italic">
-              Mapping a protocol to a target asset will immediately adjust the market value for all active transaction channels.
+              Applying a discount will change the product price for all customers immediately.
             </p>
           </div>
         </div>
