@@ -19,16 +19,13 @@ const AddCategory = ({
   const [images, setImages] = useState([]);
   const [mainImage, setMainImage] = useState(null);
 
-  // 🆕 لعرض الصور القديمة لو بنعمل Edit
   const [oldImages, setOldImages] = useState([]);
   const [oldMainImage, setOldMainImage] = useState(null);
 
   const navigate = useNavigate();
 
-  // 🧹 Clean text helper
   const cleanText = (text) => text?.replace(/\s+/g, " ").trim();
 
-  // 🧹 Reset form
   const resetForm = () => {
     setName("");
     setDescription("");
@@ -37,10 +34,9 @@ const AddCategory = ({
     setMainImage(null);
     setOldImages([]);
     setOldMainImage(null);
-    setActiveTab && setActiveTab("category-list");
+    if (setActiveTab) setActiveTab("list");
   };
 
-  // 🆕 Fetch category details when editing
   useEffect(() => {
     const fetchCategoryDetails = async () => {
       if (editCategoryMode && editCategoryId && token) {
@@ -72,7 +68,6 @@ const AddCategory = ({
     fetchCategoryDetails();
   }, [editCategoryMode, editCategoryId, token]);
 
-  // ➕ Add or Update Category
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!token) return toast.error("You must log in first!");
@@ -81,27 +76,18 @@ const AddCategory = ({
     const cleanedDescription = cleanText(description);
     const cleanedOrder = Math.max(1, Number(displayOrder));
 
-    if (!cleanedName || cleanedName.length < 3 || cleanedName.length > 50)
-      return toast.error("Name must be 3-50 characters");
-    if (
-      !cleanedDescription ||
-      cleanedDescription.length < 5 ||
-      cleanedDescription.length > 200
-    )
-      return toast.error("Description must be 5-200 characters");
+    if (!cleanedName || cleanedName.length < 2)
+      return toast.error("Name is too short");
 
     setLoading(true);
     try {
-      // Prepare the request body
       const body = {
         name: cleanedName,
         description: cleanedDescription,
         displayOrder: cleanedOrder,
       };
-      
-      // Add image IDs to keep when editing
+
       if (editCategoryMode && editCategoryId) {
-        // Keep track of existing images we want to retain
         body.imageIds = [
           ...(oldMainImage ? [oldMainImage.id] : []),
           ...(oldImages?.map(img => img.id) || [])
@@ -110,7 +96,6 @@ const AddCategory = ({
 
       let res;
       if (editCategoryMode && editCategoryId) {
-        // 📝 Update
         res = await axios.put(
           `${backendUrl}/api/categories/${editCategoryId}`,
           body,
@@ -122,7 +107,6 @@ const AddCategory = ({
           }
         );
       } else {
-        // ➕ Create
         res = await axios.post(`${backendUrl}/api/categories`, body, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -136,11 +120,7 @@ const AddCategory = ({
 
       if (!categoryId) throw new Error("Failed to get category ID");
 
-      toast.success(
-        editCategoryMode ? "Category updated ✅" : "Category created ✅"
-      );
-
-      // 2️⃣ رفع الصور الإضافية
+      // Upload Additional Images
       if (images?.length > 0) {
         const imgForm = new FormData();
         images.forEach((file) => imgForm.append("Images", file));
@@ -151,7 +131,7 @@ const AddCategory = ({
         );
       }
 
-      // 3️⃣ رفع الصورة الرئيسية
+      // Upload Main Image
       if (mainImage) {
         const mainForm = new FormData();
         mainForm.append("Image", mainImage);
@@ -162,151 +142,174 @@ const AddCategory = ({
         );
       }
 
-      // ✅ تحديث الليستة
+      toast.success(editCategoryMode ? "Changes saved successfully! ✨" : "New category created! 🚀");
+
       if (typeof fetchCategories === "function") await fetchCategories();
-      else if (typeof setCategories === "function")
-        setCategories((prev) => [...prev, res.data?.data]);
 
       resetForm();
-      navigate(`/category/view/${categoryId}`);
     } catch (error) {
       console.error("❌ Error saving category:", error);
-      const apiError =
-        error.response?.data?.responseBody?.errors?.messages?.[0] ||
-        error.response?.data?.responseBody?.message ||
-        "Error saving category";
-      toast.error(apiError);
+      toast.error("An error occurred while saving.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="p-4">
-      <div className="bg-white rounded-xl shadow p-4">
-        <h2 className="text-xl font-bold mb-4">
-          {editCategoryMode ? "Edit Category" : "Add New Category"}
+    <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-top-4 duration-500 pb-20">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-2xl font-black text-gray-900 tracking-tight">
+          {editCategoryMode ? "Refine Category" : "Define New Category"}
         </h2>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div>
-            <label className="block text-sm text-gray-700 mb-1">Category Name</label>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="border px-3 py-2 w-full rounded focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-300"
-              placeholder="Category Name"
-              required
-            />
-          </div>
+        <p className="text-gray-500 font-medium">
+          {editCategoryMode ? "Update your category details and visuals" : "Set up a new category to organize your inventory"}
+        </p>
+      </div>
 
-          <div>
-            <label className="block text-sm text-gray-700 mb-1">Description</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="border px-3 py-2 w-full rounded focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-300"
-              placeholder="Description"
-              rows="3"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm text-gray-700 mb-1">Display Order</label>
-            <input
-              type="number"
-              value={displayOrder}
-              onChange={(e) => setDisplayOrder(e.target.value)}
-              className="border px-3 py-2 w-full rounded focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-300"
-              min="1"
-            />
-          </div>
-
-        {/* 🖼️ Old Main Image */}
-        {oldMainImage && !mainImage && (
-          <div>
-            <p className="text-sm text-gray-600">Current Main Image:</p>
-            <img
-              src={oldMainImage.url}
-              alt="Old Main"
-              className="h-24 w-24 object-cover rounded mt-2"
-            />
-          </div>
-        )}
-
-          <div>
-            <label className="block text-sm text-gray-700 mb-1">Main Image</label>
-            <input
-              type="file"
-              onChange={(e) => setMainImage(e.target.files[0])}
-              className="border px-3 py-2 w-full rounded"
-              accept="image/*"
-            />
-            {mainImage && (
-              <img
-                src={URL.createObjectURL(mainImage)}
-                alt="Main"
-                className="h-24 w-24 object-cover rounded mt-2"
-              />
-            )}
-          </div>
-
-        {/* 🖼️ Old Additional Images */}
-        {oldImages?.length > 0 && images.length === 0 && (
-          <div>
-            <p className="text-sm text-gray-600">Current Additional Images:</p>
-            <div className="flex gap-2 mt-2 flex-wrap">
-              {oldImages.map((img) => (
-                <img
-                  key={img.id}
-                  src={img.url}
-                  alt="Old"
-                  className="h-20 w-20 object-cover rounded"
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Left Column: Details */}
+        <div className="lg:col-span-12 flex flex-col gap-6">
+          <div className="bg-white rounded-[32px] p-6 md:p-8 border border-gray-100 shadow-sm flex flex-col gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Identity Name</label>
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full bg-gray-50/50 border border-gray-100 rounded-2xl px-5 py-3.5 outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-400 transition-all font-bold text-gray-700"
+                  placeholder="e.g. Summer Essentials"
+                  required
                 />
-              ))}
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Display Priority</label>
+                <input
+                  type="number"
+                  value={displayOrder}
+                  onChange={(e) => setDisplayOrder(e.target.value)}
+                  className="w-full bg-gray-50/50 border border-gray-100 rounded-2xl px-5 py-3.5 outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-400 transition-all font-bold text-gray-700"
+                  min="1"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Narrative Description</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full bg-gray-50/50 border border-gray-100 rounded-2xl px-5 py-3.5 outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-400 transition-all font-medium text-gray-600 min-h-[120px]"
+                placeholder="Describe the essence of this category..."
+              />
             </div>
           </div>
-        )}
+        </div>
 
-          <div>
-            <label className="block text-sm text-gray-700 mb-1">Additional Images</label>
-            <input
-              type="file"
-              multiple
-              onChange={(e) => setImages(Array.from(e.target.files))}
-              className="border px-3 py-2 w-full rounded"
-              accept="image/*"
-            />
-            {images?.length > 0 && (
-              <div className="flex gap-2 mt-2 flex-wrap">
-                {images.map((file, idx) => (
-                  <img
-                    key={idx}
-                    src={URL.createObjectURL(file)}
-                    alt={`Preview ${idx}`}
-                    className="h-20 w-20 object-cover rounded"
-                  />
-                ))}
+        {/* Visual Assets Section */}
+        <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Main Visual */}
+          <div className="bg-white rounded-[32px] p-6 md:p-8 border border-gray-100 shadow-sm flex flex-col gap-6">
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Hero Visual</label>
+                <p className="text-[11px] text-gray-400 ml-1 mt-0.5 font-bold">Primary display image for this category</p>
               </div>
-            )}
+            </div>
+
+            <div className="relative group">
+              <label className="flex flex-col items-center justify-center w-full aspect-[16/9] border-2 border-dashed border-gray-200 rounded-3xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/20 transition-all overflow-hidden bg-gray-50/50">
+                {(mainImage || oldMainImage) ? (
+                  <img
+                    src={mainImage ? URL.createObjectURL(mainImage) : oldMainImage.url}
+                    className="w-full h-full object-cover"
+                    alt="Main Preview"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center gap-2 text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span className="text-sm font-bold">Drop main image here</span>
+                  </div>
+                )}
+                <input
+                  type="file"
+                  className="hidden"
+                  onChange={(e) => setMainImage(e.target.files[0])}
+                  accept="image/*"
+                />
+              </label>
+              {(mainImage || oldMainImage) && (
+                <div className="absolute inset-0 bg-gray-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                  <span className="bg-white/20 backdrop-blur-md text-white text-xs font-black uppercase px-4 py-2 rounded-2xl border border-white/30">Click to change</span>
+                </div>
+              )}
+            </div>
           </div>
 
+          {/* Secondary Gallery */}
+          <div className="bg-white rounded-[32px] p-6 md:p-8 border border-gray-100 shadow-sm flex flex-col gap-6">
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Support Gallery</label>
+                <p className="text-[11px] text-gray-400 ml-1 mt-0.5 font-bold">Additional images for detail views</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              {/* Previews of existing/new images */}
+              {[...oldImages, ...images].slice(0, 5).map((img, idx) => (
+                <div key={idx} className="aspect-square rounded-2xl overflow-hidden bg-gray-100 border border-gray-100">
+                  <img
+                    src={img instanceof File ? URL.createObjectURL(img) : img.url}
+                    className="w-full h-full object-cover"
+                    alt="Gallery item"
+                  />
+                </div>
+              ))}
+
+              <label className="aspect-square rounded-2xl border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50 cursor-pointer hover:border-blue-300 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                <input
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => setImages([...images, ...Array.from(e.target.files)])}
+                  accept="image/*"
+                />
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Bar */}
+        <div className="lg:col-span-12 flex items-center justify-end gap-4 mt-4">
+          <button
+            type="button"
+            onClick={resetForm}
+            className="px-8 py-4 text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors"
+          >
+            Discard Changes
+          </button>
           <button
             type="submit"
             disabled={loading}
-            className={`px-4 py-2 rounded text-white ${
-              loading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
-            }`}
+            className="px-10 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-[24px] text-sm font-black shadow-xl shadow-blue-200 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-3 disabled:opacity-50"
           >
-            {loading
-              ? editCategoryMode
-                ? "Updating..."
-                : "Adding..."
-              : editCategoryMode
-                ? "Update Category"
-                : "Add Category"}
+            {loading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Processing...
+              </>
+            ) : (
+              editCategoryMode ? "Update Repository" : "Publish Category"
+            )}
           </button>
-        </form>
-      </div>
+        </div>
+      </form>
     </div>
   );
 };

@@ -2,10 +2,10 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import axios from "axios";
-import { backendUrl } from "../App";
-import ViewSubCategory from "../components/categories/ViewSubCategory";
-import AddSubCategory from "../components/categories/AddSubCategory";
-import ListSubCategory from "../components/categories/ListSubCategory";
+import { backendUrl } from "../../App";
+import ViewSubCategory from "../../components/categories/ViewSubCategory";
+import AddSubCategory from "../../components/categories/AddSubCategory";
+import ListSubCategory from "../../components/categories/ListSubCategory";
 
 const SubCategoryDetails = ({ token }) => {
   const { id } = useParams();

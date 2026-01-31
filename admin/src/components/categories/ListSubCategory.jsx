@@ -12,18 +12,18 @@ const ListSubCategory = ({
   handleViewSubCategory,
 }) => {
   const [search, setSearch] = useState("");
-  const [isActive, setIsActive] = useState(""); // "", "true", "false"
-  const [isDeleted, setIsDeleted] = useState(""); // "", "true", "false"
+  const [isActive, setIsActive] = useState("");
+  const [isDeleted, setIsDeleted] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [deleteId, setDeleteId] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [pageSize, setPageSize] = useState(10);
-  const navigate = useNavigate();
+  const [pageSize, setPageSize] = useState(12);
   const [subcategories, setSubCategories] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // ✅ Fetch SubCategories with detailed error handling
   const fetchSubCategories = async () => {
+    setLoading(true);
     try {
       const res = await axios.get(`${backendUrl}/api/subcategories`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -36,82 +36,35 @@ const ListSubCategory = ({
         },
       });
 
-      console.log("📦 Subcategories full response:", res);
+      if (res.data?.responseBody) {
+        const subCats = res.data.responseBody.data || [];
+        const totalCount = res.data.responseBody.totalCount || subCats.length;
 
-      // ✅ Check if responseBody موجود
-      if (!res.data || !res.data.responseBody) {
-        console.error("❌ responseBody is missing in API response:", res.data);
-        toast.error("API response format is invalid");
-        return;
-      }
-
-      const subCats = res.data.responseBody.data || [];
-
-      // ✅ Handle if no data
-      if (!Array.isArray(subCats)) {
-        console.error("❌ Expected 'data' to be an array, got:", subCats);
-        toast.error("Subcategories data is not an array");
-        return;
-      }
-
-      const totalCount =
-        res.data.responseBody.totalCount ||
-        res.data.responseBody.pagination?.totalItems ||
-        subCats.length;
-
-      // ✅ Normalize image + deleted flag
-      const normalized = subCats.map((sc) => {
-        let mainImg =
-          sc.mainImage ||
-          sc.images?.find((i) => i.isMain) ||
-          sc.images?.[0] ||
-          null;
-
-        let imgUrl = null;
-        if (mainImg) {
-          if (mainImg.url) {
-            imgUrl = mainImg.url.startsWith("http")
-              ? mainImg.url
-              : `${backendUrl}/${mainImg.url}`;
-          } else if (mainImg.filePath) {
-            imgUrl = `${backendUrl}/${mainImg.filePath}`;
-          } else if (mainImg.imageName) {
-            imgUrl = `${backendUrl}/uploads/${mainImg.imageName}`;
+        const normalized = subCats.map((sc) => {
+          let mainImg = sc.mainImage || sc.images?.find((i) => i.isMain) || sc.images?.[0] || null;
+          let imgUrl = null;
+          if (mainImg) {
+            if (mainImg.url) {
+              imgUrl = mainImg.url.startsWith("http") ? mainImg.url : `${backendUrl}/${mainImg.url}`;
+            } else if (mainImg.filePath) {
+              imgUrl = `${backendUrl}/${mainImg.filePath}`;
+            }
           }
-        }
+          return {
+            ...sc,
+            mainImageUrl: imgUrl,
+            deleted: !!sc.deletedAt,
+          };
+        });
 
-        return {
-          ...sc,
-          mainImage: mainImg,
-          mainImageUrl: imgUrl,
-          deleted: !!sc.deletedAt, // 👈 لو عنده deletedAt يبقى متشال
-        };
-      });
-
-      console.log("✅ Normalized Subcategories:", normalized);
-
-      setSubCategories(normalized);
-      setTotalPages(Math.ceil(totalCount / pageSize));
-    } catch (error) {
-      if (error.response) {
-        // ❌ Error from API
-        console.error(
-          "❌ API Error:",
-          error.response.status,
-          error.response.data
-        );
-        toast.error(
-          `API Error: ${error.response.data?.message || "Unknown error"}`
-        );
-      } else if (error.request) {
-        // ❌ No response from server
-        console.error("❌ No response received:", error.request);
-        toast.error("No response from server");
-      } else {
-        // ❌ Other errors (frontend/JS)
-        console.error("❌ Error in request setup:", error.message);
-        toast.error(`Error: ${error.message}`);
+        setSubCategories(normalized);
+        setTotalPages(Math.ceil(totalCount / pageSize));
       }
+    } catch (error) {
+      console.error("❌ API Error:", error);
+      toast.error("Failed to load segments");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -119,351 +72,257 @@ const ListSubCategory = ({
     if (token) fetchSubCategories();
   }, [token, search, isActive, isDeleted, page, pageSize]);
 
-  // ✅ Delete SubCategory
   const removeSubCategory = async (id) => {
+    setDeleteLoading(true);
     try {
-      const res = await axios.delete(`${backendUrl}/api/subcategories/${id}`, {
+      await axios.delete(`${backendUrl}/api/subcategories/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      // ✅ عدل حالة العنصر بدل ما تشيله من الليستة
       setSubCategories((prev) =>
         prev.map((sc) => (sc.id === id ? { ...sc, deleted: true } : sc))
       );
-
-      const okMsg =
-        res?.data?.responseBody?.message ||
-        res?.data?.message ||
-        (typeof res?.data === "string" ? res.data : null) ||
-        "Sub-category deleted successfully";
-      toast.success(okMsg);
+      toast.success("Segment archived successfully");
     } catch (error) {
-      const errData = error.response?.data;
-      const apiMsg =
-        errData?.responseBody?.message ||
-        errData?.message ||
-        error.message ||
-        "Failed to delete sub-category";
-
-      if (errData?.responseBody?.message?.includes("already deleted")) {
-        // ✅ علّم برضه إنه متشال
-        setSubCategories((prev) =>
-          prev.map((sc) => (sc.id === id ? { ...sc, deleted: true } : sc))
-        );
-        toast.info(apiMsg);
-      } else {
-        toast.error(apiMsg);
-      }
+      toast.error("Archive operation failed");
+    } finally {
+      setDeleteLoading(false);
+      setDeleteId(null);
     }
   };
 
-  // ✅ Activate SubCategory
-  const activateSubCategory = async (subCat) => {
-    if (!subCat.mainImageUrl) return toast.error("Upload a main image first!");
+  const toggleActivation = async (subCat) => {
+    if (!subCat.isActive && !subCat.mainImageUrl) return toast.error("Headshot required for activation");
 
     try {
-      const res = await axios.patch(
-        `${backendUrl}/api/subcategories/${subCat.id}/activate`,
-        null,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/json", // أو text/plain حسب الـ API
-          },
-        }
-      );
-
-      const msg =
-        res?.data?.responseBody?.message ||
-        res?.data?.message ||
-        "Sub-category activated ✅";
-      toast.success(msg);
+      const endpoint = subCat.isActive ? "deactivate" : "activate";
+      await axios.patch(`${backendUrl}/api/subcategories/${subCat.id}/${endpoint}`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast.success(subCat.isActive ? "Segment paused" : "Segment launched");
       fetchSubCategories();
     } catch (err) {
-      if (err.response) {
-        console.error("❌ Error Response:", err.response.data);
-        console.error("❌ Status:", err.response.status);
-
-        const msg =
-          err.response.data?.responseBody?.message ||
-          err.response.data?.message ||
-          err.response.data?.error ||
-          "Activation failed";
-        toast.error(msg);
-      } else if (err.request) {
-        console.error("❌ No response received:", err.request);
-        toast.error("No response from server");
-      } else {
-        console.error("❌ Request setup error:", err.message);
-        toast.error("Request error");
-      }
+      toast.error("Status update failed");
     }
   };
 
-  // ✅ Deactivate SubCategory
-  const deactivateSubCategory = async (id) => {
+  const handleRestore = async (id) => {
     try {
-      const res = await axios.patch(
-        `${backendUrl}/api/subcategories/${id}/deactivate`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const msg =
-        res?.data?.responseBody?.message ||
-        res?.data?.message ||
-        "Sub-category deactivated ❌";
-      toast.success(msg);
-      fetchSubCategories();
-    } catch (err) {
-      const emsg =
-        err?.response?.data?.responseBody?.message ||
-        err?.response?.data?.message ||
-        err?.response?.data?.error ||
-        err?.message ||
-        "Deactivation failed";
-      toast.error(emsg);
-    }
-  };
-
-  // ✅ Restore Deleted SubCategory
-  const restoreSubCategory = async (id) => {
-    try {
-      const res = await axios.patch(
-        `${backendUrl}/api/subcategories/${id}/restore`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      const msg =
-        res?.data?.responseBody?.message ||
-        res?.data?.message ||
-        "Sub-category restored ✅";
-      toast.success(msg);
+      await axios.patch(`${backendUrl}/api/subcategories/${id}/restore`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast.success("Segment restored");
       fetchSubCategories();
     } catch {
       toast.error("Restore failed");
     }
   };
 
-  // ✅ Get Parent Category Name
-  const getParentCategoryName = (categoryId) => {
-    const parent = categories.find((cat) => cat.id === categoryId);
-    return parent ? parent.name : "Unknown";
+  const getParentName = (categoryId) => {
+    return categories.find((cat) => cat.id === categoryId)?.name || "Primary Root";
   };
 
   return (
-    <div className="p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold">Sub-Categories List</h2>
+    <div className="flex flex-col gap-8">
+      {/* Search & Filter Shell */}
+      <div className="bg-gray-50/50 p-6 rounded-[32px] border border-gray-100 flex flex-wrap gap-4 items-center justify-between">
+        <div className="flex flex-wrap gap-4 flex-1">
+          <div className="relative flex-1 min-w-[280px]">
+            <input
+              type="text"
+              placeholder="Filter by segment name or keywords..."
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              className="w-full bg-white border border-gray-200 rounded-2xl px-12 py-3.5 outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-400 transition-all font-medium text-gray-700"
+            />
+            <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+
+          <select
+            value={isActive}
+            onChange={(e) => { setIsActive(e.target.value); setPage(1); }}
+            className="bg-white border border-gray-200 rounded-2xl px-4 py-3 text-sm font-black uppercase tracking-widest text-gray-500 focus:ring-4 focus:ring-blue-50 outline-none"
+          >
+            <option value="">All Systems</option>
+            <option value="true">Live Only</option>
+            <option value="false">Internal Only</option>
+          </select>
+
+          <select
+            value={isDeleted}
+            onChange={(e) => { setIsDeleted(e.target.value); setPage(1); }}
+            className="bg-white border border-gray-200 rounded-2xl px-4 py-3 text-sm font-black uppercase tracking-widest text-gray-500 focus:ring-4 focus:ring-blue-50 outline-none"
+          >
+            <option value="">Full Repository</option>
+            <option value="true">Archived Only</option>
+            <option value="false">Active Only</option>
+          </select>
+        </div>
+
         <button
           onClick={() => setActiveTab("add-sub")}
-          className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
+          className="px-8 py-3.5 bg-gray-900 text-white rounded-2xl text-sm font-black shadow-lg shadow-gray-200 hover:scale-[1.02] active:scale-[0.98] transition-all"
         >
-          Add New Sub-Category
+          Initialize Segment
         </button>
       </div>
 
-      {/* Filters */}
-      <div className="mb-4 bg-white p-4 rounded-xl shadow flex gap-3 flex-wrap">
-        <input
-          type="text"
-          placeholder="Search sub-categories..."
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-          className="border px-3 py-2 rounded w-60 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-300"
-        />
-        <select
-          value={isActive}
-          onChange={(e) => {
-            setIsActive(e.target.value);
-            setPage(1);
-          }}
-          className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-300"
-        >
-          <option value="">All (Active/Inactive)</option>
-          <option value="true">Active</option>
-          <option value="false">Inactive</option>
-        </select>
-        <select
-          value={isDeleted}
-          onChange={(e) => {
-            setIsDeleted(e.target.value);
-            setPage(1);
-          }}
-          className="border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-300"
-        >
-          <option value="">All (Deleted/Not Deleted)</option>
-          <option value="true">Deleted</option>
-          <option value="false">Not Deleted</option>
-        </select>
-      </div>
-
-      {/* Sub-category cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {subcategories.length === 0 ? (
-          <p className="text-gray-500">No sub-categories found.</p>
+      {/* Grid of Segments */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 min-h-[400px]">
+        {loading ? (
+          Array(8).fill(0).map((_, i) => (
+            <div key={i} className="bg-white rounded-[32px] aspect-[4/5] border border-gray-100 animate-pulse" />
+          ))
+        ) : subcategories.length === 0 ? (
+          <div className="col-span-full py-20 flex flex-col items-center justify-center text-gray-400">
+            <p className="font-bold text-lg">No segments matching your parameters.</p>
+            <button onClick={() => { setSearch(""); setIsActive(""); setIsDeleted(""); }} className="text-blue-600 text-xs font-black uppercase mt-2 tracking-widest">Clear Filters</button>
+          </div>
         ) : (
           subcategories.map((subCat) => (
             <div
               key={subCat.id}
-              className="border p-4 rounded-lg shadow-sm hover:shadow-md transition bg-white"
+              className="group bg-white rounded-[32px] border border-gray-100 shadow-sm hover:shadow-2xl hover:shadow-gray-200 transition-all duration-500 overflow-hidden flex flex-col"
             >
-              {/* ✅ Show Image */}
-              {subCat.mainImageUrl ? (
-                <img
-                  src={subCat.mainImageUrl}
-                  alt={subCat.name}
-                  className="w-full h-40 object-cover rounded mb-3"
-                />
-              ) : (
-                <div className="w-full h-40 bg-gray-200 flex items-center justify-center rounded mb-3 text-gray-500">
-                  No Image
-                </div>
-              )}
-
-              {/* ✅ Name */}
-              <h3 className="font-semibold text-lg mb-1">{subCat.name}</h3>
-
-              {/* ✅ Description */}
-              <p className="text-sm text-gray-600 mb-2">
-                {subCat.description || "No description available"}
-              </p>
-
-              {/* ✅ Status */}
-              <div className="flex items-center gap-2 mb-3">
-                <span className={`px-2 py-0.5 text-[11px] rounded-full font-medium ${subCat.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                  {subCat.isActive ? 'Active' : 'Inactive'}
-                </span>
-                {subCat.deleted && (
-                  <span className="px-2 py-0.5 text-[11px] rounded-full font-medium bg-gray-100 text-gray-700">Deleted</span>
+              <div className="relative aspect-[4/3] overflow-hidden bg-gray-50">
+                {subCat.mainImageUrl ? (
+                  <img src={subCat.mainImageUrl} alt={subCat.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-300 font-black text-xs uppercase">No Visual</div>
                 )}
+
+                <div className="absolute top-4 right-4 flex flex-col gap-2">
+                  <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${subCat.isActive ? "bg-green-100 text-green-700" : "bg-rose-100 text-rose-700"}`}>
+                    {subCat.isActive ? "Live" : "Paused"}
+                  </div>
+                  {subCat.deleted && (
+                    <div className="px-3 py-1 rounded-full bg-gray-900 text-white text-[10px] font-black uppercase tracking-widest">
+                      In Trash
+                    </div>
+                  )}
+                </div>
+
+                <div className="absolute inset-0 bg-gray-900/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-2">
+                  <button onClick={() => handleViewSubCategory(subCat)} className="p-3 bg-white text-gray-900 rounded-2xl hover:bg-blue-600 hover:text-white transition-all shadow-xl font-bold text-sm">View Node</button>
+                  <button onClick={() => handleEditSubCategory(subCat)} className="p-3 bg-white text-gray-900 rounded-2xl hover:bg-amber-500 hover:text-white transition-all shadow-xl font-bold text-sm">Refine</button>
+                </div>
               </div>
 
-              {/* ✅ Actions */}
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleViewSubCategory(subCat);
-                  }}
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded"
-                >
-                  View
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEditSubCategory(subCat);
-                  }}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setDeleteId(subCat.id);
-                  }}
-                  className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
-                >
-                  Delete
-                </button>
-                {subCat.isActive ? (
+              <div className="p-6 flex flex-col gap-1 flex-1">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 line-clamp-1">
+                  Parent: {getParentName(subCat.parentCategoryId || subCat.categoryId)}
+                </p>
+                <h3 className="text-lg font-black text-gray-900 line-clamp-1">{subCat.name}</h3>
+                <p className="text-xs text-gray-500 font-medium line-clamp-2 mt-1 mb-4 flex-1">
+                  {subCat.description || "System narrative not initialized for this node."}
+                </p>
+
+                <div className="flex items-center gap-2 mt-auto pt-4 border-t border-gray-50">
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deactivateSubCategory(subCat.id);
-                    }}
-                    className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded"
+                    onClick={() => toggleActivation(subCat)}
+                    className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${subCat.isActive ? "bg-amber-50 text-amber-600 hover:bg-amber-100" : "bg-green-50 text-green-600 hover:bg-green-100"}`}
                   >
-                    Deactivate
+                    {subCat.isActive ? "Pause" : "Launch"}
                   </button>
-                ) : (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      activateSubCategory(subCat);
-                    }}
-                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
-                  >
-                    Activate
-                  </button>
-                )}
-                {subCat.deleted && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      restoreSubCategory(subCat.id);
-                    }}
-                    className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded"
-                  >
-                    Restore
-                  </button>
-                )}
+
+                  {!subCat.deleted ? (
+                    <button
+                      onClick={() => setDeleteId(subCat.id)}
+                      className="p-2.5 bg-rose-50 text-rose-600 rounded-xl hover:bg-rose-600 hover:text-white transition-all"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleRestore(subCat.id)}
+                      className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition-all"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))
         )}
       </div>
 
-      {/* Pagination */}
-      <div className="flex flex-col md:flex-row justify-center items-center gap-3 mt-6">
-        <button
-          disabled={page <= 1}
-          onClick={() => setPage((p) => p - 1)}
-          className="px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
-        >
-          Prev
-        </button>
-        <span className="text-sm text-gray-600">
-          Page {page} of {totalPages}
-        </span>
-        <button
-          disabled={page >= totalPages}
-          onClick={() => setPage((p) => p + 1)}
-          className="px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-50"
-        >
-          Next
-        </button>
-        <select
-          value={pageSize}
-          onChange={(e) => {
-            setPageSize(Number(e.target.value));
-            setPage(1);
-          }}
-          className="border px-2 py-1 rounded focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-blue-300"
-        >
-          <option value={5}>5 / page</option>
-          <option value={10}>10 / page</option>
-          <option value={20}>20 / page</option>
-          <option value={50}>50 / page</option>
-        </select>
-      </div>
+      {/* Modern Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm">
+          <p className="text-xs font-black uppercase tracking-widest text-gray-400">Node Grid Controls</p>
+          <div className="flex items-center gap-4">
+            <button
+              disabled={page <= 1}
+              onClick={() => setPage(p => p - 1)}
+              className="p-3 bg-gray-50 rounded-2xl hover:bg-gray-100 disabled:opacity-30 transition-all font-bold text-gray-600"
+            >
+              ← Prev
+            </button>
+            <div className="flex gap-1">
+              {[...Array(totalPages)].map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setPage(i + 1)}
+                  className={`w-10 h-10 rounded-xl text-xs font-black transition-all ${page === i + 1 ? "bg-blue-600 text-white shadow-lg shadow-blue-100" : "hover:bg-gray-50 text-gray-400"}`}
+                >
+                  {i + 1}
+                </button>
+              ))}
+            </div>
+            <button
+              disabled={page >= totalPages}
+              onClick={() => setPage(p => p + 1)}
+              className="p-3 bg-gray-50 rounded-2xl hover:bg-gray-100 disabled:opacity-30 transition-all font-bold text-gray-600"
+            >
+              Next →
+            </button>
+          </div>
+          <select
+            value={pageSize}
+            onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+            className="p-3 bg-gray-50 border-none rounded-2xl text-xs font-black uppercase tracking-widest text-gray-500 focus:ring-0"
+          >
+            <option value={12}>12 Matrix</option>
+            <option value={24}>24 Matrix</option>
+            <option value={48}>48 Matrix</option>
+          </select>
+        </div>
+      )}
 
-      {/* Delete Confirmation */}
+      {/* Action Confirmation Shell */}
       {deleteId && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-[350px]">
-            <h3 className="text-lg font-semibold mb-4">Confirm Delete</h3>
-            <p className="text-gray-600 mb-6">
-              Are you sure you want to delete this sub-category?
-            </p>
-            <div className="flex justify-end gap-3">
+        <div className="fixed inset-0 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm z-[100] animate-in fade-in duration-300">
+          <div className="bg-white p-10 rounded-[48px] shadow-2xl w-full max-w-[440px] border border-gray-100 text-center flex flex-col gap-6">
+            <div className="w-20 h-20 bg-rose-50 rounded-[32px] flex items-center justify-center text-rose-500 mx-auto">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-2xl font-black text-gray-900 tracking-tight">Move to Archive?</h3>
+              <p className="text-gray-500 font-medium mt-2 leading-relaxed">
+                Archiving this segment will remove it from live views. You can restore it later from the internal repository.
+              </p>
+            </div>
+            <div className="flex gap-4">
               <button
                 onClick={() => setDeleteId(null)}
-                className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400"
+                className="flex-1 py-4 bg-gray-50 text-gray-500 rounded-3xl font-black text-sm hover:bg-gray-100 transition-all"
               >
                 Cancel
               </button>
               <button
                 onClick={() => removeSubCategory(deleteId)}
                 disabled={deleteLoading}
-                className={`px-4 py-2 ${deleteLoading ? "bg-red-300" : "bg-red-500 hover:bg-red-600"
-                  } text-white rounded-md`}
+                className="flex-1 py-4 bg-rose-600 text-white rounded-3xl font-black text-sm shadow-xl shadow-rose-100 hover:bg-rose-700 transition-all disabled:opacity-50"
               >
-                {deleteLoading ? "Deleting..." : "Delete"}
+                {deleteLoading ? "Archiving..." : "Confirm Archive"}
               </button>
             </div>
           </div>

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import axios from 'axios'
-import { backendUrl } from '../App'
+import { backendUrl } from '../../App'
 import { toast } from 'react-toastify'
 
-const Users = ({ token }) => {
+const UserList = ({ token }) => {
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -399,118 +399,118 @@ const Users = ({ token }) => {
         <div className="bg-white shadow overflow-hidden rounded-lg">
           <div className="overflow-x-auto">
             <table className="min-w-[900px] md:min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Roles</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Visit</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredUsers.length > 0 ? (
-                filteredUsers.map((user) => (
-                  <tr key={user.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{user.name || 'N/A'}</div>
-                    </td>
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Roles</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Visit</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredUsers.length > 0 ? (
+                  filteredUsers.map((user) => (
+                    <tr key={user.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{user.name || 'N/A'}</div>
+                      </td>
 
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">{user.email || 'N/A'}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-500">{user.phoneNumber || 'N/A'}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex flex-col gap-1">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                          {user.isActive ? 'Active' : 'Inactive'}
-                        </span>
-                        {user.isDeleted && (
-                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                            Deleted
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">{user.email || 'N/A'}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">{user.phoneNumber || 'N/A'}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-col gap-1">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            {user.isActive ? 'Active' : 'Inactive'}
                           </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex flex-wrap gap-1">
-                        {user.roles && user.roles.length > 0 ? (
-                          user.roles.map((role, index) => {
-                            const rl = String(role).toLowerCase();
-                            const badgeClass = rl === 'admin'
-                              ? 'bg-purple-100 text-purple-800'
-                              : rl === 'delivery'
-                              ? 'bg-amber-100 text-amber-800'
-                              : 'bg-blue-100 text-blue-800';
-                            return (
-                              <span
-                                key={index}
-                                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${badgeClass}`}
-                              >
-                                {role}
-                              </span>
-                            )
-                          })
+                          {user.isDeleted && (
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                              Deleted
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-wrap gap-1">
+                          {user.roles && user.roles.length > 0 ? (
+                            user.roles.map((role, index) => {
+                              const rl = String(role).toLowerCase();
+                              const badgeClass = rl === 'admin'
+                                ? 'bg-purple-100 text-purple-800'
+                                : rl === 'delivery'
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-blue-100 text-blue-800';
+                              return (
+                                <span
+                                  key={index}
+                                  className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${badgeClass}`}
+                                >
+                                  {role}
+                                </span>
+                              )
+                            })
+                          ) : (
+                            <span className="text-xs text-gray-400">No roles</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatLastVisit(user.lastVisit)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        {/* Existing View button here */}
+
+                        {/* Lock/Unlock */}
+                        {user.isActive ? (
+                          <button
+                            className="text-yellow-600 hover:text-yellow-800 mr-3 disabled:opacity-50"
+                            disabled={lockingId === user.id}
+                            onClick={() => handleLockUser(user.id, user.name || user.userName)}
+                          >
+                            {lockingId === user.id ? 'Locking...' : 'Lock'}
+                          </button>
                         ) : (
-                          <span className="text-xs text-gray-400">No roles</span>
+                          <button
+                            className="text-green-600 hover:text-green-800 mr-3 disabled:opacity-50"
+                            disabled={unlockingId === user.id}
+                            onClick={() => handleUnlockUser(user.id, user.name || user.userName)}
+                          >
+                            {unlockingId === user.id ? 'Unlocking...' : 'Unlock'}
+                          </button>
                         )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatLastVisit(user.lastVisit)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      {/* Existing View button here */}
+                        <button
+                          className="text-indigo-600 hover:text-indigo-900 mr-3"
+                          onClick={() => handleViewUser(user.id)}
+                        >
+                          View
+                        </button>
+                        {!user.roles?.includes('admin') && (
+                          <button
+                            className="text-red-600 hover:text-red-900 disabled:opacity-50"
+                            disabled={deletingId === user.id}
+                            onClick={() => handleDeleteUser(user.id, user.name || user.userName)}
+                          >
+                            {deletingId === user.id ? 'Deleting...' : 'Delete'}
+                          </button>
+                        )}
 
-                      {/* Lock/Unlock */}
-                      {user.isActive ? (
-                        <button
-                          className="text-yellow-600 hover:text-yellow-800 mr-3 disabled:opacity-50"
-                          disabled={lockingId === user.id}
-                          onClick={() => handleLockUser(user.id, user.name || user.userName)}
-                        >
-                          {lockingId === user.id ? 'Locking...' : 'Lock'}
-                        </button>
-                      ) : (
-                        <button
-                          className="text-green-600 hover:text-green-800 mr-3 disabled:opacity-50"
-                          disabled={unlockingId === user.id}
-                          onClick={() => handleUnlockUser(user.id, user.name || user.userName)}
-                        >
-                          {unlockingId === user.id ? 'Unlocking...' : 'Unlock'}
-                        </button>
-                      )}
-                      <button
-                        className="text-indigo-600 hover:text-indigo-900 mr-3"
-                        onClick={() => handleViewUser(user.id)}
-                      >
-                        View
-                      </button>
-                      {!user.roles?.includes('admin') && (
-                        <button
-                          className="text-red-600 hover:text-red-900 disabled:opacity-50"
-                          disabled={deletingId === user.id}
-                          onClick={() => handleDeleteUser(user.id, user.name || user.userName)}
-                        >
-                          {deletingId === user.id ? 'Deleting...' : 'Delete'}
-                        </button>
-                      )}
-
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="8" className="px-6 py-4 text-center text-sm text-gray-500">
+                      No users found matching your criteria
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="8" className="px-6 py-4 text-center text-sm text-gray-500">
-                    No users found matching your criteria
-                  </td>
-                </tr>
-              )}
-            </tbody>
+                )}
+              </tbody>
             </table>
           </div>
         </div>
@@ -640,4 +640,4 @@ const Users = ({ token }) => {
   )
 }
 
-export default Users
+export default UserList

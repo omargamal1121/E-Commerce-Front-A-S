@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
-import { backendUrl } from "../App";
+import { backendUrl } from "../../App";
 
 const SubCategories = ({ token }) => {
   const [activeTab, setActiveTab] = useState("add");

@@ -8,9 +8,7 @@ const ViewProduct = ({ token, productId }) => {
   const [product, setProduct] = useState(null);
   const [variants, setVariants] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [actionLoading, setActionLoading] = useState(false);
   const navigate = useNavigate();
 
   const fetchProduct = useCallback(async () => {
@@ -18,39 +16,17 @@ const ViewProduct = ({ token, productId }) => {
     setLoading(true);
     try {
       const res = await API.products.getById(productId, token);
-      const data = res?.responseBody?.data || res?.data || res;
-      setProduct(data || null);
-      setError(null);
-    } catch (err) {
-      const emsg =
-        err?.response?.data?.responseBody?.message ||
-        err?.response?.data?.message ||
-        err?.message ||
-        "Failed to load product";
-      setError(emsg);
-      toast.error(emsg);
-      setProduct(null);
-    } finally {
-      setLoading(false);
-    }
+      setProduct(res?.responseBody?.data || null);
+    } catch (err) { toast.error("Failed to extract asset details"); }
+    finally { setLoading(false); }
   }, [productId, token]);
 
   const fetchVariants = useCallback(async () => {
     if (!productId) return;
     try {
       const res = await API.variants.getByProductId(productId, token);
-      const list = res?.responseBody?.data || res?.data || [];
-      setVariants(Array.isArray(list) ? list : []);
-    } catch (err) {
-      // Variants failure shouldn't block the page
-      const emsg =
-        err?.response?.data?.responseBody?.message ||
-        err?.response?.data?.message ||
-        err?.message ||
-        "Failed to load variants";
-      toast.error(emsg);
-      setVariants([]);
-    }
+      setVariants(res?.responseBody?.data || []);
+    } catch (err) { console.error("Variants sync failed"); }
   }, [productId, token]);
 
   useEffect(() => {
@@ -60,416 +36,170 @@ const ViewProduct = ({ token, productId }) => {
     }
   }, [productId, fetchProduct, fetchVariants]);
 
-  // Image deletion functions
-  const deleteMainImage = async () => {
-    if (!product) return;
-    if (!window.confirm("Delete main image?")) return;
-    try {
-      setActionLoading(true);
-      const res = await API.images.delete(productId, "main", token);
-      const msg =
-        res?.data?.responseBody?.message ||
-        res?.data?.message ||
-        "Main image deleted";
-      toast.success(msg);
-      await fetchProduct();
-      // Reset selected image index if it was the main image
-      setSelectedImageIndex(0);
-    } catch (err) {
-      const emsg =
-        err?.response?.data?.responseBody?.message ||
-        err?.response?.data?.message ||
-        err?.message ||
-        "Failed to delete main image";
-      toast.error(emsg);
-    } finally {
-      setActionLoading(false);
-    }
-  };
+  if (loading && !product) return (
+    <div className="flex flex-col gap-10 animate-pulse">
+      <div className="h-[500px] bg-gray-100 rounded-[48px]" />
+    </div>
+  );
 
-  const deleteImageById = async (imageId) => {
-    if (!product || !imageId) return;
-    if (!window.confirm("Delete this image?")) return;
-    try {
-      setActionLoading(true);
-      const res = await API.images.delete(productId, imageId, token);
-      const msg =
-        res?.data?.responseBody?.message ||
-        res?.data?.message ||
-        "Image deleted";
-      toast.success(msg);
-      await fetchProduct();
-      // Adjust selected image index if needed
-      const currentImages = product.images || [];
-      const deletedIndex = currentImages.findIndex(img => img.id === imageId);
-      if (deletedIndex !== -1 && selectedImageIndex >= deletedIndex) {
-        setSelectedImageIndex(Math.max(0, selectedImageIndex - 1));
-      }
-    } catch (err) {
-      const emsg =
-        err?.response?.data?.responseBody?.message ||
-        err?.response?.data?.message ||
-        err?.message ||
-        "Failed to delete image";
-      toast.error(emsg);
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  // Toggle product active/inactive status
-  const toggleProductStatus = async () => {
-    if (!product) return;
-    try {
-      const hasImage =
-        (product.images && product.images.length > 0) || product.mainImage;
-
-      if (!hasImage && !product.isActive) {
-        toast.error("Cannot activate product without an image");
-        return;
-      }
-
-      setActionLoading(true);
-      if (product.isActive) {
-        await API.products.deactivate(product.id, token);
-        toast.success("Product deactivated successfully");
-      } else {
-        await API.products.activate(product.id, token);
-        toast.success("Product activated successfully");
-      }
-      await fetchProduct();
-    } catch (error) {
-      console.error("Error toggling product status:", error?.response || error);
-      toast.error(
-        error?.response?.data?.responseBody?.message ||
-        error?.response?.data?.message ||
-        error?.message ||
-        "Failed to toggle product status"
-      );
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  if (!productId) return <div className="p-4">Enter product ID to view.</div>;
-  if (loading && !product) return <div className="p-4">Loading...</div>;
-  if (error) return <div className="p-4 text-red-600">{error}</div>;
-  if (!product) return <div className="p-4">No product found.</div>;
+  if (!product) return <div className="p-20 text-center text-gray-300 font-black uppercase tracking-widest">Asset Not Found</div>;
 
   const images = product.images || [];
-  const mainImage = images.find((img) => img.isMain) || images[0] || null;
-  const discountPercent = Number(
-    // Support multiple shapes: direct percentage or nested discount object
-    (product.discount && (product.discount.discountPercent ?? product.discount.percentage)) ??
-    product.discountPercentage ??
-    product.discountPrecentage ??
-    0
-  );
-  const hasDiscount = !Number.isNaN(discountPercent) && discountPercent > 0;
-  // Prefer server-provided finalPrice when available
-  const serverFinalPrice = product.finalPrice != null ? Number(product.finalPrice) : null;
-  const basePrice = Number(product.price);
-  const discountedPrice = hasDiscount
-    ? (serverFinalPrice != null && !Number.isNaN(serverFinalPrice)
-      ? serverFinalPrice
-      : basePrice * (1 - discountPercent / 100))
-    : basePrice;
+  const discountPercent = Number((product.discount && (product.discount.discountPercent ?? product.discount.percentage)) ?? product.discountPercentage ?? 0);
+  const hasDiscount = discountPercent > 0;
 
   return (
-    <div className="p-6 bg-white shadow-md rounded-lg">
-      <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <h2 className="text-2xl font-bold">Product: {product.name}</h2>
-        <div className="flex items-center gap-2 flex-wrap">
-          <span
-            className={`px-2 py-1 text-xs rounded-full font-medium ${product.isActive ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}
-          >
-            {product.isActive ? "Active" : "Inactive"}
+    <div className="flex flex-col gap-10 animate-in slide-in-from-bottom-10 duration-1000">
+
+      {/* Immersive Product Showcase */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+
+        {/* Visual Engine */}
+        <div className="lg:col-span-7 flex flex-col gap-6">
+          <div className="relative aspect-[4/5] bg-white rounded-[56px] overflow-hidden border border-gray-100 shadow-2xl group">
+            {images[selectedImageIndex] ? (
+              <img
+                src={images[selectedImageIndex].url}
+                className="w-full h-full object-cover transition-transform duration-[2000ms] group-hover:scale-110"
+                alt={product.name}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gray-50 text-gray-200 text-9xl">🖼️</div>
+            )}
+
+            {/* Status & Overlays */}
+            <div className="absolute top-10 left-10 flex flex-col gap-3">
+              <span className={`px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest backdrop-blur-xl border ${product.isActive ? "bg-emerald-500/80 text-white border-emerald-400" : "bg-rose-500/80 text-white border-rose-400"}`}>
+                {product.isActive ? "Operational" : "Offline"}
+              </span>
+              {hasDiscount && (
+                <span className="px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest bg-emerald-400 text-gray-900 border border-emerald-300 backdrop-blur-xl">
+                  -{discountPercent}% Campaign
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Thumbnail Array */}
+          <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
+            {images.map((img, idx) => (
+              <button
+                key={img.id || idx}
+                onClick={() => setSelectedImageIndex(idx)}
+                className={`flex-shrink-0 w-24 h-32 rounded-[24px] overflow-hidden border-4 transition-all ${selectedImageIndex === idx ? "border-emerald-500 scale-105 shadow-xl" : "border-transparent opacity-50 hover:opacity-100"}`}
+              >
+                <img src={img.url} className="w-full h-full object-cover" alt="" />
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Intelligence Context */}
+        <div className="lg:col-span-5 flex flex-col gap-8">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-4">
+              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500">Asset Ref: {product.id}</span>
+              <div className="h-px flex-1 bg-gray-100" />
+            </div>
+            <h1 className="text-5xl font-black text-gray-900 leading-[0.9] uppercase tracking-tighter">
+              {product.name}
+            </h1>
+            <p className="text-gray-500 font-medium text-lg leading-relaxed mt-4">
+              {product.description}
+            </p>
+          </div>
+
+          {/* Financial Summary */}
+          <div className="bg-gray-900 p-10 rounded-[48px] text-white shadow-2xl shadow-emerald-900/20">
+            <div className="flex flex-col gap-2 mb-8">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Market Settlement</span>
+              <div className="flex items-baseline gap-4">
+                <span className="text-5xl font-black tracking-tighter">{currency} {product.price}</span>
+                {hasDiscount && <span className="text-xl text-gray-500 line-through font-bold">{currency} {product.price}</span>}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 pb-8 border-b border-white/10">
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] font-bold uppercase text-gray-500 tracking-widest">Inventory Load</span>
+                <span className={`text-lg font-black ${product.availableQuantity > 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                  {product.availableQuantity} Units Available
+                </span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[9px] font-bold uppercase text-gray-500 tracking-widest">Structural Node</span>
+                <span className="text-lg font-black uppercase tracking-tighter">
+                  {product.subCategoryId || "Unbound"}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-4 mt-8">
+              <button onClick={() => navigate(`/add?edit=${product.id}`)} className="w-full py-5 bg-emerald-500 hover:bg-emerald-400 text-gray-900 rounded-[32px] text-xs font-black uppercase tracking-[0.2em] transition-all shadow-xl hover:scale-[1.02]">
+                Re-Forge Manifest
+              </button>
+              <button onClick={() => navigate(`/products/${product.id}/variants`)} className="w-full py-5 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-[32px] text-xs font-black uppercase tracking-[0.2em] transition-all">
+                Configure Variants
+              </button>
+            </div>
+          </div>
+
+          {/* Technical Specs */}
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              { icon: "🧶", label: "Material", value: product.material || "Technical Synth" },
+              { icon: "🧼", label: "Protocol", value: product.careInstructions || "Standard Care" },
+              { icon: "📦", label: "Logistic", value: product.shippingInfo || "Global Link" },
+              { icon: "🕰️", label: "Modified", value: new Date(product.modifiedAt || product.createdAt).toLocaleDateString() },
+            ].map((spec, i) => (
+              <div key={i} className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">{spec.icon}</span>
+                  <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">{spec.label}</span>
+                </div>
+                <span className="text-xs font-bold text-gray-900 truncate">{spec.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Variant Information Matrix */}
+      <div className="bg-white p-12 rounded-[56px] border border-gray-100 shadow-sm flex flex-col gap-10">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <div className="w-12 h-12 bg-emerald-50 rounded-[20px] flex items-center justify-center text-2xl">🧩</div>
+            <h3 className="text-3xl font-black text-gray-900 uppercase tracking-tighter">Variant Matrix</h3>
+          </div>
+          <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-6 py-2 rounded-full">
+            {variants.length} Active Vectors
           </span>
-          {product.deletedAt && (
-            <span className="px-2 py-1 text-xs rounded-full font-medium bg-gray-200 text-gray-700">
-              Deleted
-            </span>
-          )}
-
-          {hasDiscount && (
-            <span className="px-2 py-1 text-xs rounded-full font-medium bg-purple-100 text-purple-700">
-              {discountPercent}% OFF
-            </span>
-          )}
-
-          {/* Action buttons */}
-          {!product.deletedAt && (
-            <div className="flex items-center gap-2 ml-2">
-              <button
-                type="button"
-                onClick={toggleProductStatus}
-                disabled={actionLoading}
-                className={`px-3 py-1 rounded text-xs ${product.isActive
-                  ? "bg-yellow-100 text-yellow-800"
-                  : "bg-green-100 text-green-800"
-                  }`}
-              >
-                {product.isActive ? "Deactivate" : "Activate"}
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate(`/add?edit=${product.id}`)}
-                className="px-3 py-1 bg-orange-100 text-orange-800 rounded text-xs"
-              >
-                Update
-              </button>
-            </div>
-          )}
         </div>
-      </div>
 
-      {/* Product Images Section */}
-      {images.length > 0 && (
-        <div className="mb-8">
-          <h3 className="text-xl font-semibold mb-4">Product Images</h3>
-
-          {/* Main Image Display */}
-          <div className="mb-4">
-            <div className="relative bg-gray-50 rounded-lg p-4 group">
-              {images[selectedImageIndex] ? (
-                <img
-                  src={images[selectedImageIndex].url}
-                  alt={`${product.name} - Image ${selectedImageIndex + 1}`}
-                  className="w-full max-w-md mx-auto h-80 object-contain rounded-lg shadow-lg"
-                />
-              ) : (
-                <div className="w-full max-w-md mx-auto h-80 bg-gray-200 flex items-center justify-center text-gray-500 rounded-lg">
-                  No Image Available
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {variants.map((v) => (
+            <div key={v.id} className="p-6 bg-gray-50 rounded-[32px] border border-gray-100 flex flex-col gap-4 transition-all hover:bg-white hover:shadow-xl hover:shadow-gray-900/5 group">
+              <div className="flex justify-between items-start">
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Spectrum</span>
+                  <span className="text-lg font-black text-gray-900 uppercase">{v.color || "Static"}</span>
                 </div>
-              )}
-
-              {/* Delete button for main image */}
-              {images[selectedImageIndex]?.isMain && (
-                <button
-                  type="button"
-                  onClick={deleteMainImage}
-                  disabled={actionLoading}
-                  className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition bg-red-600 text-white text-xs px-2 py-1 rounded shadow"
-                >
-                  Delete Main
-                </button>
-              )}
-
-              {/* Delete button for regular images */}
-              {images[selectedImageIndex] && !images[selectedImageIndex].isMain && images[selectedImageIndex].id && (
-                <button
-                  type="button"
-                  onClick={() => deleteImageById(images[selectedImageIndex].id)}
-                  disabled={actionLoading}
-                  className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition bg-red-600 text-white text-xs px-2 py-1 rounded shadow"
-                >
-                  Delete
-                </button>
-              )}
-
-              {/* Image Navigation Arrows */}
-              {images.length > 1 && (
-                <>
-                  <button
-                    onClick={() => setSelectedImageIndex((prev) => (prev > 0 ? prev - 1 : images.length - 1))}
-                    className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={() => setSelectedImageIndex((prev) => (prev < images.length - 1 ? prev + 1 : 0))}
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                </>
-              )}
-            </div>
-
-            {/* Image Counter */}
-            {images.length > 1 && (
-              <div className="text-center mt-2 text-sm text-gray-600">
-                Image {selectedImageIndex + 1} of {images.length}
+                <div className={`w-3 h-3 rounded-full ${v.isActive ? "bg-emerald-500 shadow-lg shadow-emerald-200" : "bg-gray-300"}`} />
               </div>
-            )}
-          </div>
 
-          {/* Thumbnail Gallery */}
-          {images.length > 1 && (
-            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
-              {images.map((img, idx) => (
-                <div
-                  key={img.id || idx}
-                  className={`relative group rounded-lg overflow-hidden border-2 transition-all ${selectedImageIndex === idx
-                    ? 'border-blue-500 ring-2 ring-blue-200'
-                    : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                >
-                  <button
-                    onClick={() => setSelectedImageIndex(idx)}
-                    className="w-full h-20 block"
-                  >
-                    <img
-                      src={img.url}
-                      alt={`${product.name} thumbnail ${idx + 1}`}
-                      className="w-full h-20 object-cover"
-                    />
-                  </button>
-
-                  {/* Main badge */}
-                  {img.isMain && (
-                    <div className="absolute top-1 right-1 bg-blue-500 text-white text-xs px-1 py-0.5 rounded">
-                      Main
-                    </div>
-                  )}
-
-                  {/* Delete button for thumbnails */}
-                  {img.id && (
-                    <button
-                      type="button"
-                      onClick={() => deleteImageById(img.id)}
-                      disabled={actionLoading}
-                      className="absolute top-1 left-1 opacity-0 group-hover:opacity-100 transition bg-red-600 text-white text-xs px-1 py-0.5 rounded shadow"
-                    >
-                      ×
-                    </button>
-                  )}
+              <div className="flex items-center gap-6 border-t border-gray-200 pt-4">
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Scale</span>
+                  <span className="text-sm font-black text-gray-900">{v.size || "Universal"}</span>
                 </div>
-              ))}
+                <div className="flex flex-col border-l border-gray-200 pl-6">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Quant</span>
+                  <span className="text-sm font-black text-emerald-600 underline decoration-2 underline-offset-4">{v.quantity} Units</span>
+                </div>
+              </div>
             </div>
-          )}
+          ))}
         </div>
-      )}
-
-      {/* Product Details */}
-      <div className="mb-8">
-        <h3 className="text-xl font-semibold mb-4">Product Details</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-3">
-            <div className="flex">
-              <span className="font-semibold text-gray-700 w-24">ID:</span>
-              <span className="text-gray-900">{product.id}</span>
-            </div>
-            <div className="flex">
-              <span className="font-semibold text-gray-700 w-24">Price:</span>
-              {hasDiscount ? (
-                <span className="text-gray-900 font-bold text-lg">
-                  <span className="line-through text-gray-500 mr-2">{currency} {basePrice.toFixed(2)}</span>
-                  <span className="text-green-700">{currency} {discountedPrice.toFixed(2)}</span>
-                </span>
-              ) : (
-                <span className="text-gray-900 font-bold text-lg">{currency} {basePrice.toFixed(2)}</span>
-              )}
-            </div>
-            {hasDiscount && (
-              <div className="flex">
-                <span className="font-semibold text-gray-700 w-24">Discount:</span>
-                <span className="text-purple-700 font-semibold">{discountPercent}%</span>
-              </div>
-            )}
-            {hasDiscount && product.discount && (
-              <div className="flex">
-                <span className="font-semibold text-gray-700 w-24">Offer:</span>
-                <span className="text-gray-900">
-                  {product.discount.name || "Discount"}
-                  {typeof product.discount.isActive === 'boolean' && (
-                    <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${product.discount.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                      {product.discount.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  )}
-                </span>
-              </div>
-            )}
-            {hasDiscount && product.discount && (product.discount.startDate || product.discount.endDate) && (
-              <div className="flex text-sm text-gray-600">
-                <span className="font-semibold text-gray-700 w-24">Validity:</span>
-                <span>
-                  {product.discount.startDate ? new Date(product.discount.startDate).toLocaleDateString() : '-'}
-                  {" "}to{" "}
-                  {product.discount.endDate ? new Date(product.discount.endDate).toLocaleDateString() : '-'}
-                </span>
-              </div>
-            )}
-            {typeof product.availableQuantity !== "undefined" && (
-              <div className="flex">
-                <span className="font-semibold text-gray-700 w-24">Stock:</span>
-                <span className={`font-semibold ${product.availableQuantity > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {product.availableQuantity} units
-                </span>
-              </div>
-            )}
-          </div>
-          <div className="space-y-3">
-            {product.createdAt && (
-              <div className="flex">
-                <span className="font-semibold text-gray-700 w-24">Created:</span>
-                <span className="text-gray-900">{new Date(product.createdAt).toLocaleDateString()}</span>
-              </div>
-            )}
-            {product.modifiedAt && (
-              <div className="flex">
-                <span className="font-semibold text-gray-700 w-24">Modified:</span>
-                <span className="text-gray-900">{new Date(product.modifiedAt).toLocaleDateString()}</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {product.description && (
-          <div className="mt-4">
-            <span className="font-semibold text-gray-700">Description:</span>
-            <p className="text-gray-900 mt-1 leading-relaxed">{product.description}</p>
-          </div>
-        )}
-      </div>
-
-      <div>
-        <h3 className="text-xl font-semibold mb-3">Variants ({variants.length})</h3>
-        {variants.length === 0 ? (
-          <p className="text-gray-600">No variants found.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Color</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Size</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Waist/Length</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Quantity</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {variants.map((v) => (
-                  <tr key={v.id}>
-                    <td className="px-4 py-2 whitespace-nowrap">{v.color || "-"}</td>
-                    <td className="px-4 py-2 whitespace-nowrap">{v.size ?? "-"}</td>
-                    <td className="px-4 py-2 whitespace-nowrap">
-                      {v.waist ? `W: ${v.waist}` : ""}
-                      {v.waist && v.length ? " / " : ""}
-                      {v.length ? `L: ${v.length}` : ""}
-                      {!v.waist && !v.length && "-"}
-                    </td>
-                    <td className="px-4 py-2 whitespace-nowrap">{v.quantity ?? 0}</td>
-                    <td className="px-4 py-2 whitespace-nowrap">
-                      {v.isDeleted ? (
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Deleted</span>
-                      ) : v.isActive ? (
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>
-                      ) : (
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">Inactive</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
       </div>
     </div>
   );

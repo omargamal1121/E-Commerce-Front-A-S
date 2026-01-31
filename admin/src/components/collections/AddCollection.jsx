@@ -2,14 +2,12 @@ import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { backendUrl } from "../../App";
-import { useNavigate } from "react-router-dom";
 
 const AddCollection = ({
   token,
   editCollectionMode = false,
   editCollectionId = null,
   fetchCollections,
-  setCollections,
   setActiveTab,
 }) => {
   const [loading, setLoading] = useState(false);
@@ -19,16 +17,11 @@ const AddCollection = ({
   const [images, setImages] = useState([]);
   const [mainImage, setMainImage] = useState(null);
 
-  // For showing old images when editing
   const [oldImages, setOldImages] = useState([]);
   const [oldMainImage, setOldMainImage] = useState(null);
 
-  const navigate = useNavigate();
-
-  // Clean text helper
   const cleanText = (text) => text?.replace(/\s+/g, " ").trim();
 
-  // Reset form
   const resetForm = () => {
     setName("");
     setDescription("");
@@ -37,23 +30,19 @@ const AddCollection = ({
     setMainImage(null);
     setOldImages([]);
     setOldMainImage(null);
-    setActiveTab && setActiveTab("collection-list");
+    if (setActiveTab) setActiveTab("list");
   };
 
-  // Fetch collection details when editing
   useEffect(() => {
     const fetchCollectionDetails = async () => {
       if (editCollectionMode && editCollectionId && token) {
         try {
           const res = await axios.get(
             `${backendUrl}/api/Collection/${editCollectionId}`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
+            { headers: { Authorization: `Bearer ${token}` } }
           );
 
-          const col =
-            res.data?.responseBody?.data || res.data?.data || res.data;
+          const col = res.data?.responseBody?.data || res.data?.data || res.data;
           setName(col.name || "");
           setDescription(col.description || "");
           setDisplayOrder(col.displayOrder || 1);
@@ -63,8 +52,8 @@ const AddCollection = ({
             setOldMainImage(col.images.find((img) => img.isMain));
           }
         } catch (err) {
-          console.error("❌ Error fetching collection:", err);
-          toast.error("Failed to load collection details");
+          console.error("❌ Error fetching collection details:", err);
+          toast.error("Failed to load node intelligence");
         }
       }
     };
@@ -72,40 +61,28 @@ const AddCollection = ({
     fetchCollectionDetails();
   }, [editCollectionMode, editCollectionId, token]);
 
-  // Add or Update Collection
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!token) return toast.error("You must log in first!");
+    if (!token) return toast.error("Authentication required");
 
     const cleanedName = cleanText(name);
     const cleanedDescription = cleanText(description);
-    const cleanedOrder = Math.max(1, Number(displayOrder));
 
-    // Validations
-    if (!cleanedName || cleanedName.length < 3 || cleanedName.length > 50)
-      return toast.error("Name must be 3-50 characters");
-    if (
-      !cleanedDescription ||
-      cleanedDescription.length < 5 ||
-      cleanedDescription.length > 200
-    )
-      return toast.error("Description must be 5-200 characters");
+    if (!cleanedName || cleanedName.length < 2) return toast.error("Identity name too short");
 
     setLoading(true);
     try {
-      // JSON body (as required by API)
       const body = {
         name: cleanedName,
         description: cleanedDescription,
-        displayOrder: cleanedOrder,
+        displayOrder: Number(displayOrder),
       };
 
-      let response;
+      let res;
       let collectionId;
 
       if (editCollectionMode && editCollectionId) {
-        // Update existing collection
-        response = await axios.put(
+        res = await axios.put(
           `${backendUrl}/api/Collection/${editCollectionId}`,
           body,
           {
@@ -117,277 +94,194 @@ const AddCollection = ({
           }
         );
         collectionId = editCollectionId;
-        toast.success("Collection updated successfully!");
       } else {
-        // Create new collection
-        response = await axios.post(`${backendUrl}/api/Collection`, body, {
+        res = await axios.post(`${backendUrl}/api/Collection`, body, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json-patch+json",
             Accept: "text/plain",
           },
         });
-        collectionId =
-          response.data?.responseBody?.data?.id ||
-          response.data?.data?.id ||
-          response.data?.id;
-        toast.success("Collection created successfully!");
+        collectionId = res.data?.responseBody?.data?.id || res.data?.data?.id || res.data?.id;
       }
 
-      // ✅ Upload main image if exists
-      if (mainImage && collectionId) {
-        const formData = new FormData();
-        formData.append("Image", mainImage);
+      if (!collectionId) throw new Error("ID synchronization failed");
 
+      // Upload Main Image
+      if (mainImage) {
+        const mainForm = new FormData();
+        mainForm.append("Image", mainImage);
         await axios.put(
-          // ← بدلناها من post إلى put
           `${backendUrl}/api/Collection/${collectionId}/main-image`,
-          formData,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "multipart/form-data",
-            },
-          }
+          mainForm,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
-        toast.success("Main image uploaded successfully!");
       }
 
-      // ✅ Upload additional images if exists
-      if (images.length > 0 && collectionId) {
-        const formData = new FormData();
-        images.forEach((img) => {
-          formData.append("Images", img);
-        });
-
+      // Upload Supplementary Matrix
+      if (images.length > 0) {
+        const addForm = new FormData();
+        images.forEach((file) => addForm.append("Images", file));
         await axios.post(
           `${backendUrl}/api/Collection/${collectionId}/images`,
-          formData,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "multipart/form-data",
-            },
-          }
+          addForm,
+          { headers: { Authorization: `Bearer ${token}` } }
         );
-        toast.success("Additional images uploaded successfully!");
       }
 
-      // Reset form and update collections list
+      toast.success(editCollectionMode ? "Repository evolution complete! ✨" : "New collection published! 🚀");
+      if (typeof fetchCollections === "function") await fetchCollections();
       resetForm();
-      fetchCollections && fetchCollections();
-
-      // Navigate to collection list
-      setActiveTab && setActiveTab("collection-list");
     } catch (error) {
-      console.error("Error:", error);
-      const apiMsg =
-        error.response?.data?.responseBody?.message ||
-        error.response?.data?.responseBody?.errors?.messages?.[0] ||
-        error.response?.data?.message ||
-        error.message ||
-        "Failed to save collection. Please try again.";
-      toast.error(apiMsg);
+      console.error(error);
+      toast.error("An error occurred during publication");
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle image selection
-  const handleImageChange = (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length > 0) {
-      setImages([...images, ...files]);
-    }
-  };
-
-  // Handle main image selection
-  const handleMainImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setMainImage(file);
-    }
-  };
-
-  // Remove image from selection
-  const removeImage = (index) => {
-    const newImages = [...images];
-    newImages.splice(index, 1);
-    setImages(newImages);
-  };
-
-  // Remove main image
-  const removeMainImage = () => {
-    setMainImage(null);
-  };
-
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-xl font-semibold mb-4">
-        {editCollectionMode ? "Edit Collection" : "Add New Collection"}
-      </h2>
+    <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-top-4 duration-500 pb-20">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-2xl font-black text-gray-900 tracking-tight">
+          {editCollectionMode ? "Refine Collection" : "Initialize New Collection"}
+        </h2>
+        <p className="text-gray-500 font-medium text-sm">
+          {editCollectionMode ? "Update the structural properties of this aggregate" : "Define a new specialized product grouping"}
+        </p>
+      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Name */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Collection Name *
-          </label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter collection name"
-            required
-          />
-        </div>
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Core Schematic Details */}
+        <div className="lg:col-span-12 flex flex-col gap-6">
+          <div className="bg-white rounded-[32px] p-8 border border-gray-100 shadow-sm flex flex-col gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="md:col-span-2 flex flex-col gap-2">
+                <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Identity Name</label>
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full bg-gray-50/50 border border-gray-100 rounded-2xl px-5 py-3.5 outline-none focus:ring-4 focus:ring-rose-50 focus:border-rose-400 transition-all font-bold text-gray-700"
+                  placeholder="e.g. Winter Nexus 2024"
+                  required
+                />
+              </div>
 
-        {/* Description */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Description *
-          </label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Enter collection description"
-            rows="3"
-            required
-          ></textarea>
-        </div>
-
-        {/* Display Order */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Display Order
-          </label>
-          <input
-            type="number"
-            value={displayOrder}
-            onChange={(e) => setDisplayOrder(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            min="1"
-          />
-        </div>
-
-        {/* Main Image Upload */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Main Image
-          </label>
-          <input
-            type="file"
-            onChange={handleMainImageChange}
-            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            accept="image/*"
-          />
-
-          {/* Preview main image */}
-          {mainImage && (
-            <div className="mt-2 relative inline-block">
-              <img
-                src={URL.createObjectURL(mainImage)}
-                alt="Main Preview"
-                className="h-24 w-24 object-cover rounded-md"
-              />
-              <button
-                type="button"
-                onClick={removeMainImage}
-                className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center"
-              >
-                ×
-              </button>
-            </div>
-          )}
-
-          {/* Show old main image if editing */}
-          {!mainImage && oldMainImage && (
-            <div className="mt-2">
-              <p className="text-sm text-gray-500 mb-1">Current Main Image:</p>
-              <img
-                src={oldMainImage.url}
-                alt="Current Main"
-                className="h-24 w-24 object-cover rounded-md"
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Additional Images Upload */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Additional Images
-          </label>
-          <input
-            type="file"
-            onChange={handleImageChange}
-            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            accept="image/*"
-            multiple
-          />
-
-          {/* Preview additional images */}
-          {images.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {images.map((img, index) => (
-                <div key={index} className="relative inline-block">
-                  <img
-                    src={URL.createObjectURL(img)}
-                    alt={`Preview ${index}`}
-                    className="h-24 w-24 object-cover rounded-md"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeImage(index)}
-                    className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Show old images if editing */}
-          {oldImages.length > 0 && (
-            <div className="mt-2">
-              <p className="text-sm text-gray-500 mb-1">Current Images:</p>
-              <div className="flex flex-wrap gap-2">
-                {oldImages.map((img, index) => (
-                  <img
-                    key={index}
-                    src={img.url}
-                    alt={`Current ${index}`}
-                    className="h-24 w-24 object-cover rounded-md"
-                  />
-                ))}
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Display Rank</label>
+                <input
+                  type="number"
+                  value={displayOrder}
+                  onChange={(e) => setDisplayOrder(e.target.value)}
+                  className="w-full bg-gray-50/50 border border-gray-100 rounded-2xl px-5 py-3.5 outline-none focus:ring-4 focus:ring-rose-50 focus:border-rose-400 transition-all font-bold text-gray-700"
+                  min="1"
+                />
               </div>
             </div>
-          )}
+
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Narrative Insight</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full bg-gray-50/50 border border-gray-100 rounded-2xl px-5 py-3.5 outline-none focus:ring-4 focus:ring-rose-50 focus:border-rose-400 transition-all font-medium text-gray-600 min-h-[120px]"
+                placeholder="Describe the specialized nature of this grouping..."
+                required
+              />
+            </div>
+          </div>
         </div>
 
-        {/* Submit Button */}
-        <div className="flex justify-end">
+        {/* Visual Strategy Section */}
+        <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Main Visual */}
+          <div className="bg-white rounded-[32px] p-8 border border-gray-100 shadow-sm flex flex-col gap-6">
+            <div className="flex flex-col">
+              <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Hero Visual</label>
+              <p className="text-[11px] text-gray-400 ml-1 mt-0.5 font-bold">The primary identifier for this collection</p>
+            </div>
+
+            <div className="relative group">
+              <label className="flex flex-col items-center justify-center w-full aspect-[16/9] border-2 border-dashed border-gray-200 rounded-3xl cursor-pointer hover:border-rose-400 hover:bg-rose-50/20 transition-all overflow-hidden bg-gray-50/50">
+                {(mainImage || oldMainImage) ? (
+                  <img
+                    src={mainImage ? URL.createObjectURL(mainImage) : oldMainImage.url}
+                    className="w-full h-full object-cover"
+                    alt="Main Preview"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center gap-2 text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span className="text-sm font-bold">Mount hero visual</span>
+                  </div>
+                )}
+                <input
+                  type="file"
+                  className="hidden"
+                  onChange={(e) => setMainImage(e.target.files[0])}
+                  accept="image/*"
+                />
+              </label>
+            </div>
+          </div>
+
+          {/* Supporting Matrix */}
+          <div className="bg-white rounded-[32px] p-8 border border-gray-100 shadow-sm flex flex-col gap-6">
+            <div className="flex flex-col">
+              <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Supporting Gallery</label>
+              <p className="text-[11px] text-gray-400 ml-1 mt-0.5 font-bold">Secondary angles or thematic shots</p>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              {[...oldImages, ...images].slice(0, 5).map((img, idx) => (
+                <div key={idx} className="aspect-square rounded-2xl overflow-hidden bg-gray-100 border border-gray-100">
+                  <img
+                    src={img instanceof File ? URL.createObjectURL(img) : img.url}
+                    className="w-full h-full object-cover"
+                    alt={`Preview ${idx}`}
+                  />
+                </div>
+              ))}
+              <label className="aspect-square rounded-2xl border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50 cursor-pointer hover:border-rose-300 transition-all">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                <input
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => setImages([...images, ...Array.from(e.target.files)])}
+                  accept="image/*"
+                />
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Action Controls */}
+        <div className="lg:col-span-12 flex items-center justify-end gap-4 mt-6">
           <button
             type="button"
             onClick={resetForm}
-            className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md mr-2 hover:bg-gray-400"
-            disabled={loading}
+            className="px-8 py-4 text-sm font-bold text-gray-400 hover:text-gray-900 transition-colors"
           >
-            Cancel
+            Discard Changes
           </button>
           <button
             type="submit"
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-blue-300"
             disabled={loading}
+            className="px-10 py-4 bg-rose-600 hover:bg-rose-700 text-white rounded-[24px] text-sm font-black shadow-xl shadow-rose-100 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-3 disabled:opacity-50"
           >
-            {loading
-              ? "Saving..."
-              : editCollectionMode
-                ? "Update Collection"
-                : "Add Collection"}
+            {loading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Deploying...
+              </>
+            ) : (
+              editCollectionMode ? "Push Evolution" : "Validate & Publish"
+            )}
           </button>
         </div>
       </form>

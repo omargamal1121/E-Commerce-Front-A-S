@@ -1,6 +1,6 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import ViewProduct from "../components/products/ViewProduct";
+import ViewProduct from "../../components/products/ViewProduct";
 
 const ProductDetails = ({ token }) => {
   const { id } = useParams();
