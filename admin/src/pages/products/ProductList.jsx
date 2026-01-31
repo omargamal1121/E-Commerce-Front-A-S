@@ -11,29 +11,42 @@ const ProductList = ({ token }) => {
   const [totalCount, setTotalCount] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState("all"); // all, active, inactive
+  const [deletedFilter, setDeletedFilter] = useState("all"); // all, deleted, not_deleted
   const pageSize = 12;
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await API.products.getAll(token);
-      const data = res?.responseBody?.data || [];
+      const filters = {
+        searchTerm,
+        page,
+        pageSize,
+        isActive: statusFilter === "active" ? true : statusFilter === "inactive" ? false : null,
+        includeDeleted: deletedFilter === "all" || deletedFilter === "deleted"
+      };
 
-      // Filter based on search term (client-side for responsiveness)
-      const filtered = data.filter(p =>
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.id.toString().includes(searchTerm)
-      );
+      const res = await API.products.list(filters, token);
+      let data = res?.responseBody?.data || [];
+      let total = res?.responseBody?.totalCount || 0;
 
-      setTotalCount(filtered.length);
-      const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
-      setProducts(paginated);
+      // If "deleted" filter is selected, we filter client-side if the API doesn't support "deletedOnly"
+      if (deletedFilter === "deleted") {
+        data = data.filter(p => p.isDeleted);
+        total = data.length; // This is a limitation of the current API if it only has includeDeleted
+      } else if (deletedFilter === "not_deleted") {
+        data = data.filter(p => !p.isDeleted);
+        total = data.length;
+      }
+
+      setProducts(data);
+      setTotalCount(total);
     } catch (error) {
       toast.error("Failed to load products");
     } finally {
       setLoading(false);
     }
-  }, [token, searchTerm, page]);
+  }, [token, searchTerm, page, statusFilter, deletedFilter]);
 
   useEffect(() => {
     fetchProducts();
@@ -57,6 +70,14 @@ const ProductList = ({ token }) => {
     } catch (e) { toast.error("Delete failed"); }
   };
 
+  const handleRestore = async (id) => {
+    try {
+      await API.products.restore(id, token);
+      toast.success("Product restored");
+      fetchProducts();
+    } catch (e) { toast.error("Restore failed"); }
+  };
+
   return (
     <div className="flex flex-col gap-10 animate-in slide-in-from-bottom-6 duration-700">
       {/* Search Products */}
@@ -72,7 +93,29 @@ const ProductList = ({ token }) => {
           <svg className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-hover:text-emerald-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex bg-gray-100 p-1.5 rounded-[22px] border border-gray-200 shadow-inner">
+            <select
+              value={statusFilter}
+              onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+              className="bg-transparent text-[11px] font-black uppercase tracking-widest px-4 py-2 outline-none cursor-pointer hover:text-emerald-600 transition-colors"
+            >
+              <option value="all">Statuses: All</option>
+              <option value="active">Active Only</option>
+              <option value="inactive">Inactive Only</option>
+            </select>
+            <div className="w-[1px] bg-gray-300 my-1"></div>
+            <select
+              value={deletedFilter}
+              onChange={(e) => { setDeletedFilter(e.target.value); setPage(1); }}
+              className="bg-transparent text-[11px] font-black uppercase tracking-widest px-4 py-2 outline-none cursor-pointer hover:text-emerald-600 transition-colors"
+            >
+              <option value="not_deleted">Trash: Exclude</option>
+              <option value="deleted">Trash: Only</option>
+              <option value="all">Trash: Include</option>
+            </select>
+          </div>
+
           <button onClick={() => navigate('/add')} className="px-10 py-4 bg-gray-900 text-white rounded-[24px] text-xs font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-xl hover:scale-[1.05] active:scale-95">
             Add New Product
           </button>
@@ -105,9 +148,15 @@ const ProductList = ({ token }) => {
 
                   {/* Status Overlay */}
                   <div className="absolute top-4 left-4 flex flex-col gap-2">
-                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-md border shadow-sm ${p.isActive ? "bg-emerald-500/80 text-white border-emerald-400" : "bg-gray-500/80 text-white border-gray-400"}`}>
-                      {p.isActive ? "Active" : "Inactive"}
-                    </span>
+                    {p.isDeleted ? (
+                      <span className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-600 text-white border border-rose-500 backdrop-blur-md shadow-sm">
+                        Deleted
+                      </span>
+                    ) : (
+                      <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-md border shadow-sm ${p.isActive ? "bg-emerald-500/80 text-white border-emerald-400" : "bg-gray-500/80 text-white border-gray-400"}`}>
+                        {p.isActive ? "Active" : "Inactive"}
+                      </span>
+                    )}
                     {hasDiscount && (
                       <span className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-500/80 text-white border border-rose-400 backdrop-blur-md shadow-sm">
                         -{p.discountPercentage}%
@@ -145,19 +194,32 @@ const ProductList = ({ token }) => {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => toggleStatus(p)}
-                        className={`p-3 rounded-2xl transition-all border ${p.isActive ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-gray-50 text-gray-400 border-gray-100"}`}
-                        title="Toggle Status"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                      </button>
-                      <button
-                        onClick={() => handleDelete(p.id)}
-                        className="p-3 bg-rose-50 text-rose-600 border border-rose-100 rounded-2xl hover:bg-rose-600 hover:text-white transition-all"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                      </button>
+                      {!p.isDeleted && (
+                        <button
+                          onClick={() => toggleStatus(p)}
+                          className={`p-3 rounded-2xl transition-all border ${p.isActive ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-gray-50 text-gray-400 border-gray-100"}`}
+                          title="Toggle Status"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                        </button>
+                      )}
+                      {p.isDeleted ? (
+                        <button
+                          onClick={() => handleRestore(p.id)}
+                          className="p-3 bg-blue-50 text-blue-600 border border-blue-100 rounded-2xl hover:bg-blue-600 hover:text-white transition-all"
+                          title="Restore Product"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleDelete(p.id)}
+                          className="p-3 bg-rose-50 text-rose-600 border border-rose-100 rounded-2xl hover:bg-rose-600 hover:text-white transition-all"
+                          title="Delete Product"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

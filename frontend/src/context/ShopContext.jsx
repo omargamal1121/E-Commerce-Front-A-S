@@ -777,7 +777,6 @@ const ShopContextProvider = (props) => {
     fetchWishlist,
     isInWishlist,
     clearWishlist,
-    clearWishlist,
     getWishlistCount,
     serverCart, // Expose server cart data
   };
