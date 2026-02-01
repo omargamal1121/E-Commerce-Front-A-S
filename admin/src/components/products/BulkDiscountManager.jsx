@@ -26,7 +26,10 @@ const BulkDiscountManager = ({ token }) => {
     try {
       const res = await API.products.getAll(token);
       const data = res?.responseBody?.data || [];
-      const filtered = data.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
+      // Filter out deleted products (deletedAt is null/undefined means not deleted)
+      const notDeleted = data.filter(p => p.deletedAt === null || p.deletedAt === undefined);
+      // Then filter by search term
+      const filtered = notDeleted.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
       setTotalCount(filtered.length);
       setProducts(filtered.slice((page - 1) * pageSize, page * pageSize));
     } catch (e) { toast.error("Asset sync failed"); }

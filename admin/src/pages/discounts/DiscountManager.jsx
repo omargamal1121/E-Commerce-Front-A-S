@@ -30,7 +30,7 @@ const DiscountManager = ({ token }) => {
   const fetchDiscounts = async () => {
     setLoading(true);
     try {
-      const res = await API.discounts.list({ page, pageSize }, token);
+      const res = await API.discounts.list({ page, pageSize, includeDeleted: true }, token);
       setDiscounts(res?.responseBody?.data || []);
       setTotalItems(res?.responseBody?.totalCount || 0);
     } catch (e) { toast.error("Failed to load discounts"); }
@@ -63,9 +63,61 @@ const DiscountManager = ({ token }) => {
     try {
       if (current) await API.discounts.deactivate(id, token);
       else await API.discounts.activate(id, token);
+      
+      // Update local state immediately for better UX
+      setDiscounts(prevDiscounts => 
+        prevDiscounts.map(d => 
+          d.id === id ? { ...d, isActive: !current } : d
+        )
+      );
+      
       toast.success("Status updated");
+      // Also refresh from server to ensure consistency
       fetchDiscounts();
-    } catch (e) { toast.error("Update failed"); }
+    } catch (e) { 
+      toast.error("Update failed");
+      // Refresh on error to revert any optimistic update
+      fetchDiscounts();
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this discount?")) return;
+    try {
+      await API.discounts.delete(id, token);
+      
+      // Update local state immediately
+      setDiscounts(prevDiscounts => 
+        prevDiscounts.map(d => 
+          d.id === id ? { ...d, deletedAt: new Date().toISOString() } : d
+        )
+      );
+      
+      toast.success("Discount deleted");
+      fetchDiscounts();
+    } catch (e) {
+      toast.error("Delete failed");
+      fetchDiscounts();
+    }
+  };
+
+  const handleRestore = async (id) => {
+    try {
+      await API.discounts.restore(id, token);
+      
+      // Update local state immediately
+      setDiscounts(prevDiscounts => 
+        prevDiscounts.map(d => 
+          d.id === id ? { ...d, deletedAt: null } : d
+        )
+      );
+      
+      toast.success("Discount restored");
+      fetchDiscounts();
+    } catch (e) {
+      toast.error("Restore failed");
+      fetchDiscounts();
+    }
   };
 
   return (
@@ -116,6 +168,8 @@ const DiscountManager = ({ token }) => {
               loading={loading}
               handleEditDiscount={handleEdit}
               handleToggleActive={handleToggle}
+              handleDeleteDiscount={handleDelete}
+              handleRestoreDiscount={handleRestore}
               fetchDiscounts={fetchDiscounts}
               currentPage={page}
               totalPages={Math.ceil(totalItems / pageSize)}

@@ -69,32 +69,54 @@ const DiscountList = ({
                   </div>
                 </td>
                 <td className="px-8 py-6">
-                  <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${d.isActive ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-rose-50 text-rose-600 border-rose-100"}`}>
-                    {d.isActive ? "Operational" : "Offline"}
-                  </span>
+                  {(d.deletedAt !== null && d.deletedAt !== undefined) ? (
+                    <span className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border bg-rose-600 text-white border-rose-500">
+                      Deleted
+                    </span>
+                  ) : (
+                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${d.isActive ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-rose-50 text-rose-600 border-rose-100"}`}>
+                      {d.isActive ? "Operational" : "Offline"}
+                    </span>
+                  )}
                 </td>
                 <td className="px-8 py-6">
                   <div className="flex items-center justify-end gap-2">
-                    <button
-                      onClick={() => handleToggleActive(d.id, d.isActive)}
-                      className={`p-3 rounded-2xl transition-all border ${d.isActive ? "bg-orange-50 text-orange-600 border-orange-100" : "bg-emerald-50 text-emerald-600 border-emerald-100"}`}
-                      title={d.isActive ? "Deactivate" : "Activate"}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                    </button>
-                    <button
-                      onClick={() => handleEditDiscount(d.id)}
-                      className="p-3 bg-white hover:bg-gray-900 hover:text-white border border-gray-100 rounded-2xl transition-all shadow-sm"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                    </button>
-                    {handleDeleteDiscount && (
-                      <button
-                        onClick={() => handleDeleteDiscount(d.id)}
-                        className="p-3 bg-rose-50 text-rose-600 border border-rose-100 rounded-2xl hover:bg-rose-600 hover:text-white transition-all shadow-sm"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                      </button>
+                    {(d.deletedAt === null || d.deletedAt === undefined) ? (
+                      <>
+                        <button
+                          onClick={() => handleToggleActive(d.id, d.isActive)}
+                          className={`p-3 rounded-2xl transition-all border ${d.isActive ? "bg-orange-50 text-orange-600 border-orange-100" : "bg-emerald-50 text-emerald-600 border-emerald-100"}`}
+                          title={d.isActive ? "Deactivate" : "Activate"}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                        </button>
+                        <button
+                          onClick={() => handleEditDiscount(d.id)}
+                          className="p-3 bg-white hover:bg-gray-900 hover:text-white border border-gray-100 rounded-2xl transition-all shadow-sm"
+                          title="Edit Discount"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                        </button>
+                        {handleDeleteDiscount && (
+                          <button
+                            onClick={() => handleDeleteDiscount(d.id)}
+                            className="p-3 bg-rose-50 text-rose-600 border border-rose-100 rounded-2xl hover:bg-rose-600 hover:text-white transition-all shadow-sm"
+                            title="Delete Discount"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      handleRestoreDiscount && (
+                        <button
+                          onClick={() => handleRestoreDiscount(d.id)}
+                          className="p-3 bg-blue-50 text-blue-600 border border-blue-100 rounded-2xl hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                          title="Restore Discount"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                        </button>
+                      )
                     )}
                   </div>
                 </td>
