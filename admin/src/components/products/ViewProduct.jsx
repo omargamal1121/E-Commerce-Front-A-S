@@ -101,7 +101,13 @@ const ViewProduct = ({ token, productId }) => {
   const isDeleted = product.deletedAt !== null && product.deletedAt !== undefined;
 
   const images = product.images || [];
-  const discountPercent = Number((product.discount && (product.discount.discountPercent ?? product.discount.percentage)) ?? product.discountPercentage ?? 0);
+  // Get discount percent from discount object or direct property
+  const discountPercent = Number(
+    product.discount?.discountPercent ?? 
+    product.discount?.percentage ?? 
+    product.discountPercentage ?? 
+    0
+  );
   const hasDiscount = discountPercent > 0;
 
   return (
@@ -217,15 +223,15 @@ const ViewProduct = ({ token, productId }) => {
           <div className="bg-gray-900 p-10 rounded-[48px] text-white shadow-2xl shadow-emerald-900/20">
             <div className="flex flex-col gap-2 mb-8">
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Price Info</span>
-              <div className="flex items-baseline gap-4">
+              <div className="flex items-baseline gap-4 flex-wrap">
                 {hasDiscount && product.finalPrice ? (
                   <>
-                    <span className="text-5xl font-black tracking-tighter text-emerald-400">{currency} {product.finalPrice.toFixed(2)}</span>
-                    <span className="text-xl text-gray-500 line-through font-bold">{currency} {product.price}</span>
+                    <span className="text-5xl font-black tracking-tighter text-emerald-400">{currency} {Number(product.finalPrice).toFixed(2)}</span>
+                    <span className="text-xl text-gray-500 line-through font-bold">{currency} {Number(product.price).toFixed(2)}</span>
                     <span className="text-sm font-bold text-emerald-400">-{discountPercent}%</span>
                   </>
                 ) : (
-                  <span className="text-5xl font-black tracking-tighter">{currency} {product.price}</span>
+                  <span className="text-5xl font-black tracking-tighter">{currency} {Number(product.price).toFixed(2)}</span>
                 )}
               </div>
             </div>

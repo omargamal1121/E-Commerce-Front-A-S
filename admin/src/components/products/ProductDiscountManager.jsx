@@ -131,6 +131,24 @@ const ProductDiscountManager = ({ productId, token }) => {
     <div className="bg-white p-4 rounded shadow">
       <h3 className="text-lg font-medium mb-4">Manage Discount for {product.name}</h3>
       
+      {/* Product Price Info */}
+      <div className="mb-6 p-4 border rounded bg-gray-50">
+        <h4 className="text-md font-medium mb-2">Product Pricing</h4>
+        <div className="flex items-baseline gap-3">
+          {product.finalPrice && product.finalPrice !== product.price ? (
+            <>
+              <span className="text-2xl font-bold text-emerald-600">${Number(product.finalPrice).toFixed(2)}</span>
+              <span className="text-lg text-gray-500 line-through">${Number(product.price).toFixed(2)}</span>
+              {product.discount?.discountPercent && (
+                <span className="text-sm font-bold text-emerald-600">-{product.discount.discountPercent}%</span>
+              )}
+            </>
+          ) : (
+            <span className="text-2xl font-bold">${Number(product.price).toFixed(2)}</span>
+          )}
+        </div>
+      </div>
+
       {/* Current Discount */}
       <div className="mb-6 p-4 border rounded">
         <h4 className="text-md font-medium mb-2">Current Discount</h4>

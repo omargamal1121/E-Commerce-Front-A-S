@@ -123,21 +123,43 @@ const BulkDiscountManager = ({ token }) => {
             {loadingProducts ? (
               [1, 2, 3, 4, 5, 6, 7, 8].map(i => <div key={i} className="aspect-square bg-gray-50 rounded-[32px] animate-pulse border border-gray-100" />)
             ) : (
-              products.map(p => (
-                <div
-                  key={p.id}
-                  onClick={() => setSelectedProductIds(prev => prev.includes(p.id) ? prev.filter(id => id !== p.id) : [...prev, p.id])}
-                  className={`group relative p-3 rounded-[32px] border transition-all cursor-pointer ${selectedProductIds.includes(p.id) ? "bg-purple-600 border-purple-600 shadow-xl shadow-purple-900/10" : "bg-gray-50 border-gray-100 hover:border-purple-200"}`}
-                >
-                  <div className="aspect-square rounded-[24px] overflow-hidden mb-3 bg-white shadow-inner">
-                    <img src={p.images?.[0]?.url || p.mainImage} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="" />
+              products.map(p => {
+                // Get discount info
+                const discountPercent = p.discount?.discountPercent ?? p.discountPercentage ?? 0;
+                const hasDiscount = discountPercent > 0;
+                const finalPrice = p.finalPrice ?? p.price;
+                
+                return (
+                  <div
+                    key={p.id}
+                    onClick={() => setSelectedProductIds(prev => prev.includes(p.id) ? prev.filter(id => id !== p.id) : [...prev, p.id])}
+                    className={`group relative p-3 rounded-[32px] border transition-all cursor-pointer ${selectedProductIds.includes(p.id) ? "bg-purple-600 border-purple-600 shadow-xl shadow-purple-900/10" : "bg-gray-50 border-gray-100 hover:border-purple-200"}`}
+                  >
+                    <div className="aspect-square rounded-[24px] overflow-hidden mb-3 bg-white shadow-inner relative">
+                      <img src={p.images?.[0]?.url || p.mainImage} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="" />
+                      {hasDiscount && (
+                        <div className="absolute top-2 left-2 px-2 py-1 bg-rose-500 text-white rounded-full text-[8px] font-black uppercase">
+                          -{discountPercent}%
+                        </div>
+                      )}
+                    </div>
+                    <p className={`text-[10px] font-black uppercase tracking-tighter truncate text-center mb-1 ${selectedProductIds.includes(p.id) ? "text-white" : "text-gray-900"}`}>{p.name}</p>
+                    <div className={`text-[9px] font-bold text-center ${selectedProductIds.includes(p.id) ? "text-purple-200" : "text-gray-500"}`}>
+                      {hasDiscount && finalPrice ? (
+                        <>
+                          <span className="text-emerald-500">{finalPrice.toFixed(2)}</span>
+                          <span className="line-through opacity-60 ml-1">{p.price.toFixed(2)}</span>
+                        </>
+                      ) : (
+                        <span>{p.price.toFixed(2)}</span>
+                      )}
+                    </div>
+                    {selectedProductIds.includes(p.id) && (
+                      <div className="absolute top-2 right-2 w-6 h-6 bg-white text-purple-600 rounded-full flex items-center justify-center text-xs font-black shadow-lg animate-in zoom-in-50">✓</div>
+                    )}
                   </div>
-                  <p className={`text-[10px] font-black uppercase tracking-tighter truncate text-center ${selectedProductIds.includes(p.id) ? "text-white" : "text-gray-900"}`}>{p.name}</p>
-                  {selectedProductIds.includes(p.id) && (
-                    <div className="absolute top-2 right-2 w-6 h-6 bg-white text-purple-600 rounded-full flex items-center justify-center text-xs font-black shadow-lg animate-in zoom-in-50">✓</div>
-                  )}
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
