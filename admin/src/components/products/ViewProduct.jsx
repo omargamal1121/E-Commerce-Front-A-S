@@ -85,16 +85,53 @@ const ViewProduct = ({ token, productId }) => {
   return (
     <div className="flex flex-col gap-10 animate-in slide-in-from-bottom-10 duration-1000">
 
+      {/* Deleted Product Alert Banner */}
+      {product.isDeleted && (
+        <div className="bg-rose-500/10 border-2 border-rose-500 rounded-[32px] p-6 flex items-center justify-between gap-6 animate-in slide-in-from-top-4 duration-500">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-rose-500 rounded-full flex items-center justify-center text-2xl">
+              ⚠️
+            </div>
+            <div className="flex flex-col">
+              <span className="text-lg font-black text-rose-600 uppercase tracking-tighter">
+                This Product Has Been Deleted
+              </span>
+              <span className="text-sm font-bold text-rose-500/80">
+                Restore the product to make it available again
+              </span>
+            </div>
+          </div>
+          <button 
+            onClick={handleRestore} 
+            disabled={actionLoading}
+            className="px-8 py-4 bg-blue-500 hover:bg-blue-600 text-white rounded-[24px] text-xs font-black uppercase tracking-widest transition-all shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {actionLoading ? "Restoring..." : "Restore Product"}
+          </button>
+        </div>
+      )}
+
       {/* Immersive Product Showcase */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
 
         {/* Visual Engine */}
         <div className="lg:col-span-7 flex flex-col gap-6">
-          <div className="relative aspect-[4/5] bg-white rounded-[56px] overflow-hidden border border-gray-100 shadow-2xl group">
+          <div className={`relative aspect-[4/5] bg-white rounded-[56px] overflow-hidden border shadow-2xl group ${product.isDeleted ? "border-rose-500/50" : "border-gray-100"}`}>
+            {product.isDeleted && (
+              <div className="absolute inset-0 bg-rose-500/20 backdrop-blur-[2px] z-10 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-6xl mb-4">🗑️</div>
+                  <span className="text-2xl font-black text-rose-600 uppercase tracking-widest">Deleted</span>
+                </div>
+              </div>
+            )}
             {images[selectedImageIndex] ? (
               <img
                 src={images[selectedImageIndex].url}
-                className="w-full h-full object-cover transition-transform duration-[2000ms] group-hover:scale-110"
+                className={`w-full h-full object-cover transition-transform duration-[2000ms] group-hover:scale-110 ${product.isDeleted ? "opacity-50 grayscale" : ""}`}
                 alt={product.name}
               />
             ) : (
@@ -140,11 +177,16 @@ const ViewProduct = ({ token, productId }) => {
             <div className="flex items-center gap-4">
               <span className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500">ID: {product.id}</span>
               <div className="h-px flex-1 bg-gray-100" />
+              {product.isDeleted && (
+                <span className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-600 text-white border border-rose-500 animate-pulse">
+                  DELETED
+                </span>
+              )}
             </div>
-            <h1 className="text-5xl font-black text-gray-900 leading-[0.9] uppercase tracking-tighter">
+            <h1 className={`text-5xl font-black leading-[0.9] uppercase tracking-tighter ${product.isDeleted ? "text-rose-500 line-through" : "text-gray-900"}`}>
               {product.name}
             </h1>
-            <p className="text-gray-500 font-medium text-lg leading-relaxed mt-4">
+            <p className={`font-medium text-lg leading-relaxed mt-4 ${product.isDeleted ? "text-rose-400" : "text-gray-500"}`}>
               {product.description}
             </p>
           </div>
