@@ -37,9 +37,11 @@ const DiscountManager = ({ token }) => {
         pageSize,
       };
 
-      // Pass deleted filter to API: only pass if "all" or "deleted", don't pass for "not_deleted"
-      if (deletedFilter === "all" || deletedFilter === "deleted") {
-        params.includeDeleted = true;
+      // Pass deleted filter to API
+      if (deletedFilter === "all") {
+        params.includeDeleted = null; // Pass null for "all"
+      } else if (deletedFilter === "deleted") {
+        params.includeDeleted = true; // Pass true for "deleted"
       }
       // For "not_deleted", don't pass includeDeleted - API will handle it
 

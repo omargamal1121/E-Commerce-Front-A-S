@@ -136,12 +136,18 @@ const API = {
           queryParams.append("page", page);
           queryParams.append("pageSize", pageSize);
 
-          if (filters.isActive !== undefined) {
+          if (filters.isActive !== undefined && filters.isActive !== null) {
             queryParams.append("isActive", filters.isActive);
+          } else if (filters.isActive === null) {
+            queryParams.append("isActive", "null");
           }
 
-          if (filters.includeDeleted) {
-            queryParams.append("includeDeleted", filters.includeDeleted);
+          if (filters.includeDeleted !== undefined) {
+            if (filters.includeDeleted === null) {
+              queryParams.append("includeDeleted", "null");
+            } else {
+              queryParams.append("includeDeleted", filters.includeDeleted);
+            }
           }
           const requestBody = {
             searchTerm: filters.searchTerm || "",
@@ -234,10 +240,19 @@ const API = {
         const mergedFilters = { ...filters, ...extractedFilters };
 
         // Add filter parameters if they exist
-        if (mergedFilters.isActive !== null)
+        if (mergedFilters.isActive !== undefined && mergedFilters.isActive !== null) {
           params.append("isActive", mergedFilters.isActive);
-        if (mergedFilters.includeDeleted)
-          params.append("includeDeleted", mergedFilters.includeDeleted);
+        } else if (mergedFilters.isActive === null) {
+          params.append("isActive", "null");
+        }
+        
+        if (mergedFilters.includeDeleted !== undefined) {
+          if (mergedFilters.includeDeleted === null) {
+            params.append("includeDeleted", "null");
+          } else {
+            params.append("includeDeleted", mergedFilters.includeDeleted);
+          }
+        }
         if (mergedFilters.subcategoryId)
           params.append("subcategoryId", mergedFilters.subcategoryId);
         if (mergedFilters.gender) params.append("gender", mergedFilters.gender);

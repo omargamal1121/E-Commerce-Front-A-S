@@ -22,12 +22,14 @@ const ProductList = ({ token }) => {
         searchTerm,
         page,
         pageSize,
-        isActive: statusFilter === "active" ? true : statusFilter === "inactive" ? false : null,
+        isActive: statusFilter === "active" ? true : statusFilter === "inactive" ? false : null, // null for "all"
       };
 
-      // Pass deleted filter to API: only pass if "all" or "deleted", don't pass for "not_deleted"
-      if (deletedFilter === "all" || deletedFilter === "deleted") {
-        filters.includeDeleted = true;
+      // Pass deleted filter to API
+      if (deletedFilter === "all") {
+        filters.includeDeleted = null; // Pass null for "all"
+      } else if (deletedFilter === "deleted") {
+        filters.includeDeleted = true; // Pass true for "deleted"
       }
       // For "not_deleted", don't pass includeDeleted - API will handle it
 
