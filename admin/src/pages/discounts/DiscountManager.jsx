@@ -31,7 +31,14 @@ const DiscountManager = ({ token }) => {
     setLoading(true);
     try {
       const res = await API.discounts.list({ page, pageSize, includeDeleted: true }, token);
-      setDiscounts(res?.responseBody?.data || []);
+      const data = res?.responseBody?.data || [];
+      
+      // Debug: Log first discount to see structure
+      if (data.length > 0) {
+        console.log("Sample discount from API:", data[0]);
+      }
+      
+      setDiscounts(data);
       setTotalItems(res?.responseBody?.totalCount || 0);
     } catch (e) { toast.error("Failed to load discounts"); }
     finally { setLoading(false); }

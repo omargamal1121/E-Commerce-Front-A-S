@@ -1,5 +1,4 @@
 import React from "react";
-import { currency } from "../../App";
 
 const DiscountList = ({
   discounts,
@@ -8,8 +7,6 @@ const DiscountList = ({
   handleDeleteDiscount,
   handleToggleActive,
   handleRestoreDiscount,
-  handleCalculateDiscount,
-  fetchDiscounts,
   currentPage,
   totalPages,
   handlePreviousPage,
@@ -25,7 +22,7 @@ const DiscountList = ({
   if (!discounts.length) return (
     <div className="bg-white p-20 rounded-[48px] border border-gray-100 text-center flex flex-col items-center gap-6">
       <div className="text-7xl opacity-20">🏷️</div>
-      <p className="text-gray-400 font-black uppercase tracking-[0.3em] text-xs">Campaign Registry Empty</p>
+      <p className="text-gray-400 font-black uppercase tracking-[0.3em] text-xs">No Discounts Found</p>
     </div>
   );
 
@@ -35,10 +32,10 @@ const DiscountList = ({
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-gray-50/50">
-              <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Identity</th>
-              <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Magnitude</th>
-              <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Temporal Range</th>
-              <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Protocol Status</th>
+              <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Name</th>
+              <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Discount</th>
+              <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Date Range</th>
+              <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Status</th>
               <th className="px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 text-right">Actions</th>
             </tr>
           </thead>
@@ -48,7 +45,7 @@ const DiscountList = ({
                 <td className="px-8 py-6">
                   <div className="flex flex-col">
                     <span className="text-sm font-black text-gray-900 uppercase tracking-tight">{d.name}</span>
-                    <span className="text-[10px] font-bold text-gray-400 truncate max-w-[200px]">{d.description || "No metadata provided"}</span>
+                    <span className="text-[10px] font-bold text-gray-400 truncate max-w-[200px]">{d.description || "No description"}</span>
                   </div>
                 </td>
                 <td className="px-8 py-6">
@@ -70,10 +67,8 @@ const DiscountList = ({
                 </td>
                 <td className="px-8 py-6">
                   {(() => {
-                    // Check if discount is deleted
-                    // A discount is deleted only if deletedAt has a truthy value (not null, undefined, or empty string)
-                    // OR if isDeleted is explicitly true
-                    const isDeleted = (d.deletedAt && d.deletedAt !== null && d.deletedAt !== "") || d.isDeleted === true;
+                    // Check if discount is deleted - only if deletedAt has a real value
+                    const isDeleted = d.deletedAt && d.deletedAt !== null && d.deletedAt !== "";
                     
                     if (isDeleted) {
                       return (
@@ -85,7 +80,7 @@ const DiscountList = ({
                     
                     return (
                       <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${d.isActive ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-rose-50 text-rose-600 border-rose-100"}`}>
-                        {d.isActive ? "Operational" : "Offline"}
+                        {d.isActive ? "Active" : "Inactive"}
                       </span>
                     );
                   })()}
@@ -93,17 +88,15 @@ const DiscountList = ({
                 <td className="px-8 py-6">
                   <div className="flex items-center justify-end gap-2">
                     {(() => {
-                      // Check if discount is deleted
-                      // A discount is deleted only if deletedAt has a truthy value (not null, undefined, or empty string)
-                      // OR if isDeleted is explicitly true
-                      const isDeleted = (d.deletedAt && d.deletedAt !== null && d.deletedAt !== "") || d.isDeleted === true;
+                      // Check if discount is deleted - only if deletedAt has a real value
+                      const isDeleted = d.deletedAt && d.deletedAt !== null && d.deletedAt !== "";
                       
                       if (isDeleted) {
                         return handleRestoreDiscount ? (
                           <button
                             onClick={() => handleRestoreDiscount(d.id)}
                             className="p-3 bg-blue-50 text-blue-600 border border-blue-100 rounded-2xl hover:bg-blue-600 hover:text-white transition-all shadow-sm"
-                            title="Restore Discount"
+                            title="Restore"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
                           </button>
@@ -122,7 +115,7 @@ const DiscountList = ({
                           <button
                             onClick={() => handleEditDiscount(d.id)}
                             className="p-3 bg-white hover:bg-gray-900 hover:text-white border border-gray-100 rounded-2xl transition-all shadow-sm"
-                            title="Edit/Update Discount"
+                            title="Edit"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                           </button>
@@ -130,7 +123,7 @@ const DiscountList = ({
                             <button
                               onClick={() => handleDeleteDiscount(d.id)}
                               className="p-3 bg-rose-50 text-rose-600 border border-rose-100 rounded-2xl hover:bg-rose-600 hover:text-white transition-all shadow-sm"
-                              title="Delete Discount"
+                              title="Delete"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                             </button>
