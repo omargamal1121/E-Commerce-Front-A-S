@@ -19,6 +19,8 @@ const DiscountManager = ({ token }) => {
   const [loading, setLoading] = useState(false);
   const [totalItems, setTotalItems] = useState(0);
   const [page, setPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState("all"); // all, active, inactive
+  const [deletedFilter, setDeletedFilter] = useState("not_deleted"); // all, deleted, not_deleted
   const pageSize = 10;
 
   // Form State
@@ -30,8 +32,23 @@ const DiscountManager = ({ token }) => {
   const fetchDiscounts = async () => {
     setLoading(true);
     try {
-      const res = await API.discounts.list({ page, pageSize, includeDeleted: true }, token);
-      const data = res?.responseBody?.data || [];
+      const res = await API.discounts.list({ page, pageSize, includeDeleted: deletedFilter === "all" || deletedFilter === "deleted" }, token);
+      let data = res?.responseBody?.data || [];
+      
+      // Filter by status
+      if (statusFilter === "active") {
+        data = data.filter(d => d.isActive === true);
+      } else if (statusFilter === "inactive") {
+        data = data.filter(d => d.isActive === false);
+      }
+      
+      // Filter by deleted status
+      if (deletedFilter === "deleted") {
+        data = data.filter(d => d.deletedAt !== null && d.deletedAt !== undefined);
+      } else if (deletedFilter === "not_deleted") {
+        data = data.filter(d => d.deletedAt === null || d.deletedAt === undefined);
+      }
+      
       setDiscounts(data);
       setTotalItems(res?.responseBody?.totalCount || 0);
     } catch (e) { toast.error("Failed to load discounts"); }
@@ -40,7 +57,12 @@ const DiscountManager = ({ token }) => {
 
   useEffect(() => {
     fetchDiscounts();
-  }, [token, page]);
+  }, [token, page, statusFilter, deletedFilter]);
+  
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, deletedFilter]);
 
   const handleEdit = async (id) => {
     try {
@@ -164,6 +186,40 @@ const DiscountManager = ({ token }) => {
       <div className="min-h-[600px]">
         {activeTab === "registry" && (
           <div className="flex flex-col gap-6 animate-in slide-in-from-bottom-8 duration-700">
+            {/* Filters */}
+            <div className="bg-white/80 backdrop-blur-md p-6 rounded-[40px] border border-gray-100 shadow-sm flex flex-wrap items-center gap-4">
+              <div className="flex flex-col gap-2">
+                <div className="flex bg-gray-100 p-1.5 rounded-[22px] border border-gray-200 shadow-inner">
+                  <div className="flex items-center px-3">
+                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Status:</span>
+                  </div>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+                    className="bg-transparent text-[11px] font-black uppercase tracking-widest px-4 py-2 outline-none cursor-pointer hover:text-purple-600 transition-colors"
+                  >
+                    <option value="all">All</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
+                <div className="flex bg-gray-100 p-1.5 rounded-[22px] border border-gray-200 shadow-inner">
+                  <div className="flex items-center px-3">
+                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Delete:</span>
+                  </div>
+                  <select
+                    value={deletedFilter}
+                    onChange={(e) => { setDeletedFilter(e.target.value); setPage(1); }}
+                    className="bg-transparent text-[11px] font-black uppercase tracking-widest px-4 py-2 outline-none cursor-pointer hover:text-purple-600 transition-colors"
+                  >
+                    <option value="all">All</option>
+                    <option value="deleted">Deleted</option>
+                    <option value="not_deleted">Not Deleted</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            
             <DiscountList
               discounts={discounts}
               loading={loading}
