@@ -9,6 +9,7 @@ const ViewProduct = ({ token, productId }) => {
   const [variants, setVariants] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [actionLoading, setActionLoading] = useState(false);
   const navigate = useNavigate();
 
   const fetchProduct = useCallback(async () => {
@@ -17,7 +18,9 @@ const ViewProduct = ({ token, productId }) => {
     try {
       const res = await API.products.getById(productId, token);
       setProduct(res?.responseBody?.data || null);
-    } catch (err) { toast.error("Failed to load product details"); }
+    } catch {
+      toast.error("Failed to load product details");
+    }
     finally { setLoading(false); }
   }, [productId, token]);
 
@@ -26,7 +29,9 @@ const ViewProduct = ({ token, productId }) => {
     try {
       const res = await API.variants.getByProductId(productId, token);
       setVariants(res?.responseBody?.data || []);
-    } catch (err) { console.error("Failed to load variants"); }
+    } catch {
+      console.error("Failed to load variants");
+    }
   }, [productId, token]);
 
   useEffect(() => {
@@ -35,6 +40,35 @@ const ViewProduct = ({ token, productId }) => {
       fetchVariants();
     }
   }, [productId, fetchProduct, fetchVariants]);
+
+  const handleDelete = async () => {
+    if (!product) return;
+    if (!window.confirm("Are you sure you want to delete this product?")) return;
+    setActionLoading(true);
+    try {
+      await API.products.delete(product.id, token);
+      toast.success("Product deleted");
+      fetchProduct();
+    } catch {
+      toast.error("Delete failed");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    if (!product) return;
+    setActionLoading(true);
+    try {
+      await API.products.restore(product.id, token);
+      toast.success("Product restored");
+      fetchProduct();
+    } catch {
+      toast.error("Restore failed");
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   if (loading && !product) return (
     <div className="flex flex-col gap-10 animate-pulse">
@@ -69,9 +103,15 @@ const ViewProduct = ({ token, productId }) => {
 
             {/* Status & Overlays */}
             <div className="absolute top-10 left-10 flex flex-col gap-3">
-              <span className={`px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest backdrop-blur-xl border ${product.isActive ? "bg-emerald-500/80 text-white border-emerald-400" : "bg-rose-500/80 text-white border-rose-400"}`}>
-                {product.isActive ? "Active" : "Inactive"}
-              </span>
+              {product.isDeleted ? (
+                <span className="px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest bg-rose-600 text-white border border-rose-500 backdrop-blur-xl">
+                  Deleted
+                </span>
+              ) : (
+                <span className={`px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest backdrop-blur-xl border ${product.isActive ? "bg-emerald-500/80 text-white border-emerald-400" : "bg-rose-500/80 text-white border-rose-400"}`}>
+                  {product.isActive ? "Active" : "Inactive"}
+                </span>
+              )}
               {hasDiscount && (
                 <span className="px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest bg-emerald-400 text-gray-900 border border-emerald-300 backdrop-blur-xl">
                   -{discountPercent}% Discount
@@ -135,12 +175,32 @@ const ViewProduct = ({ token, productId }) => {
             </div>
 
             <div className="flex flex-col gap-4 mt-8">
-              <button onClick={() => navigate(`/add?edit=${product.id}`)} className="w-full py-5 bg-emerald-500 hover:bg-emerald-400 text-gray-900 rounded-[32px] text-xs font-black uppercase tracking-[0.2em] transition-all shadow-xl hover:scale-[1.02]">
-                Edit Product
-              </button>
-              <button onClick={() => navigate(`/products/${product.id}/variants`)} className="w-full py-5 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-[32px] text-xs font-black uppercase tracking-[0.2em] transition-all">
-                Manage Variants
-              </button>
+              {!product.isDeleted && (
+                <>
+                  <button onClick={() => navigate(`/add?edit=${product.id}`)} className="w-full py-5 bg-emerald-500 hover:bg-emerald-400 text-gray-900 rounded-[32px] text-xs font-black uppercase tracking-[0.2em] transition-all shadow-xl hover:scale-[1.02]">
+                    Edit Product
+                  </button>
+                  <button onClick={() => navigate(`/products/${product.id}/variants`)} className="w-full py-5 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-[32px] text-xs font-black uppercase tracking-[0.2em] transition-all">
+                    Manage Variants
+                  </button>
+                  <button 
+                    onClick={handleDelete} 
+                    disabled={actionLoading}
+                    className="w-full py-5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border border-rose-500/30 rounded-[32px] text-xs font-black uppercase tracking-[0.2em] transition-all disabled:opacity-50"
+                  >
+                    {actionLoading ? "Deleting..." : "Delete Product"}
+                  </button>
+                </>
+              )}
+              {product.isDeleted && (
+                <button 
+                  onClick={handleRestore} 
+                  disabled={actionLoading}
+                  className="w-full py-5 bg-blue-500 hover:bg-blue-400 text-white rounded-[32px] text-xs font-black uppercase tracking-[0.2em] transition-all shadow-xl hover:scale-[1.02] disabled:opacity-50"
+                >
+                  {actionLoading ? "Restoring..." : "Restore Product"}
+                </button>
+              )}
             </div>
           </div>
 

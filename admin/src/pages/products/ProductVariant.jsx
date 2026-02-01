@@ -21,6 +21,7 @@ const ProductVariant = ({ token }) => {
 
   const [selectedVariantId, setSelectedVariantId] = useState(null);
   const [adjustQuantity, setAdjustQuantity] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
 
   const SIZE_OPTIONS = [
     { value: 0, label: "XS" }, { value: 1, label: "S" }, { value: 2, label: "M" },
@@ -32,7 +33,13 @@ const ProductVariant = ({ token }) => {
     try {
       const res = await API.products.getById(productId, token);
       setProduct(res.responseBody.data);
-    } catch (e) { toast.error("Failed to load product"); }
+    } catch (e) {
+      if (e.response?.status === 404) {
+        toast.error("Product not found or deleted. Please restore it first.");
+      } else {
+        toast.error("Failed to load product");
+      }
+    }
     finally { setLoading(false); }
   };
 
@@ -67,7 +74,13 @@ const ProductVariant = ({ token }) => {
       toast.success("Variant added");
       setColor(""); setSize(""); setWaist(""); setLength(""); setQuantity("");
       fetchVariants();
-    } catch (e) { toast.error("Failed to add variant"); }
+    } catch (e) {
+      if (e.response?.status === 404) {
+        toast.error("Product is deleted. Please restore it first before adding variants.");
+      } else {
+        toast.error("Failed to add variant");
+      }
+    }
     finally { setLoading(false); }
   };
 
@@ -100,6 +113,21 @@ const ProductVariant = ({ token }) => {
     }
   };
 
+  const handleRestoreProduct = async () => {
+    if (!product) return;
+    setActionLoading(true);
+    try {
+      await API.products.restore(product.id, token);
+      toast.success("Product restored");
+      fetchProduct();
+      fetchVariants();
+    } catch (e) {
+      toast.error("Restore failed");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-10 max-w-[1400px] mx-auto animate-in fade-in duration-700 pb-20">
 
@@ -110,13 +138,31 @@ const ProductVariant = ({ token }) => {
             🧬
           </div>
           <div>
-            <h1 className="text-3xl font-black text-gray-900 tracking-tighter uppercase">{product?.name || "Product"} Variants</h1>
+            <div className="flex items-center gap-4">
+              <h1 className="text-3xl font-black text-gray-900 tracking-tighter uppercase">{product?.name || "Product"} Variants</h1>
+              {product?.isDeleted && (
+                <span className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-600 text-white border border-rose-500">
+                  Deleted
+                </span>
+              )}
+            </div>
             <p className="text-gray-400 font-bold text-[10px] uppercase tracking-[0.3em] mt-1">Manage variations and stock levels</p>
           </div>
         </div>
-        <button onClick={() => navigate('/products')} className="px-8 py-3 bg-gray-50 border border-gray-100 rounded-[22px] text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 transition-all">
-          Back to Products
-        </button>
+        <div className="flex items-center gap-4">
+          {product?.isDeleted && (
+            <button 
+              onClick={handleRestoreProduct} 
+              disabled={actionLoading}
+              className="px-8 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-[22px] text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50"
+            >
+              {actionLoading ? "Restoring..." : "Restore Product"}
+            </button>
+          )}
+          <button onClick={() => navigate('/products')} className="px-8 py-3 bg-gray-50 border border-gray-100 rounded-[22px] text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 transition-all">
+            Back to Products
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
@@ -128,41 +174,50 @@ const ProductVariant = ({ token }) => {
               <h3 className="text-xl font-black uppercase tracking-tighter">Add New Variant</h3>
             </div>
 
-            <form onSubmit={handleAddVariant} className="flex flex-col gap-6">
-              {[
-                { label: "Color", state: color, set: setColor, type: "text", p: "e.g. Black, Red..." },
-                { label: "Waist Size", state: waist, set: setWaist, type: "number", p: "0" },
-                { label: "Length Size", state: length, set: setLength, type: "number", p: "0" },
-                { label: "Initial Stock", state: quantity, set: setQuantity, type: "number", p: "0" },
-              ].map(f => (
-                <div key={f.label} className="flex flex-col gap-2">
-                  <label className="text-[9px] font-bold uppercase text-gray-500 tracking-widest ml-1">{f.label}</label>
-                  <input
-                    type={f.type} value={f.state} onChange={(e) => f.set(e.target.value)}
-                    className="bg-white/5 border border-white/10 rounded-2xl px-6 py-3.5 outline-none focus:border-blue-500 font-bold text-sm transition-all"
-                    placeholder={f.p}
-                  />
-                </div>
-              ))}
-
-              <div className="flex flex-col gap-2">
-                <label className="text-[9px] font-bold uppercase text-gray-500 tracking-widest ml-1">Size</label>
-                <select
-                  value={size} onChange={(e) => setSize(e.target.value)}
-                  className="bg-white/5 border border-white/10 rounded-2xl px-6 py-3.5 outline-none focus:border-blue-500 font-bold text-sm transition-all appearance-none"
-                >
-                  <option value="" className="bg-gray-900">Select Size</option>
-                  {SIZE_OPTIONS.map(o => <option key={o.value} value={o.value} className="bg-gray-900">{o.label}</option>)}
-                </select>
+            {product?.isDeleted ? (
+              <div className="flex flex-col items-center gap-4 p-8 bg-rose-500/10 border border-rose-500/20 rounded-2xl">
+                <div className="text-4xl">⚠️</div>
+                <p className="text-center text-white/80 font-bold text-sm">
+                  This product is deleted. Please restore it first before adding variants.
+                </p>
               </div>
+            ) : (
+              <form onSubmit={handleAddVariant} className="flex flex-col gap-6">
+                {[
+                  { label: "Color", state: color, set: setColor, type: "text", p: "e.g. Black, Red..." },
+                  { label: "Waist Size", state: waist, set: setWaist, type: "number", p: "0" },
+                  { label: "Length Size", state: length, set: setLength, type: "number", p: "0" },
+                  { label: "Initial Stock", state: quantity, set: setQuantity, type: "number", p: "0" },
+                ].map(f => (
+                  <div key={f.label} className="flex flex-col gap-2">
+                    <label className="text-[9px] font-bold uppercase text-gray-500 tracking-widest ml-1">{f.label}</label>
+                    <input
+                      type={f.type} value={f.state} onChange={(e) => f.set(e.target.value)}
+                      className="bg-white/5 border border-white/10 rounded-2xl px-6 py-3.5 outline-none focus:border-blue-500 font-bold text-sm transition-all"
+                      placeholder={f.p}
+                    />
+                  </div>
+                ))}
 
-              <button
-                type="submit" disabled={loading}
-                className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-[28px] text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-blue-900/50 active:scale-95 disabled:opacity-20"
-              >
-                {loading ? "Adding..." : "Add Variant"}
-              </button>
-            </form>
+                <div className="flex flex-col gap-2">
+                  <label className="text-[9px] font-bold uppercase text-gray-500 tracking-widest ml-1">Size</label>
+                  <select
+                    value={size} onChange={(e) => setSize(e.target.value)}
+                    className="bg-white/5 border border-white/10 rounded-2xl px-6 py-3.5 outline-none focus:border-blue-500 font-bold text-sm transition-all appearance-none"
+                  >
+                    <option value="" className="bg-gray-900">Select Size</option>
+                    {SIZE_OPTIONS.map(o => <option key={o.value} value={o.value} className="bg-gray-900">{o.label}</option>)}
+                  </select>
+                </div>
+
+                <button
+                  type="submit" disabled={loading}
+                  className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-[28px] text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-blue-900/50 active:scale-95 disabled:opacity-20"
+                >
+                  {loading ? "Adding..." : "Add Variant"}
+                </button>
+              </form>
+            )}
           </div>
         </div>
 
