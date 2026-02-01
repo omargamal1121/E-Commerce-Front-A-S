@@ -218,8 +218,15 @@ const ViewProduct = ({ token, productId }) => {
             <div className="flex flex-col gap-2 mb-8">
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Price Info</span>
               <div className="flex items-baseline gap-4">
-                <span className="text-5xl font-black tracking-tighter">{currency} {product.price}</span>
-                {hasDiscount && <span className="text-xl text-gray-500 line-through font-bold">{currency} {product.price}</span>}
+                {hasDiscount && product.finalPrice ? (
+                  <>
+                    <span className="text-5xl font-black tracking-tighter text-emerald-400">{currency} {product.finalPrice.toFixed(2)}</span>
+                    <span className="text-xl text-gray-500 line-through font-bold">{currency} {product.price}</span>
+                    <span className="text-sm font-bold text-emerald-400">-{discountPercent}%</span>
+                  </>
+                ) : (
+                  <span className="text-5xl font-black tracking-tighter">{currency} {product.price}</span>
+                )}
               </div>
             </div>
 

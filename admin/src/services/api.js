@@ -553,8 +553,7 @@ const API = {
           {
             headers: {
               Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json-patch+json",
-              Accept: "text/plain",
+              "Content-Type": "application/json",
             },
           }
         );

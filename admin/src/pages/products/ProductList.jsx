@@ -141,7 +141,9 @@ const ProductList = ({ token }) => {
           </div>
         ) : (
           products.map((p) => {
-            const hasDiscount = p.discountPercentage > 0;
+            // Get discount percent from discount object or direct property
+            const discountPercent = p.discount?.discountPercent || p.discountPercentage || 0;
+            const hasDiscount = discountPercent > 0;
             return (
               <div key={p.id} className="group relative bg-white rounded-[48px] border border-gray-100 p-4 hover:shadow-2xl hover:shadow-emerald-900/5 transition-all duration-500 hover:-translate-y-3">
                 {/* Product Image */}
@@ -165,7 +167,7 @@ const ProductList = ({ token }) => {
                     )}
                     {hasDiscount && (
                       <span className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-500/80 text-white border border-rose-400 backdrop-blur-md shadow-sm">
-                        -{p.discountPercentage}%
+                        -{discountPercent}%
                       </span>
                     )}
                   </div>
