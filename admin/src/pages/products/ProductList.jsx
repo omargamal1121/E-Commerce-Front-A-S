@@ -116,9 +116,9 @@ const ProductList = ({ token }) => {
               onChange={(e) => { setDeletedFilter(e.target.value); setPage(1); }}
               className="bg-transparent text-[11px] font-black uppercase tracking-widest px-4 py-2 outline-none cursor-pointer hover:text-emerald-600 transition-colors"
             >
-              <option value="not_deleted">Not Deleted</option>
+              <option value="not_deleted">Not</option>
               <option value="deleted">Deleted</option>
-              <option value="all">All</option>
+              <option value="all">Include</option>
             </select>
           </div>
 
@@ -141,15 +141,8 @@ const ProductList = ({ token }) => {
           </div>
         ) : (
           products.map((p) => {
-            // Get discount percent from discount object or direct property
-            // Check multiple possible locations for discount info
-            const discountPercent = Number(
-              p.discount?.discountPercent ?? 
-              p.discount?.percentage ?? 
-              p.discountPercentage ?? 
-              p.discountPrecentage ?? 
-              0
-            );
+            // Get discount percent - API uses discountPrecentage (with typo)
+            const discountPercent = Number(p.discountPrecentage ?? p.discountPercentage ?? p.discount?.discountPercent ?? 0);
             const hasDiscount = discountPercent > 0;
             const finalPrice = p.finalPrice ?? p.price;
             
