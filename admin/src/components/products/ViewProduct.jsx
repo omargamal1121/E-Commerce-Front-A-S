@@ -70,6 +70,25 @@ const ViewProduct = ({ token, productId }) => {
     }
   };
 
+  const handleToggleStatus = async () => {
+    if (!product) return;
+    setActionLoading(true);
+    try {
+      if (product.isActive) {
+        await API.products.deactivate(product.id, token);
+        toast.success("Product deactivated");
+      } else {
+        await API.products.activate(product.id, token);
+        toast.success("Product activated");
+      }
+      fetchProduct();
+    } catch {
+      toast.error("Failed to update status");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   if (loading && !product) return (
     <div className="flex flex-col gap-10 animate-pulse">
       <div className="h-[500px] bg-gray-100 rounded-[48px]" />
@@ -227,6 +246,17 @@ const ViewProduct = ({ token, productId }) => {
                   </button>
                   <button onClick={() => navigate(`/products/${product.id}/variants`)} className="w-full py-5 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-[32px] text-xs font-black uppercase tracking-[0.2em] transition-all">
                     Manage Variants
+                  </button>
+                  <button 
+                    onClick={handleToggleStatus} 
+                    disabled={actionLoading}
+                    className={`w-full py-5 rounded-[32px] text-xs font-black uppercase tracking-[0.2em] transition-all shadow-xl hover:scale-[1.02] disabled:opacity-50 ${
+                      product.isActive 
+                        ? "bg-amber-500 hover:bg-amber-400 text-white" 
+                        : "bg-emerald-500 hover:bg-emerald-400 text-white"
+                    }`}
+                  >
+                    {actionLoading ? (product.isActive ? "Deactivating..." : "Activating...") : (product.isActive ? "Deactivate Product" : "Activate Product")}
                   </button>
                   <button 
                     onClick={handleDelete} 

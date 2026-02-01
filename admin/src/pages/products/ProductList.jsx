@@ -53,6 +53,11 @@ const ProductList = ({ token }) => {
     fetchProducts();
   }, [fetchProducts]);
 
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, deletedFilter, searchTerm]);
+
   const toggleStatus = async (product) => {
     try {
       if (product.isActive) await API.products.deactivate(product.id, token);

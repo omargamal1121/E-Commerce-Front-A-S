@@ -36,27 +36,42 @@ const OrderList = ({ token }) => {
     return 'bg-gray-50 text-gray-500 border-gray-100';
   };
 
+  const [totalCount, setTotalCount] = useState(0);
+
   const fetchOrders = useCallback(async () => {
     if (!token) return;
     setLoading(true);
     try {
+      const params = {
+        page: currentPage,
+        pageSize: itemsPerPage,
+      };
+      
+      // Send status filter to server if selected
+      if (statusFilter !== "") {
+        params.status = Number(statusFilter);
+      }
+      
+      // Handle search term if provided
+      if (searchTerm) {
+        params.searchTerm = searchTerm;
+      }
+
       const resp = await axios.get(`${backendUrl}/api/Order`, {
         headers: { Authorization: `Bearer ${token}` },
-        params: { pageSize: 1000 },
+        params,
       });
       const data = resp.data?.responseBody?.data || [];
+      const total = resp.data?.responseBody?.totalCount || 0;
       setOrders(data);
+      setTotalCount(total);
     } catch (error) {
       console.error("Error fetching orders:", error);
       toast.error("Failed to load orders");
     } finally {
       setLoading(false);
     }
-  }, [token]);
-
-  useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
+  }, [token, currentPage, statusFilter, searchTerm]);
 
   const queryParams = new URLSearchParams(window.location.search);
   const initialFilter = queryParams.get("filter");
@@ -67,36 +82,17 @@ const OrderList = ({ token }) => {
     }
   }, [initialFilter]);
 
-  // Reset to page 1 when status filter changes
+  // Reset to page 1 when status filter or search term changes
   useEffect(() => {
     setCurrentPage(1);
   }, [statusFilter, searchTerm]);
 
-  const filteredOrders = orders.filter(order => {
-    const matchSearch = (order.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customerName?.toLowerCase().includes(searchTerm.toLowerCase()));
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
 
-    let matchStatus = true;
-    
-    // Apply status filter
-    if (statusFilter !== "") {
-      // Compare both as numbers and strings to handle different data types
-      matchStatus = String(order.status) === String(statusFilter) || 
-                   Number(order.status) === Number(statusFilter);
-    }
-
-    // If 'active' filter is active from dashboard
-    if (initialFilter === "active" && statusFilter === "") {
-      // Exclude CancelledByUser (5), PaymentExpired (8), CancelledByAdmin (9)
-      const excludedStatuses = [5, 8, 9];
-      matchStatus = !excludedStatuses.includes(Number(order.status));
-    }
-
-    return matchSearch && matchStatus;
-  }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
-  const currentOrders = filteredOrders.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
+  const currentOrders = orders;
 
   return (
     <div className="flex flex-col gap-8 animate-in slide-in-from-bottom-4 duration-500 p-4 md:p-8">
