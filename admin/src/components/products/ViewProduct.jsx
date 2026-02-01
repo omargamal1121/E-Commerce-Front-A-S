@@ -78,6 +78,9 @@ const ViewProduct = ({ token, productId }) => {
 
   if (!product) return <div className="p-20 text-center text-gray-300 font-black uppercase tracking-widest">Product Not Found</div>;
 
+  // Check if product is deleted (deletedAt is not null)
+  const isDeleted = product.deletedAt !== null && product.deletedAt !== undefined;
+
   const images = product.images || [];
   const discountPercent = Number((product.discount && (product.discount.discountPercent ?? product.discount.percentage)) ?? product.discountPercentage ?? 0);
   const hasDiscount = discountPercent > 0;
@@ -86,7 +89,7 @@ const ViewProduct = ({ token, productId }) => {
     <div className="flex flex-col gap-10 animate-in slide-in-from-bottom-10 duration-1000">
 
       {/* Deleted Product Alert Banner */}
-      {product.isDeleted && (
+      {isDeleted && (
         <div className="bg-rose-500/10 border-2 border-rose-500 rounded-[32px] p-6 flex items-center justify-between gap-6 animate-in slide-in-from-top-4 duration-500">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-rose-500 rounded-full flex items-center justify-center text-2xl">
@@ -119,8 +122,8 @@ const ViewProduct = ({ token, productId }) => {
 
         {/* Visual Engine */}
         <div className="lg:col-span-7 flex flex-col gap-6">
-          <div className={`relative aspect-[4/5] bg-white rounded-[56px] overflow-hidden border shadow-2xl group ${product.isDeleted ? "border-rose-500/50" : "border-gray-100"}`}>
-            {product.isDeleted && (
+          <div className={`relative aspect-[4/5] bg-white rounded-[56px] overflow-hidden border shadow-2xl group ${isDeleted ? "border-rose-500/50" : "border-gray-100"}`}>
+            {isDeleted && (
               <div className="absolute inset-0 bg-rose-500/20 backdrop-blur-[2px] z-10 flex items-center justify-center">
                 <div className="text-center">
                   <div className="text-6xl mb-4">🗑️</div>
@@ -131,7 +134,7 @@ const ViewProduct = ({ token, productId }) => {
             {images[selectedImageIndex] ? (
               <img
                 src={images[selectedImageIndex].url}
-                className={`w-full h-full object-cover transition-transform duration-[2000ms] group-hover:scale-110 ${product.isDeleted ? "opacity-50 grayscale" : ""}`}
+                className={`w-full h-full object-cover transition-transform duration-[2000ms] group-hover:scale-110 ${isDeleted ? "opacity-50 grayscale" : ""}`}
                 alt={product.name}
               />
             ) : (
@@ -140,7 +143,7 @@ const ViewProduct = ({ token, productId }) => {
 
             {/* Status & Overlays */}
             <div className="absolute top-10 left-10 flex flex-col gap-3">
-              {product.isDeleted ? (
+              {isDeleted ? (
                 <span className="px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest bg-rose-600 text-white border border-rose-500 backdrop-blur-xl">
                   Deleted
                 </span>
@@ -177,16 +180,16 @@ const ViewProduct = ({ token, productId }) => {
             <div className="flex items-center gap-4">
               <span className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500">ID: {product.id}</span>
               <div className="h-px flex-1 bg-gray-100" />
-              {product.isDeleted && (
+              {isDeleted && (
                 <span className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-600 text-white border border-rose-500 animate-pulse">
                   DELETED
                 </span>
               )}
             </div>
-            <h1 className={`text-5xl font-black leading-[0.9] uppercase tracking-tighter ${product.isDeleted ? "text-rose-500 line-through" : "text-gray-900"}`}>
+            <h1 className={`text-5xl font-black leading-[0.9] uppercase tracking-tighter ${isDeleted ? "text-rose-500 line-through" : "text-gray-900"}`}>
               {product.name}
             </h1>
-            <p className={`font-medium text-lg leading-relaxed mt-4 ${product.isDeleted ? "text-rose-400" : "text-gray-500"}`}>
+            <p className={`font-medium text-lg leading-relaxed mt-4 ${isDeleted ? "text-rose-400" : "text-gray-500"}`}>
               {product.description}
             </p>
           </div>
@@ -217,7 +220,7 @@ const ViewProduct = ({ token, productId }) => {
             </div>
 
             <div className="flex flex-col gap-4 mt-8">
-              {!product.isDeleted && (
+              {!isDeleted && (
                 <>
                   <button onClick={() => navigate(`/add?edit=${product.id}`)} className="w-full py-5 bg-emerald-500 hover:bg-emerald-400 text-gray-900 rounded-[32px] text-xs font-black uppercase tracking-[0.2em] transition-all shadow-xl hover:scale-[1.02]">
                     Edit Product
@@ -234,7 +237,7 @@ const ViewProduct = ({ token, productId }) => {
                   </button>
                 </>
               )}
-              {product.isDeleted && (
+              {isDeleted && (
                 <button 
                   onClick={handleRestore} 
                   disabled={actionLoading}

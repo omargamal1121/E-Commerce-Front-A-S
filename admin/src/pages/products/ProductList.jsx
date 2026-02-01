@@ -31,11 +31,12 @@ const ProductList = ({ token }) => {
       let total = res?.responseBody?.totalCount || 0;
 
       // If "deleted" filter is selected, we filter client-side if the API doesn't support "deletedOnly"
+      // Check deletedAt instead of isDeleted (deletedAt !== null means deleted)
       if (deletedFilter === "deleted") {
-        data = data.filter(p => p.isDeleted);
+        data = data.filter(p => p.deletedAt !== null && p.deletedAt !== undefined);
         total = data.length; // This is a limitation of the current API if it only has includeDeleted
       } else if (deletedFilter === "not_deleted") {
-        data = data.filter(p => !p.isDeleted);
+        data = data.filter(p => p.deletedAt === null || p.deletedAt === undefined);
         total = data.length;
       }
 
@@ -148,7 +149,7 @@ const ProductList = ({ token }) => {
 
                   {/* Status Overlay */}
                   <div className="absolute top-4 left-4 flex flex-col gap-2">
-                    {p.isDeleted ? (
+                    {(p.deletedAt !== null && p.deletedAt !== undefined) ? (
                       <span className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-600 text-white border border-rose-500 backdrop-blur-md shadow-sm">
                         Deleted
                       </span>
@@ -194,7 +195,7 @@ const ProductList = ({ token }) => {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      {!p.isDeleted && (
+                      {!(p.deletedAt !== null && p.deletedAt !== undefined) && (
                         <button
                           onClick={() => toggleStatus(p)}
                           className={`p-3 rounded-2xl transition-all border ${p.isActive ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-gray-50 text-gray-400 border-gray-100"}`}
@@ -203,7 +204,7 @@ const ProductList = ({ token }) => {
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                         </button>
                       )}
-                      {p.isDeleted ? (
+                      {(p.deletedAt !== null && p.deletedAt !== undefined) ? (
                         <button
                           onClick={() => handleRestore(p.id)}
                           className="p-3 bg-blue-50 text-blue-600 border border-blue-100 rounded-2xl hover:bg-blue-600 hover:text-white transition-all"

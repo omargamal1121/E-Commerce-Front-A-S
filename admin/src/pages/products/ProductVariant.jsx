@@ -43,6 +43,9 @@ const ProductVariant = ({ token }) => {
     finally { setLoading(false); }
   };
 
+  // Check if product is deleted (deletedAt is not null)
+  const isDeleted = product?.deletedAt !== null && product?.deletedAt !== undefined;
+
   const fetchVariants = async () => {
     setVariantsLoading(true);
     try {
@@ -140,7 +143,7 @@ const ProductVariant = ({ token }) => {
           <div>
             <div className="flex items-center gap-4">
               <h1 className="text-3xl font-black text-gray-900 tracking-tighter uppercase">{product?.name || "Product"} Variants</h1>
-              {product?.isDeleted && (
+              {isDeleted && (
                 <span className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-600 text-white border border-rose-500">
                   Deleted
                 </span>
@@ -150,7 +153,7 @@ const ProductVariant = ({ token }) => {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          {product?.isDeleted && (
+          {isDeleted && (
             <button 
               onClick={handleRestoreProduct} 
               disabled={actionLoading}
@@ -174,7 +177,7 @@ const ProductVariant = ({ token }) => {
               <h3 className="text-xl font-black uppercase tracking-tighter">Add New Variant</h3>
             </div>
 
-            {product?.isDeleted ? (
+            {isDeleted ? (
               <div className="flex flex-col items-center gap-4 p-8 bg-rose-500/10 border border-rose-500/20 rounded-2xl">
                 <div className="text-4xl">⚠️</div>
                 <p className="text-center text-white/80 font-bold text-sm">
