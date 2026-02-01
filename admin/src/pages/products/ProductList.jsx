@@ -12,7 +12,7 @@ const ProductList = ({ token }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("all"); // all, active, inactive
-  const [deletedFilter, setDeletedFilter] = useState("all"); // all, deleted, not_deleted
+  const [deletedFilter, setDeletedFilter] = useState("not_deleted"); // all, deleted, not_deleted
   const pageSize = 12;
 
   const fetchProducts = useCallback(async () => {
@@ -106,9 +106,9 @@ const ProductList = ({ token }) => {
               onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
               className="bg-transparent text-[11px] font-black uppercase tracking-widest px-4 py-2 outline-none cursor-pointer hover:text-emerald-600 transition-colors"
             >
-              <option value="all">Statuses: All</option>
-              <option value="active">Active Only</option>
-              <option value="inactive">Inactive Only</option>
+              <option value="all">All</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
             </select>
             <div className="w-[1px] bg-gray-300 my-1"></div>
             <select
@@ -116,9 +116,9 @@ const ProductList = ({ token }) => {
               onChange={(e) => { setDeletedFilter(e.target.value); setPage(1); }}
               className="bg-transparent text-[11px] font-black uppercase tracking-widest px-4 py-2 outline-none cursor-pointer hover:text-emerald-600 transition-colors"
             >
-              <option value="not_deleted">Trash: Exclude</option>
-              <option value="deleted">Trash: Only</option>
-              <option value="all">Trash: Include</option>
+              <option value="not_deleted">Not Deleted</option>
+              <option value="deleted">Deleted</option>
+              <option value="all">All</option>
             </select>
           </div>
 
@@ -142,9 +142,17 @@ const ProductList = ({ token }) => {
         ) : (
           products.map((p) => {
             // Get discount percent from discount object or direct property
-            const discountPercent = p.discount?.discountPercent || p.discountPercentage || 0;
+            // Check multiple possible locations for discount info
+            const discountPercent = Number(
+              p.discount?.discountPercent ?? 
+              p.discount?.percentage ?? 
+              p.discountPercentage ?? 
+              p.discountPrecentage ?? 
+              0
+            );
             const hasDiscount = discountPercent > 0;
             const finalPrice = p.finalPrice ?? p.price;
+            
             return (
               <div key={p.id} className="group relative bg-white rounded-[48px] border border-gray-100 p-4 hover:shadow-2xl hover:shadow-emerald-900/5 transition-all duration-500 hover:-translate-y-3">
                 {/* Product Image */}
@@ -166,9 +174,9 @@ const ProductList = ({ token }) => {
                         {p.isActive ? "Active" : "Inactive"}
                       </span>
                     )}
-                    {hasDiscount && (
-                      <span className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-500/80 text-white border border-rose-400 backdrop-blur-md shadow-sm">
-                        -{discountPercent}%
+                    {hasDiscount && discountPercent > 0 && (
+                      <span className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-500 text-white border border-rose-400 backdrop-blur-md shadow-sm">
+                        -{discountPercent.toFixed(0)}%
                       </span>
                     )}
                   </div>
