@@ -67,11 +67,23 @@ const OrderList = ({ token }) => {
     }
   }, [initialFilter]);
 
+  // Reset to page 1 when status filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter, searchTerm]);
+
   const filteredOrders = orders.filter(order => {
     const matchSearch = (order.orderNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customerName?.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    let matchStatus = statusFilter === "" || String(order.status) === statusFilter;
+    let matchStatus = true;
+    
+    // Apply status filter
+    if (statusFilter !== "") {
+      // Compare both as numbers and strings to handle different data types
+      matchStatus = String(order.status) === String(statusFilter) || 
+                   Number(order.status) === Number(statusFilter);
+    }
 
     // If 'active' filter is active from dashboard
     if (initialFilter === "active" && statusFilter === "") {

@@ -80,6 +80,13 @@ const ProductVariant = ({ token }) => {
     } catch (e) {
       if (e.response?.status === 404) {
         toast.error("Product is deleted. Please restore it first before adding variants.");
+      } else if (e.response?.data?.errors?.messages && Array.isArray(e.response.data.errors.messages)) {
+        // Display validation error messages from API
+        e.response.data.errors.messages.forEach((message) => {
+          toast.error(message);
+        });
+      } else if (e.response?.data?.message) {
+        toast.error(e.response.data.message);
       } else {
         toast.error("Failed to add variant");
       }
