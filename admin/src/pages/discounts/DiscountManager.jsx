@@ -32,17 +32,35 @@ const DiscountManager = ({ token }) => {
   const fetchDiscounts = async () => {
     setLoading(true);
     try {
-      const res = await API.discounts.list({ page, pageSize, includeDeleted: deletedFilter === "all" || deletedFilter === "deleted" }, token);
+      const params = {
+        page,
+        pageSize,
+      };
+
+      // Pass deleted filter to API: only pass if "all" or "deleted", don't pass for "not_deleted"
+      if (deletedFilter === "all" || deletedFilter === "deleted") {
+        params.includeDeleted = true;
+      }
+      // For "not_deleted", don't pass includeDeleted - API will handle it
+
+      // Pass status filter if not "all"
+      if (statusFilter === "active") {
+        params.isActive = true;
+      } else if (statusFilter === "inactive") {
+        params.isActive = false;
+      }
+
+      const res = await API.discounts.list(params, token);
       let data = res?.responseBody?.data || [];
       
-      // Filter by status
+      // Filter by status (client-side fallback if API doesn't support it)
       if (statusFilter === "active") {
         data = data.filter(d => d.isActive === true);
       } else if (statusFilter === "inactive") {
         data = data.filter(d => d.isActive === false);
       }
       
-      // Filter by deleted status
+      // Filter by deleted status (client-side fallback if API doesn't support it)
       if (deletedFilter === "deleted") {
         data = data.filter(d => d.deletedAt !== null && d.deletedAt !== undefined);
       } else if (deletedFilter === "not_deleted") {

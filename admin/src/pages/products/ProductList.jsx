@@ -23,25 +23,28 @@ const ProductList = ({ token }) => {
         page,
         pageSize,
         isActive: statusFilter === "active" ? true : statusFilter === "inactive" ? false : null,
-        includeDeleted: deletedFilter === "all" || deletedFilter === "deleted"
       };
 
-      const res = await API.products.list(filters, token);
-      let data = res?.responseBody?.data || [];
-      let total = res?.responseBody?.totalCount || 0;
+      // Pass deleted filter to API: only pass if "all" or "deleted", don't pass for "not_deleted"
+      if (deletedFilter === "all" || deletedFilter === "deleted") {
+        filters.includeDeleted = true;
+      }
+      // For "not_deleted", don't pass includeDeleted - API will handle it
 
-      // If "deleted" filter is selected, we filter client-side if the API doesn't support "deletedOnly"
-      // Check deletedAt instead of isDeleted (deletedAt !== null means deleted)
+      const res = await API.products.list(filters, token);
+      const data = res?.responseBody?.data || [];
+      const total = res?.responseBody?.totalCount || 0;
+
+      // Filter by deleted status if needed (API should handle this, but keep as fallback)
+      let filteredData = data;
       if (deletedFilter === "deleted") {
-        data = data.filter(p => p.deletedAt !== null && p.deletedAt !== undefined);
-        total = data.length; // This is a limitation of the current API if it only has includeDeleted
+        filteredData = data.filter(p => p.deletedAt !== null && p.deletedAt !== undefined);
       } else if (deletedFilter === "not_deleted") {
-        data = data.filter(p => p.deletedAt === null || p.deletedAt === undefined);
-        total = data.length;
+        filteredData = data.filter(p => p.deletedAt === null || p.deletedAt === undefined);
       }
 
-      setProducts(data);
-      setTotalCount(total);
+      setProducts(filteredData);
+      setTotalCount(deletedFilter === "all" ? total : filteredData.length);
     } catch (error) {
       toast.error("Failed to load products");
     } finally {
