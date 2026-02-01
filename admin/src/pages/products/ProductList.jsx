@@ -144,6 +144,7 @@ const ProductList = ({ token }) => {
             // Get discount percent from discount object or direct property
             const discountPercent = p.discount?.discountPercent || p.discountPercentage || 0;
             const hasDiscount = discountPercent > 0;
+            const finalPrice = p.finalPrice ?? p.price;
             return (
               <div key={p.id} className="group relative bg-white rounded-[48px] border border-gray-100 p-4 hover:shadow-2xl hover:shadow-emerald-900/5 transition-all duration-500 hover:-translate-y-3">
                 {/* Product Image */}
@@ -196,9 +197,16 @@ const ProductList = ({ token }) => {
                   </h4>
 
                   <div className="flex items-center justify-between border-t border-gray-100 pt-6">
-                    <div className="flex flex-col">
+                    <div className="flex flex-col gap-1">
                       <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Price</span>
-                      <span className="text-2xl font-black text-gray-900 tracking-tighter">{currency} {p.price}</span>
+                      {hasDiscount && finalPrice !== p.price ? (
+                        <div className="flex items-baseline gap-2 flex-wrap">
+                          <span className="text-2xl font-black text-emerald-600 tracking-tighter">{currency} {Number(finalPrice).toFixed(2)}</span>
+                          <span className="text-sm text-gray-400 line-through font-bold">{currency} {Number(p.price).toFixed(2)}</span>
+                        </div>
+                      ) : (
+                        <span className="text-2xl font-black text-gray-900 tracking-tighter">{currency} {Number(p.price).toFixed(2)}</span>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-2">
