@@ -42,16 +42,27 @@ const ListCategory = ({
       const normalized = cats.map((cat) => {
         let mainImg = cat.images?.find((i) => i.isMain) || cat.images?.[0] || null;
         let imgUrl = null;
+
         if (mainImg) {
+          // Check for url property first
           if (mainImg.url) {
-            imgUrl = mainImg.url.startsWith("http") ? mainImg.url : `${backendUrl}${mainImg.url.startsWith('/') ? '' : '/'}${mainImg.url}`;
-          } else if (mainImg.filePath) {
-            imgUrl = `${backendUrl}/${mainImg.filePath}`;
+            // If it's already a full URL (starts with http/https), use it as is
+            if (mainImg.url.startsWith("http://") || mainImg.url.startsWith("https://")) {
+              imgUrl = mainImg.url;
+            } else {
+              // Otherwise, prepend backendUrl
+              imgUrl = `${backendUrl}${mainImg.url.startsWith('/') ? '' : '/'}${mainImg.url}`;
+            }
+          }
+          // Fallback to filePath if url is not available
+          else if (mainImg.filePath) {
+            imgUrl = `${backendUrl}${mainImg.filePath.startsWith('/') ? '' : '/'}${mainImg.filePath}`;
           }
         }
+
         return {
           ...cat,
-          mainImage: { url: imgUrl },
+          mainImage: imgUrl ? { url: imgUrl } : null,
           wasDeleted: cat.isDeleted || false,
         };
       });
@@ -229,11 +240,15 @@ const ListCategory = ({
             >
               {/* Image Container */}
               <div className="relative aspect-[4/3] rounded-3xl overflow-hidden bg-gray-50 mb-5">
-                {cat.mainImage ? (
+                {cat.mainImage?.url ? (
                   <img
                     src={cat.mainImage.url}
                     alt={cat.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    onError={(e) => {
+                      console.error('Image failed to load:', cat.mainImage.url);
+                      e.target.style.display = 'none';
+                    }}
                   />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center text-gray-300 select-none">
