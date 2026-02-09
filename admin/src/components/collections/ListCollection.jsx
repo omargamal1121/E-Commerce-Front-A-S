@@ -41,14 +41,16 @@ const ListCollection = ({
       const totalCount = res.data?.responseBody?.totalCount || cols.length;
 
       const normalized = cols.map((col) => {
-        let mainImage = col.images?.find((i) => i.isMain) || col.images?.[0] || null;
-        if (mainImage && mainImage.url) {
-          mainImage = {
-            ...mainImage,
-            url: mainImage.url.startsWith("http") ? mainImage.url : `${backendUrl}/${mainImage.url}`
-          };
+        let mainImg = col.images?.find((i) => i.isMain) || col.images?.[0] || null;
+        let imgUrl = null;
+        if (mainImg) {
+          if (mainImg.url) {
+            imgUrl = mainImg.url.startsWith("https") ? mainImg.url : `${backendUrl}${mainImg.url.startsWith('/') ? '' : '/'}${mainImg.url}`;
+          } else if (mainImg.filePath) {
+            imgUrl = `${backendUrl}/${mainImg.filePath}`;
+          }
         }
-        return { ...col, mainImage, wasDeleted: col.isDeleted || false };
+        return { ...col, mainImage: { url: imgUrl }, wasDeleted: col.isDeleted || false };
       });
 
       setCollections(normalized);
@@ -124,7 +126,7 @@ const ListCollection = ({
         <div className="relative w-full lg:max-w-md group">
           <input
             type="text"
-            placeholder="Search registry by identifier..."
+            placeholder="Search by name or ID..."
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             className="w-full pl-12 pr-4 py-3.5 bg-white border border-gray-200 rounded-2xl focus:ring-4 focus:ring-rose-50/50 focus:border-rose-400 outline-none transition-all text-sm font-medium shadow-sm"
@@ -141,9 +143,9 @@ const ListCollection = ({
               onChange={(e) => { setIsActive(e.target.value); setPage(1); }}
               className="bg-transparent border-none outline-none text-xs font-black uppercase tracking-widest text-gray-500 px-4 py-2 cursor-pointer"
             >
-              <option value="">Visibility: All</option>
-              <option value="true">Live Only</option>
-              <option value="false">Hidden Only</option>
+              <option value="">Status: All</option>
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
             </select>
             <div className="w-px h-4 bg-gray-100" />
             <select
@@ -151,8 +153,9 @@ const ListCollection = ({
               onChange={(e) => { setIsDeleted(e.target.value); setPage(1); }}
               className="bg-transparent border-none outline-none text-xs font-black uppercase tracking-widest text-gray-500 px-4 py-2 cursor-pointer"
             >
-              <option value="">Repository: Active</option>
-              <option value="true">Repository: Deleted</option>
+              <option value="">Show: All</option>
+              <option value="false">Show: not Deleted</option>
+              <option value="true">Show: Deleted</option>
             </select>
           </div>
 
@@ -163,7 +166,7 @@ const ListCollection = ({
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
             </svg>
-            Initialize New
+            Create Collection
           </button>
         </div>
       </div>
@@ -182,8 +185,8 @@ const ListCollection = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
             </svg>
           </div>
-          <h3 className="text-xl font-black text-gray-900">Repository empty</h3>
-          <p className="text-gray-500 mt-2 font-medium">No collections found matching current parameters</p>
+          <h3 className="text-xl font-black text-gray-900">No collections found</h3>
+          <p className="text-gray-500 mt-2 font-medium">Try adjusting your filters</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -194,7 +197,7 @@ const ListCollection = ({
             >
               {/* Image Hub */}
               <div className="relative aspect-square rounded-[32px] overflow-hidden bg-gray-50 mb-6">
-                {col.mainImage ? (
+                {col.mainImage && col.mainImage.url ? (
                   <img
                     src={col.mainImage.url}
                     alt={col.name}
@@ -205,18 +208,18 @@ const ListCollection = ({
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    <span className="text-[10px] font-black uppercase tracking-widest">No Visual Asset</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest">No Image</span>
                   </div>
                 )}
 
                 {/* Status Overlays */}
                 <div className="absolute top-4 left-4 flex flex-col gap-2">
                   <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-md shadow-lg ${col.isActive ? 'bg-green-500/90 text-white' : 'bg-rose-500/90 text-white'}`}>
-                    {col.isActive ? 'Live' : 'Internal'}
+                    {col.isActive ? 'Active' : 'Inactive'}
                   </div>
                   {(col.isDeleted || col.wasDeleted) && (
                     <div className="px-4 py-1.5 rounded-full bg-gray-900/90 text-white text-[10px] font-black uppercase tracking-widest backdrop-blur-md shadow-lg">
-                      Archived
+                      Deleted
                     </div>
                   )}
                 </div>
@@ -227,11 +230,12 @@ const ListCollection = ({
                     onClick={() => handleViewCollection(col)}
                     className="flex-1 py-3 bg-white hover:bg-gray-900 text-gray-900 hover:text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl"
                   >
-                    Inspect
+                    View
                   </button>
                   <button
                     onClick={() => handleEditCollection(col)}
                     className="p-3 bg-white hover:bg-amber-500 text-gray-900 hover:text-white rounded-2xl transition-all shadow-xl"
+                    title="Edit"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -249,7 +253,7 @@ const ListCollection = ({
                   <span className="text-[10px] font-bold text-gray-400">#{col.id}</span>
                 </div>
                 <p className="text-gray-500 text-xs font-medium line-clamp-2 leading-relaxed h-[32px] mt-1 mb-6">
-                  {col.description || "Node description pending initialization."}
+                  {col.description || "No description available."}
                 </p>
 
                 {/* Bottom Control Bar */}
@@ -258,7 +262,7 @@ const ListCollection = ({
                     onClick={() => toggleStatus(col)}
                     className={`flex-1 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${col.isActive ? "bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white" : "bg-green-50 text-green-600 hover:bg-green-600 hover:text-white"}`}
                   >
-                    {col.isActive ? "Pause deployment" : "Deploy Live"}
+                    {col.isActive ? "Deactivate" : "Activate"}
                   </button>
 
                   <div className="flex gap-1.5">
@@ -266,7 +270,7 @@ const ListCollection = ({
                       <button
                         onClick={() => setDeleteId(col.id)}
                         className="p-3 bg-rose-50 text-rose-600 rounded-2xl hover:bg-rose-600 hover:text-white transition-all shadow-sm"
-                        title="Move to Archive"
+                        title="Delete"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -276,7 +280,7 @@ const ListCollection = ({
                       <button
                         onClick={() => restoreCollection(col.id)}
                         className="p-3 bg-blue-50 text-blue-600 rounded-2xl hover:bg-blue-600 hover:text-white transition-all shadow-sm"
-                        title="Restore Node"
+                        title="Restore"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -331,23 +335,23 @@ const ListCollection = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
             </div>
-            <h3 className="text-2xl font-black text-gray-900 tracking-tight mb-3">Archive Collection?</h3>
+            <h3 className="text-2xl font-black text-gray-900 tracking-tight mb-3">Delete Collection?</h3>
             <p className="text-gray-500 font-medium mb-10 leading-relaxed px-4">
-              This node will be moved to the internal repository and hidden from all frontend projection.
+              This collection will be removed from the store.
             </p>
             <div className="flex gap-4">
               <button
                 onClick={() => setDeleteId(null)}
                 className="flex-1 py-4 bg-gray-50 text-gray-600 rounded-3xl font-black text-sm hover:bg-gray-100 transition-all"
               >
-                Retain Node
+                Cancel
               </button>
               <button
                 onClick={() => removeCollection(deleteId)}
                 disabled={deleteLoading}
                 className="flex-1 py-4 bg-rose-600 text-white rounded-3xl font-black text-sm shadow-xl shadow-rose-100 hover:bg-rose-700 transition-all disabled:opacity-50"
               >
-                {deleteLoading ? "Synchronizing..." : "Execute Archive"}
+                {deleteLoading ? "Deleting..." : "Delete"}
               </button>
             </div>
           </div>

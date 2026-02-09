@@ -40,18 +40,18 @@ const ListCategory = ({
       const totalCount = res.data?.responseBody?.totalCount || cats.length;
 
       const normalized = cats.map((cat) => {
-        let mainImage = cat.images?.find((i) => i.isMain) || cat.images?.[0] || null;
-
-        if (mainImage && mainImage.url) {
-          mainImage = {
-            ...mainImage,
-            url: mainImage.url.startsWith("http") ? mainImage.url : `${backendUrl}/${mainImage.url}`
-          };
+        let mainImg = cat.images?.find((i) => i.isMain) || cat.images?.[0] || null;
+        let imgUrl = null;
+        if (mainImg) {
+          if (mainImg.url) {
+            imgUrl = mainImg.url.startsWith("http") ? mainImg.url : `${backendUrl}${mainImg.url.startsWith('/') ? '' : '/'}${mainImg.url}`;
+          } else if (mainImg.filePath) {
+            imgUrl = `${backendUrl}/${mainImg.filePath}`;
+          }
         }
-
         return {
           ...cat,
-          mainImage,
+          mainImage: { url: imgUrl },
           wasDeleted: cat.isDeleted || false,
         };
       });
@@ -143,7 +143,7 @@ const ListCategory = ({
             </div>
             <input
               type="text"
-              placeholder="Search by name or keyword..."
+              placeholder="Search by name..."
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -163,9 +163,9 @@ const ListCategory = ({
                 }}
                 className="bg-transparent border-none outline-none text-xs font-bold text-gray-600 px-3 py-1 cursor-pointer"
               >
-                <option value="">Visibility: All</option>
-                <option value="true">Visible</option>
-                <option value="false">Hidden</option>
+                <option value="">Status: All</option>
+                <option value="true">Active</option>
+                <option value="false">Inactive</option>
               </select>
               <div className="w-px h-4 bg-gray-200" />
               <select
@@ -176,8 +176,9 @@ const ListCategory = ({
                 }}
                 className="bg-transparent border-none outline-none text-xs font-bold text-gray-600 px-3 py-1 cursor-pointer"
               >
-                <option value="">Trash: Exclude</option>
-                <option value="true">Trash: Include</option>
+                <option value="">Show: All</option>
+                <option value="false">Show: not Deleted</option>
+                <option value="true">Show: Deleted</option>
               </select>
             </div>
 
@@ -188,7 +189,7 @@ const ListCategory = ({
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
               </svg>
-              Create New
+              Create Category
             </button>
           </div>
         </div>
@@ -239,7 +240,7 @@ const ListCategory = ({
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    <span className="text-xs font-bold uppercase tracking-widest">No Visual</span>
+                    <span className="text-xs font-bold uppercase tracking-widest">No Image</span>
                   </div>
                 )}
 
@@ -247,11 +248,11 @@ const ListCategory = ({
                 <div className="absolute top-3 left-3 flex flex-col gap-2">
                   <div className={`px-3 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-tighter shadow-lg backdrop-blur-md ${cat.isActive ? 'bg-green-500/90 text-white' : 'bg-rose-500/90 text-white'
                     }`}>
-                    {cat.isActive ? 'Live' : 'Hidden'}
+                    {cat.isActive ? 'Active' : 'Inactive'}
                   </div>
-                  {cat.isDeleted && (
+                  {(cat.isDeleted || cat.wasDeleted) && (
                     <div className="px-3 py-1.5 rounded-2xl bg-gray-900/90 text-white text-[10px] font-black uppercase tracking-tighter shadow-lg backdrop-blur-md">
-                      In Trash
+                      Deleted
                     </div>
                   )}
                 </div>
@@ -278,13 +279,13 @@ const ListCategory = ({
                   onClick={() => handleViewCategory(cat)}
                   className="flex-1 px-4 py-2.5 bg-gray-50 hover:bg-blue-50 text-gray-600 hover:text-blue-600 rounded-2xl text-xs font-bold transition-all border border-transparent hover:border-blue-100"
                 >
-                  Inspect
+                  View
                 </button>
                 <div className="flex gap-1.5">
                   <button
                     onClick={() => handleEditCategory(cat)}
                     className="p-2.5 bg-gray-50 hover:bg-amber-50 text-gray-600 hover:text-amber-600 rounded-2xl transition-all"
-                    title="Edit Details"
+                    title="Edit"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -295,7 +296,7 @@ const ListCategory = ({
                     <button
                       onClick={() => deactivateCategory(cat.id)}
                       className="p-2.5 bg-gray-50 hover:bg-rose-50 text-gray-600 hover:text-rose-600 rounded-2xl transition-all"
-                      title="Hide Category"
+                      title="Deactivate"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
@@ -305,7 +306,7 @@ const ListCategory = ({
                     <button
                       onClick={() => activateCategory(cat)}
                       className="p-2.5 bg-gray-50 hover:bg-green-50 text-gray-600 hover:text-green-600 rounded-2xl transition-all"
-                      title="Go Live"
+                      title="Activate"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -318,7 +319,7 @@ const ListCategory = ({
                     <button
                       onClick={() => setDeleteId(cat.id)}
                       className="p-2.5 bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white rounded-2xl transition-all"
-                      title="Move to Trash"
+                      title="Delete"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -328,7 +329,7 @@ const ListCategory = ({
                     <button
                       onClick={() => restoreCategory(cat.id)}
                       className="p-2.5 bg-green-50 hover:bg-green-600 text-green-600 hover:text-white rounded-2xl transition-all"
-                      title="Restore from Trash"
+                      title="Restore"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -383,23 +384,23 @@ const ListCategory = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
             </div>
-            <h3 className="text-2xl font-black text-gray-900 text-center mb-2 tracking-tight">Move to Trash?</h3>
+            <h3 className="text-2xl font-black text-gray-900 text-center mb-2 tracking-tight">Delete Category?</h3>
             <p className="text-gray-500 text-center mb-10 font-medium leading-relaxed px-4">
-              This category will be hidden from your store but can be restored later from the trash filters.
+              This category will be removed but can be restored later.
             </p>
             <div className="flex gap-4">
               <button
                 onClick={() => setDeleteId(null)}
                 className="flex-1 px-4 py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-3xl transition-all"
               >
-                Keep it
+                Cancel
               </button>
               <button
                 onClick={() => removeCategory(deleteId)}
                 disabled={deleteLoading}
                 className={`flex-1 px-4 py-4 shadow-lg shadow-rose-200 border border-rose-600 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-3xl transition-all ${deleteLoading ? "opacity-50" : ""}`}
               >
-                {deleteLoading ? "Processing..." : "Trash it"}
+                {deleteLoading ? "Processing..." : "Delete"}
               </button>
             </div>
           </div>

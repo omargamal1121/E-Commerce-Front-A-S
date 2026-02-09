@@ -62,7 +62,7 @@ const ListSubCategory = ({
       }
     } catch (error) {
       console.error("❌ API Error:", error);
-      toast.error("Failed to load segments");
+      toast.error("Failed to load subcategories");
     } finally {
       setLoading(false);
     }
@@ -81,9 +81,9 @@ const ListSubCategory = ({
       setSubCategories((prev) =>
         prev.map((sc) => (sc.id === id ? { ...sc, deleted: true } : sc))
       );
-      toast.success("Segment archived successfully");
+      toast.success("Subcategory deleted successfully");
     } catch (error) {
-      toast.error("Archive operation failed");
+      toast.error("Delete failed");
     } finally {
       setDeleteLoading(false);
       setDeleteId(null);
@@ -91,17 +91,17 @@ const ListSubCategory = ({
   };
 
   const toggleActivation = async (subCat) => {
-    if (!subCat.isActive && !subCat.mainImageUrl) return toast.error("Headshot required for activation");
+    if (!subCat.isActive && !subCat.mainImageUrl) return toast.error("Image required for activation");
 
     try {
       const endpoint = subCat.isActive ? "deactivate" : "activate";
       await axios.patch(`${backendUrl}/api/subcategories/${subCat.id}/${endpoint}`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      toast.success(subCat.isActive ? "Segment paused" : "Segment launched");
+      toast.success(subCat.isActive ? "Subcategory deactivated" : "Subcategory activated");
       fetchSubCategories();
     } catch (err) {
-      toast.error("Status update failed");
+      toast.error("Update failed");
     }
   };
 
@@ -110,7 +110,7 @@ const ListSubCategory = ({
       await axios.patch(`${backendUrl}/api/subcategories/${id}/restore`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      toast.success("Segment restored");
+      toast.success("Subcategory restored");
       fetchSubCategories();
     } catch {
       toast.error("Restore failed");
@@ -129,7 +129,7 @@ const ListSubCategory = ({
           <div className="relative flex-1 min-w-[280px]">
             <input
               type="text"
-              placeholder="Filter by segment name or keywords..."
+              placeholder="Search by name..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               className="w-full bg-white border border-gray-200 rounded-2xl px-12 py-3.5 outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-400 transition-all font-medium text-gray-700"
@@ -144,9 +144,9 @@ const ListSubCategory = ({
             onChange={(e) => { setIsActive(e.target.value); setPage(1); }}
             className="bg-white border border-gray-200 rounded-2xl px-4 py-3 text-sm font-black uppercase tracking-widest text-gray-500 focus:ring-4 focus:ring-blue-50 outline-none"
           >
-            <option value="">All Systems</option>
-            <option value="true">Live Only</option>
-            <option value="false">Internal Only</option>
+            <option value="">Status: All</option>
+            <option value="true">Active</option>
+            <option value="false">Inactive</option>
           </select>
 
           <select
@@ -154,9 +154,9 @@ const ListSubCategory = ({
             onChange={(e) => { setIsDeleted(e.target.value); setPage(1); }}
             className="bg-white border border-gray-200 rounded-2xl px-4 py-3 text-sm font-black uppercase tracking-widest text-gray-500 focus:ring-4 focus:ring-blue-50 outline-none"
           >
-            <option value="">Full Repository</option>
-            <option value="true">Archived Only</option>
-            <option value="false">Active Only</option>
+            <option value="">Show: All</option>
+            <option value="true">Show: Deleted</option>
+            <option value="false">Show: not Deleted</option>
           </select>
         </div>
 
@@ -164,7 +164,7 @@ const ListSubCategory = ({
           onClick={() => setActiveTab("add-sub")}
           className="px-8 py-3.5 bg-gray-900 text-white rounded-2xl text-sm font-black shadow-lg shadow-gray-200 hover:scale-[1.02] active:scale-[0.98] transition-all"
         >
-          Initialize Segment
+          Create Subcategory
         </button>
       </div>
 
@@ -176,7 +176,7 @@ const ListSubCategory = ({
           ))
         ) : subcategories.length === 0 ? (
           <div className="col-span-full py-20 flex flex-col items-center justify-center text-gray-400">
-            <p className="font-bold text-lg">No segments matching your parameters.</p>
+            <p className="font-bold text-lg">No subcategories found.</p>
             <button onClick={() => { setSearch(""); setIsActive(""); setIsDeleted(""); }} className="text-blue-600 text-xs font-black uppercase mt-2 tracking-widest">Clear Filters</button>
           </div>
         ) : (
@@ -189,23 +189,23 @@ const ListSubCategory = ({
                 {subCat.mainImageUrl ? (
                   <img src={subCat.mainImageUrl} alt={subCat.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-300 font-black text-xs uppercase">No Visual</div>
+                  <div className="w-full h-full flex items-center justify-center text-gray-300 font-black text-xs uppercase">No Image</div>
                 )}
 
                 <div className="absolute top-4 right-4 flex flex-col gap-2">
                   <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${subCat.isActive ? "bg-green-100 text-green-700" : "bg-rose-100 text-rose-700"}`}>
-                    {subCat.isActive ? "Live" : "Paused"}
+                    {subCat.isActive ? "Active" : "Inactive"}
                   </div>
                   {subCat.deleted && (
                     <div className="px-3 py-1 rounded-full bg-gray-900 text-white text-[10px] font-black uppercase tracking-widest">
-                      In Trash
+                      Deleted
                     </div>
                   )}
                 </div>
 
                 <div className="absolute inset-0 bg-gray-900/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-2">
-                  <button onClick={() => handleViewSubCategory(subCat)} className="p-3 bg-white text-gray-900 rounded-2xl hover:bg-blue-600 hover:text-white transition-all shadow-xl font-bold text-sm">View Node</button>
-                  <button onClick={() => handleEditSubCategory(subCat)} className="p-3 bg-white text-gray-900 rounded-2xl hover:bg-amber-500 hover:text-white transition-all shadow-xl font-bold text-sm">Refine</button>
+                  <button onClick={() => handleViewSubCategory(subCat)} className="p-3 bg-white text-gray-900 rounded-2xl hover:bg-blue-600 hover:text-white transition-all shadow-xl font-bold text-sm">View</button>
+                  <button onClick={() => handleEditSubCategory(subCat)} className="p-3 bg-white text-gray-900 rounded-2xl hover:bg-amber-500 hover:text-white transition-all shadow-xl font-bold text-sm">Edit</button>
                 </div>
               </div>
 
@@ -215,7 +215,7 @@ const ListSubCategory = ({
                 </p>
                 <h3 className="text-lg font-black text-gray-900 line-clamp-1">{subCat.name}</h3>
                 <p className="text-xs text-gray-500 font-medium line-clamp-2 mt-1 mb-4 flex-1">
-                  {subCat.description || "System narrative not initialized for this node."}
+                  {subCat.description || "No description available."}
                 </p>
 
                 <div className="flex items-center gap-2 mt-auto pt-4 border-t border-gray-50">
@@ -223,7 +223,7 @@ const ListSubCategory = ({
                     onClick={() => toggleActivation(subCat)}
                     className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${subCat.isActive ? "bg-amber-50 text-amber-600 hover:bg-amber-100" : "bg-green-50 text-green-600 hover:bg-green-100"}`}
                   >
-                    {subCat.isActive ? "Pause" : "Launch"}
+                    {subCat.isActive ? "Deactivate" : "Activate"}
                   </button>
 
                   {!subCat.deleted ? (
@@ -255,7 +255,7 @@ const ListSubCategory = ({
       {/* Modern Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm">
-          <p className="text-xs font-black uppercase tracking-widest text-gray-400">Node Grid Controls</p>
+          <p className="text-xs font-black uppercase tracking-widest text-gray-400">Pagination</p>
           <div className="flex items-center gap-4">
             <button
               disabled={page <= 1}
@@ -288,9 +288,9 @@ const ListSubCategory = ({
             onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
             className="p-3 bg-gray-50 border-none rounded-2xl text-xs font-black uppercase tracking-widest text-gray-500 focus:ring-0"
           >
-            <option value={12}>12 Matrix</option>
-            <option value={24}>24 Matrix</option>
-            <option value={48}>48 Matrix</option>
+            <option value={12}>12 Rows</option>
+            <option value={24}>24 Rows</option>
+            <option value={48}>48 Rows</option>
           </select>
         </div>
       )}
@@ -305,9 +305,9 @@ const ListSubCategory = ({
               </svg>
             </div>
             <div>
-              <h3 className="text-2xl font-black text-gray-900 tracking-tight">Move to Archive?</h3>
+              <h3 className="text-2xl font-black text-gray-900 tracking-tight">Delete Subcategory?</h3>
               <p className="text-gray-500 font-medium mt-2 leading-relaxed">
-                Archiving this segment will remove it from live views. You can restore it later from the internal repository.
+                This subcategory will be removed from the store.
               </p>
             </div>
             <div className="flex gap-4">
@@ -322,7 +322,7 @@ const ListSubCategory = ({
                 disabled={deleteLoading}
                 className="flex-1 py-4 bg-rose-600 text-white rounded-3xl font-black text-sm shadow-xl shadow-rose-100 hover:bg-rose-700 transition-all disabled:opacity-50"
               >
-                {deleteLoading ? "Archiving..." : "Confirm Archive"}
+                {deleteLoading ? "Deleting..." : "Delete"}
               </button>
             </div>
           </div>

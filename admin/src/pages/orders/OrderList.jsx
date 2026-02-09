@@ -12,9 +12,24 @@ const OrderList = ({ token }) => {
   const [statusFilter, setStatusFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [updatingStatus, setUpdatingStatus] = useState(null);
+
+  const STATUS_ENUM = {
+    PendingPayment: 0,
+    Confirmed: 1,
+    Processing: 2,
+    Shipped: 3,
+    Delivered: 4,
+    CancelledByUser: 5,
+    Refunded: 6,
+    Returned: 7,
+    PaymentExpired: 8,
+    CancelledByAdmin: 9,
+    Complete: 10,
+  };
 
   const STATUS_LABELS = {
-    0: 'Pending',
+    0: 'Pending Payment',
     1: 'Confirmed',
     2: 'Processing',
     3: 'Shipped',
@@ -22,18 +37,28 @@ const OrderList = ({ token }) => {
     5: 'Cancelled (User)',
     6: 'Refunded',
     7: 'Returned',
-    8: 'Expired',
+    8: 'Payment Expired',
     9: 'Cancelled (Admin)',
     10: 'Complete',
   };
 
   const getStatusBadgeClass = (status) => {
-    const s = Number(status);
-    if ([4, 10].includes(s)) return 'bg-green-50 text-green-600 border-green-100';
-    if ([5, 9].includes(s)) return 'bg-rose-50 text-rose-600 border-rose-100';
-    if ([1, 2, 3].includes(s)) return 'bg-blue-50 text-blue-600 border-blue-100';
-    if ([6, 7].includes(s)) return 'bg-amber-50 text-amber-600 border-amber-100';
+    // Handle both string status from API and integer status from local state/mapping
+    const statusInt = typeof status === 'string' ? STATUS_ENUM[status] : status;
+
+    if ([4, 10].includes(statusInt)) return 'bg-green-50 text-green-600 border-green-100';
+    if ([5, 9, 8].includes(statusInt)) return 'bg-rose-50 text-rose-600 border-rose-100';
+    if ([1, 2, 3].includes(statusInt)) return 'bg-blue-50 text-blue-600 border-blue-100';
+    if ([6, 7].includes(statusInt)) return 'bg-amber-50 text-amber-600 border-amber-100';
     return 'bg-gray-50 text-gray-500 border-gray-100';
+  };
+
+  const getStatusLabel = (status) => {
+    if (typeof status === 'string') {
+      const statusInt = STATUS_ENUM[status];
+      return STATUS_LABELS[statusInt] || status;
+    }
+    return STATUS_LABELS[status] || status;
   };
 
   const [totalCount, setTotalCount] = useState(0);
@@ -46,12 +71,12 @@ const OrderList = ({ token }) => {
         page: currentPage,
         pageSize: itemsPerPage,
       };
-      
+
       // Send status filter to server if selected
       if (statusFilter !== "") {
         params.status = Number(statusFilter);
       }
-      
+
       // Handle search term if provided
       if (searchTerm) {
         params.searchTerm = searchTerm;
@@ -61,8 +86,12 @@ const OrderList = ({ token }) => {
         headers: { Authorization: `Bearer ${token}` },
         params,
       });
+      // Handle the new response structure
       const data = resp.data?.responseBody?.data || [];
-      const total = resp.data?.responseBody?.totalCount || 0;
+      // Note: If totalCount is not provided in responseBody, we might need a fallback or it might be in headers
+      // Assuming for now it's still available or we default to 0/length
+      const total = resp.data?.responseBody?.totalCount || resp.data?.totalCount || 0;
+
       setOrders(data);
       setTotalCount(total);
     } catch (error) {
@@ -72,6 +101,26 @@ const OrderList = ({ token }) => {
       setLoading(false);
     }
   }, [token, currentPage, statusFilter, searchTerm]);
+
+  const handleStatusUpdate = async (orderId, newStatus) => {
+    setUpdatingStatus(orderId);
+    try {
+      // Using PUT method as requested
+      await axios.put(`${backendUrl}/api/Order/${orderId}/status?status=${newStatus}`, {}, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      });
+      toast.success("Order status updated successfully");
+      fetchOrders();
+    } catch (error) {
+      console.error("Error updating status:", error);
+      toast.error("Failed to update status");
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
 
   const queryParams = new URLSearchParams(window.location.search);
   const initialFilter = queryParams.get("filter");
@@ -166,41 +215,97 @@ const OrderList = ({ token }) => {
                 </td>
               </tr>
             ) : (
-              currentOrders.map((order) => (
-                <tr key={order.id} className="hover:bg-gray-50/50 transition-colors group">
-                  <td className="px-8 py-6">
-                    <div className="flex flex-col gap-1">
-                      <span className="font-black text-gray-900 text-lg tracking-tight group-hover:text-blue-600 transition-colors">#{order.orderNumber}</span>
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{new Date(order.createdAt).toLocaleDateString()}</span>
-                    </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className="flex flex-col gap-1">
-                      <span className="font-bold text-gray-700">{order.customerName || "Anonymous Customer"}</span>
-                      <span className="text-[10px] font-bold text-gray-400 uppercase">UID: {order.customerId || "N/A"}</span>
-                    </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className={`inline-flex items-center px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${getStatusBadgeClass(order.status)} shadow-sm`}>
-                      {STATUS_LABELS[order.status] || order.status}
-                    </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className="flex flex-col gap-1">
-                      <span className="font-black text-gray-900 text-lg">{currency} {order.totalAmount?.toFixed(2) || order.total?.toFixed(2) || "0.00"}</span>
-                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Price</span>
-                    </div>
-                  </td>
-                  <td className="px-8 py-6 text-right">
-                    <button
-                      onClick={() => navigate(`/orders/view/${order.orderNumber}`)}
-                      className="px-6 py-2.5 bg-gray-50 hover:bg-gray-900 text-gray-600 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border border-gray-100"
-                    >
-                      View
-                    </button>
-                  </td>
-                </tr>
-              ))
+              currentOrders.map((order) => {
+                const currentStatusInt = typeof order.status === 'string' ? STATUS_ENUM[order.status] : order.status;
+
+                // Define allowed transitions based on current status
+                const getAllowedStatuses = (current) => {
+                  switch (current) {
+                    case STATUS_ENUM.PendingPayment: // 0
+                      return [STATUS_ENUM.Confirmed, STATUS_ENUM.PaymentExpired, STATUS_ENUM.CancelledByAdmin];
+                    case STATUS_ENUM.Confirmed: // 1
+                      return [STATUS_ENUM.Processing, STATUS_ENUM.CancelledByAdmin];
+                    case STATUS_ENUM.Processing: // 2
+                      return [STATUS_ENUM.Shipped, STATUS_ENUM.CancelledByAdmin];
+                    case STATUS_ENUM.Shipped: // 3
+                      return [STATUS_ENUM.Delivered];
+                    case STATUS_ENUM.Delivered: // 4
+                      return [STATUS_ENUM.Complete, STATUS_ENUM.Returned, STATUS_ENUM.Refunded];
+                    case STATUS_ENUM.PaymentExpired: // 8
+                      return [STATUS_ENUM.CancelledByAdmin];
+                    default:
+                      return [];
+                  }
+                };
+
+                const allowedStatuses = new Set([currentStatusInt, ...getAllowedStatuses(currentStatusInt)]);
+
+                return (
+                  <tr key={order.id} className="hover:bg-gray-50/50 transition-colors group">
+                    <td className="px-8 py-6">
+                      <div className="flex flex-col gap-1">
+                        <span className="font-black text-gray-900 text-lg tracking-tight group-hover:text-blue-600 transition-colors">#{order.orderNumber}</span>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{new Date(order.createdAt).toLocaleString()}</span>
+                      </div>
+                    </td>
+                    <td className="px-8 py-6">
+                      <div className="flex flex-col gap-1">
+                        <span className="font-bold text-gray-700">{order.customerName || "Anonymous Customer"}</span>
+                        {/* customerId Removed as per new response structure */}
+                      </div>
+                    </td>
+                    <td className="px-8 py-6">
+                      <div className="flex items-center gap-2">
+                        <div className={`inline-flex items-center px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${getStatusBadgeClass(order.status)} shadow-sm`}>
+                          {getStatusLabel(order.status)}
+                        </div>
+                        <div className="relative group/status">
+                          <select
+                            value={currentStatusInt}
+                            onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
+                            disabled={updatingStatus === order.id}
+                            className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-10"
+                            title="Change Status"
+                          >
+                            {Object.entries(STATUS_LABELS)
+                              .filter(([code]) => allowedStatuses.has(Number(code)))
+                              .map(([code, label]) => (
+                                <option key={code} value={code}>{label}</option>
+                              ))}
+                          </select>
+                          <button className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-blue-600 transition-colors">
+                            {updatingStatus === order.id ? (
+                              <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                            ) : (
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                              </svg>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-8 py-6">
+                      <div className="flex flex-col gap-1">
+                        {/* Updated to use order.total */}
+                        <span className="font-black text-gray-900 text-lg">{currency} {order.total?.toFixed(2) || "0.00"}</span>
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Price</span>
+                      </div>
+                    </td>
+                    <td className="px-8 py-6 text-right">
+                      <button
+                        onClick={() => navigate(`/orders/view/${order.orderNumber}`)}
+                        className="px-6 py-2.5 bg-gray-50 hover:bg-gray-900 text-gray-600 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border border-gray-100"
+                      >
+                        View
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
