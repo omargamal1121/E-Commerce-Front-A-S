@@ -50,14 +50,21 @@ const ListCategory = ({
             if (mainImg.url.startsWith("http://") || mainImg.url.startsWith("https://")) {
               imgUrl = mainImg.url;
             } else {
-              // Otherwise, prepend backendUrl
-              imgUrl = `${backendUrl}${mainImg.url.startsWith('/') ? '' : '/'}${mainImg.url}`;
+              // Otherwise, prepend backendUrl and ensure proper path formatting
+              const path = mainImg.url.startsWith('/') ? mainImg.url : `/${mainImg.url}`;
+              imgUrl = `${backendUrl}${path}`;
             }
           }
           // Fallback to filePath if url is not available
           else if (mainImg.filePath) {
-            imgUrl = `${backendUrl}${mainImg.filePath.startsWith('/') ? '' : '/'}${mainImg.filePath}`;
+            const path = mainImg.filePath.startsWith('/') ? mainImg.filePath : `/${mainImg.filePath}`;
+            imgUrl = `${backendUrl}${path}`;
           }
+        }
+
+        // Log for debugging if image URL is missing
+        if (!imgUrl && cat.images?.length > 0) {
+          console.warn(`⚠️ Category ${cat.id} (${cat.name}) has images but no valid URL:`, cat.images);
         }
 
         return {

@@ -137,17 +137,14 @@ class AuthService {
         throw new Error("No token to refresh");
       }
 
+      const backendUrl = import.meta.env.VITE_BACKEND_URL;
       console.log("🔄 Attempting to refresh token...");
-      console.log(
-        "🔄 Current token (first 20 chars):",
-        currentToken.substring(0, 20) + "..."
-      );
       console.log("🔄 Using cookie-based refresh token from server...");
 
       // Make GET request to refresh token endpoint with timeout
       // No Authorization header needed - refresh token is stored in cookies
       const response = await axios.get(
-        "https://fashion-v1.runasp.net/api/Account/refresh-token",
+        `${backendUrl}/api/Account/refresh-token`,
         {
           timeout: 10000, // 10 second timeout
           withCredentials: true, // Include cookies in the request
@@ -155,17 +152,22 @@ class AuthService {
       );
 
       console.log("🔄 Refresh response status:", response.status);
-      console.log("🔄 Refresh response data:", response.data);
+
+      // If response is not 200, it's considered a failure for refresh
+      if (response.status !== 200) {
+        throw new Error(`Refresh failed with status ${response.status}`);
+      }
 
       // Extract new token from response - try multiple possible formats
+      const data = response?.data;
       const newToken =
-        response?.data?.token ||
-        response?.data?.accessToken ||
-        response?.data?.data?.token ||
-        response?.data?.data?.accessToken ||
-        response?.data?.responseBody?.data?.token ||
-        response?.data?.responseBody?.data?.accessToken ||
-        response?.data;
+        data?.token ||
+        data?.accessToken ||
+        data?.data?.token ||
+        data?.data?.accessToken ||
+        data?.responseBody?.data?.token ||
+        data?.responseBody?.data?.accessToken ||
+        (typeof data === 'string' ? data : null);
 
       console.log(
         "🔄 Extracted token:",
@@ -186,10 +188,29 @@ class AuthService {
       console.error("❌ Error response:", error.response?.data);
       console.error("❌ Error status:", error.response?.status);
 
-      // If refresh token request returns 400 or any error, it means refresh failed
-      if (error.response?.status === 400 || error.response?.status >= 400) {
-        console.log("❌ Refresh token is invalid or expired");
-        throw new Error("Refresh token failed - redirecting to login");
+      // If refresh token request returns 400 or 401, treat it as unauthorized and force login again
+      if (
+        error.response?.status === 400 ||
+        error.response?.status === 401
+      ) {
+        console.log("❌ Refresh token is invalid or expired. Forcing re-login.");
+
+        // Immediately redirect user to login
+        this.redirectToLogin();
+
+        // Normalize the error to look like a 401 for any callers
+        const authError = new Error("Refresh token invalid or expired");
+        authError.response = {
+          ...(error.response || {}),
+          status: 401,
+        };
+
+        throw authError;
+      }
+
+      // For any other error status, just rethrow the original error
+      if (error.response?.status >= 400) {
+        throw error;
       }
 
       throw error;
@@ -270,8 +291,9 @@ class AuthService {
 
       console.log("🧪 Testing refresh token endpoint...");
 
+      const backendUrl = import.meta.env.VITE_BACKEND_URL;
       const response = await axios.get(
-        "https://fashion-v1.runasp.net/api/Account/refresh-token",
+        `${backendUrl}/api/Account/refresh-token`,
         {
           timeout: 10000,
           withCredentials: true, // Include cookies in the request
@@ -293,9 +315,9 @@ class AuthService {
   // Method to force a 401 error for testing (for debugging)
   async triggerTest401() {
     try {
-      console.log("🧪 Triggering test 401 error...");
+      const backendUrl = import.meta.env.VITE_BACKEND_URL;
       // Make a request that should trigger 401
-      await axios.get("https://fashion-v1.runasp.net/api/Order", {
+      await axios.get(`${backendUrl}/api/Order`, {
         headers: {
           Authorization: `Bearer invalid_token_for_testing`,
         },
@@ -309,9 +331,10 @@ class AuthService {
   // Method to check if cookies are being sent (for debugging)
   async checkCookies() {
     try {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL;
       console.log("🍪 Checking if cookies are being sent...");
       const response = await axios.get(
-        "https://fashion-v1.runasp.net/api/Account/refresh-token",
+        `${backendUrl}/api/Account/refresh-token`,
         {
           withCredentials: true,
           timeout: 5000,

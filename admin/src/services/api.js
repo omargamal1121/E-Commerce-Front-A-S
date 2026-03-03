@@ -245,7 +245,7 @@ const API = {
         } else if (mergedFilters.isActive === null) {
           params.append("isActive", "null");
         }
-        
+
         if (mergedFilters.includeDeleted !== undefined) {
           if (mergedFilters.includeDeleted === null) {
             params.append("includeDeleted", "null");
@@ -745,6 +745,73 @@ const API = {
       } catch (error) {
         console.error(
           "❌ Error fetching discount details:",
+          error.response?.data || error
+        );
+        throw error;
+      }
+    },
+
+    // Update a discount
+    update: async (discountId, discountData, token) => {
+      try {
+        const response = await axios.put(
+          `${backendUrl}/api/Discount/${discountId}`,
+          {
+            name: discountData.name,
+            discountPercent: discountData.discountPercent,
+            startDate: discountData.startDate,
+            endDate: discountData.endDate,
+            description: discountData.description,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        return response.data;
+      } catch (error) {
+        console.error(
+          "❌ Error updating discount:",
+          error.response?.data || error
+        );
+        throw error;
+      }
+    },
+
+    // Get products by discount ID
+    getProductsByDiscount: async (discountId, token) => {
+      try {
+        const response = await axios.get(
+          `${backendUrl}/api/Products/Discount/${discountId}/Products`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        return response.data;
+      } catch (error) {
+        console.error(
+          "❌ Error fetching products by discount:",
+          error.response?.data || error
+        );
+        throw error;
+      }
+    },
+
+    // Remove discount from a product
+    removeDiscountFromProduct: async (productId, token) => {
+      try {
+        const response = await axios.delete(
+          `${backendUrl}/api/Products/${productId}/Discount`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        return response.data;
+      } catch (error) {
+        console.error(
+          "❌ Error removing discount from product:",
           error.response?.data || error
         );
         throw error;

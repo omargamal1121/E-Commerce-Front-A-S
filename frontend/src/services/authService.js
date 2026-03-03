@@ -101,15 +101,20 @@ class AuthService {
 
   async refreshToken() {
     try {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL;
       // Cookie-based refresh, no Authorization header; include cookies
       const response = await axios.get(
-        "https://fashion-v1.runasp.net/api/Account/refresh-token",
+        `${backendUrl}/api/Account/refresh-token`,
         {
           withCredentials: true,
           timeout: 10000,
-          // Avoid the interceptor if it adds Authorization or catches 401 again (handled in setupInterceptors)
         }
       );
+
+      // If response is not 200, it's considered a failure for refresh
+      if (response.status !== 200) {
+        throw new Error(`Refresh failed with status ${response.status}`);
+      }
 
       const data = response?.data;
       const newToken =
@@ -159,7 +164,7 @@ class AuthService {
   }
 
   initiateGoogleLogin() {
-    const backendUrl = "https://fashion-v1.runasp.net";
+    const backendUrl = import.meta.env.VITE_BACKEND_URL;
     const returnUrl = `${window.location.origin}/google-callback`;
     window.location.href = `${backendUrl}/api/ExternalLogin/Login?provider=Google&returnUrl=${encodeURIComponent(returnUrl)}`;
   }

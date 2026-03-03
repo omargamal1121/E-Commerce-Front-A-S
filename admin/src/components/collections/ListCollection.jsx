@@ -43,14 +43,36 @@ const ListCollection = ({
       const normalized = cols.map((col) => {
         let mainImg = col.images?.find((i) => i.isMain) || col.images?.[0] || null;
         let imgUrl = null;
+
         if (mainImg) {
+          // Check for url property first
           if (mainImg.url) {
-            imgUrl = mainImg.url.startsWith("https") ? mainImg.url : `${backendUrl}${mainImg.url.startsWith('/') ? '' : '/'}${mainImg.url}`;
-          } else if (mainImg.filePath) {
-            imgUrl = `${backendUrl}/${mainImg.filePath}`;
+            // If it's already a full URL (starts with http/https), use it as is
+            if (mainImg.url.startsWith("http://") || mainImg.url.startsWith("https://")) {
+              imgUrl = mainImg.url;
+            } else {
+              // Otherwise, prepend backendUrl and ensure proper path formatting
+              const path = mainImg.url.startsWith('/') ? mainImg.url : `/${mainImg.url}`;
+              imgUrl = `${backendUrl}${path}`;
+            }
+          }
+          // Fallback to filePath if url is not available
+          else if (mainImg.filePath) {
+            const path = mainImg.filePath.startsWith('/') ? mainImg.filePath : `/${mainImg.filePath}`;
+            imgUrl = `${backendUrl}${path}`;
           }
         }
-        return { ...col, mainImage: { url: imgUrl }, wasDeleted: col.isDeleted || false };
+
+        // Log for debugging if image URL is missing
+        if (!imgUrl && col.images?.length > 0) {
+          console.warn(`⚠️ Collection ${col.id} (${col.name}) has images but no valid URL:`, col.images);
+        }
+
+        return {
+          ...col,
+          mainImage: imgUrl ? { url: imgUrl } : null,
+          wasDeleted: col.isDeleted || false,
+        };
       });
 
       setCollections(normalized);
@@ -202,6 +224,10 @@ const ListCollection = ({
                     src={col.mainImage.url}
                     alt={col.name}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
+                    onError={(e) => {
+                      console.error('❌ Collection image failed to load:', col.mainImage.url);
+                      e.target.style.display = 'none';
+                    }}
                   />
                 ) : (
                   <div className="w-full h-full flex flex-col items-center justify-center text-gray-300 select-none">

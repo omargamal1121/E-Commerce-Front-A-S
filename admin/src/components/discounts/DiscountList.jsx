@@ -4,9 +4,11 @@ const DiscountList = ({
   discounts,
   loading,
   handleEditDiscount,
+  handleViewDiscount,
   handleDeleteDiscount,
   handleToggleActive,
   handleRestoreDiscount,
+  toggleLoading,
   currentPage,
   totalPages,
   handlePreviousPage,
@@ -44,7 +46,13 @@ const DiscountList = ({
               <tr key={d.id} className="group hover:bg-purple-50/30 transition-colors">
                 <td className="px-8 py-6">
                   <div className="flex flex-col">
-                    <span className="text-sm font-black text-gray-900 uppercase tracking-tight">{d.name}</span>
+                    <span
+                      className="text-sm font-black text-gray-900 uppercase tracking-tight cursor-pointer hover:text-purple-600 transition-colors"
+                      onClick={() => handleViewDiscount && handleViewDiscount(d.id)}
+                      title="Click to view details"
+                    >
+                      {d.name}
+                    </span>
                     <span className="text-[10px] font-bold text-gray-400 truncate max-w-[200px]">{d.description || "No description"}</span>
                   </div>
                 </td>
@@ -92,10 +100,23 @@ const DiscountList = ({
                       <>
                         <button
                           onClick={() => handleToggleActive(d.id, d.isActive)}
-                          className={`p-3 rounded-2xl transition-all border ${d.isActive ? "bg-orange-50 text-orange-600 border-orange-100" : "bg-emerald-50 text-emerald-600 border-emerald-100"}`}
-                          title={d.isActive ? "Deactivate" : "Activate"}
+                          disabled={toggleLoading === d.id}
+                          className={`p-3 rounded-2xl transition-all border ${toggleLoading === d.id
+                              ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                              : d.isActive
+                                ? "bg-orange-50 text-orange-600 border-orange-100 hover:bg-orange-600 hover:text-white"
+                                : "bg-emerald-50 text-emerald-600 border-emerald-100 hover:bg-emerald-600 hover:text-white"
+                            }`}
+                          title={toggleLoading === d.id ? "Processing..." : (d.isActive ? "Deactivate" : "Activate")}
                         >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                          {toggleLoading === d.id ? (
+                            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                          ) : (
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                          )}
                         </button>
                         <button
                           onClick={() => handleEditDiscount(d.id)}
