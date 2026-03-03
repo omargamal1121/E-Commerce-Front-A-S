@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { backendUrl } from "../../App";
-import { useNavigate } from "react-router-dom";
 
 const ListCategory = ({
   token,
@@ -11,7 +10,6 @@ const ListCategory = ({
   handleEditCategory,
   handleViewCategory,
 }) => {
-  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [isActive, setIsActive] = useState("");
   const [isDeleted, setIsDeleted] = useState("");
@@ -43,28 +41,39 @@ const ListCategory = ({
         let mainImg = cat.images?.find((i) => i.isMain) || cat.images?.[0] || null;
         let imgUrl = null;
 
+        // Helper to normalize any url-like string
+        const normalizeUrl = (raw) => {
+          if (!raw) return null;
+          if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
+          const path = raw.startsWith("/") ? raw : `/${raw}`;
+          return `${backendUrl}${path}`;
+        };
+
         if (mainImg) {
-          // Check for url property first
-          if (mainImg.url) {
-            // If it's already a full URL (starts with http/https), use it as is
-            if (mainImg.url.startsWith("http://") || mainImg.url.startsWith("https://")) {
-              imgUrl = mainImg.url;
-            } else {
-              // Otherwise, prepend backendUrl and ensure proper path formatting
-              const path = mainImg.url.startsWith('/') ? mainImg.url : `/${mainImg.url}`;
-              imgUrl = `${backendUrl}${path}`;
-            }
-          }
-          // Fallback to filePath if url is not available
-          else if (mainImg.filePath) {
-            const path = mainImg.filePath.startsWith('/') ? mainImg.filePath : `/${mainImg.filePath}`;
-            imgUrl = `${backendUrl}${path}`;
-          }
+          // Common patterns from API
+          imgUrl =
+            normalizeUrl(mainImg.url) ||
+            normalizeUrl(mainImg.filePath) ||
+            normalizeUrl(mainImg.imageUrl) ||
+            normalizeUrl(mainImg.path);
         }
 
-        // Log for debugging if image URL is missing
-        if (!imgUrl && cat.images?.length > 0) {
-          console.warn(`⚠️ Category ${cat.id} (${cat.name}) has images but no valid URL:`, cat.images);
+        // Fallback: sometimes list endpoint only sends a top-level image URL
+        if (!imgUrl) {
+          imgUrl =
+            normalizeUrl(cat.mainImageUrl) ||
+            normalizeUrl(cat.imageUrl) ||
+            normalizeUrl(cat.thumbnailUrl) ||
+            normalizeUrl(cat.mainImage?.url) ||
+            normalizeUrl(cat.image?.url);
+        }
+
+        // Log for debugging if image URL is missing but API says there are images
+        if (!imgUrl && (cat.images?.length > 0 || cat.mainImageUrl || cat.imageUrl)) {
+          console.warn(
+            `⚠️ Category ${cat.id} (${cat.name}) has image metadata but no resolved URL:`,
+            { images: cat.images, mainImageUrl: cat.mainImageUrl, imageUrl: cat.imageUrl }
+          );
         }
 
         return {
@@ -86,12 +95,12 @@ const ListCategory = ({
 
   useEffect(() => {
     fetchCategories();
-  }, [token, search, isActive, isDeleted, page]);
+  }, [token, search, isActive, isDeleted, page, fetchCategories]);
 
   const removeCategory = async (id) => {
     try {
       setDeleteLoading(true);
-      const res = await axios.delete(`${backendUrl}/api/categories/${id}`, {
+      await axios.delete(`${backendUrl}/api/categories/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -102,7 +111,7 @@ const ListCategory = ({
       );
 
       toast.success("Category moved to trash");
-    } catch (error) {
+    } catch {
       toast.error("Failed to delete category");
     } finally {
       setDeleteLoading(false);
@@ -118,7 +127,7 @@ const ListCategory = ({
       });
       toast.success("Category is now live! ✨");
       fetchCategories();
-    } catch (err) {
+    } catch {
       toast.error("Activation failed");
     }
   };
@@ -131,7 +140,7 @@ const ListCategory = ({
       });
       toast.info("Category hidden from customers");
       fetchCategories();
-    } catch (err) {
+    } catch {
       toast.error("Deactivation failed");
     }
   };
@@ -143,7 +152,7 @@ const ListCategory = ({
       });
       toast.success("Category restored from trash");
       fetchCategories();
-    } catch (err) {
+    } catch {
       toast.error("Restore failed");
     }
   };

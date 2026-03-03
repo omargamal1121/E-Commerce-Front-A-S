@@ -39,6 +39,12 @@ class AuthService {
 
         const originalRequest = error.config;
 
+        // If this request is explicitly marked to skip auth refresh handling,
+        // just reject and let the caller handle it.
+        if (originalRequest?.skipAuthRefresh) {
+          return Promise.reject(error);
+        }
+
         // 🟥 Handle 409 Conflict (e.g., product with same name)
         if (error.response?.status === 409) {
           const serverMsg =
@@ -65,7 +71,13 @@ class AuthService {
         // 🟡 Handle 401 Unauthorized (token invalid or expired)
         if (error.response?.status === 401 && !originalRequest._retry) {
           const existingToken = localStorage.getItem("token");
-          if (!existingToken) return Promise.reject(error);
+
+          // If there's no token in storage, force user to login again
+          if (!existingToken) {
+            console.log("❌ 401 received and no token found. Redirecting to login.");
+            this.redirectToLogin();
+            return Promise.reject(error);
+          }
 
           console.log("🔄 401 detected, attempting token refresh...");
 
@@ -148,6 +160,9 @@ class AuthService {
         {
           timeout: 10000, // 10 second timeout
           withCredentials: true, // Include cookies in the request
+          // Prevent the global 401 interceptor from trying to refresh again
+          // for this refresh-token call itself.
+          skipAuthRefresh: true,
         }
       );
 
@@ -158,8 +173,33 @@ class AuthService {
         throw new Error(`Refresh failed with status ${response.status}`);
       }
 
-      // Extract new token from response - try multiple possible formats
+      // Extract response data
       const data = response?.data;
+
+      // If backend wraps 401 in the body (statuscode / responseBody), treat it as auth failure
+      const bodyStatusCode =
+        data?.statuscode || data?.responseBody?.statuscode || data?.responseBody?.statusCode;
+      const bodyMessage = data?.responseBody?.message || data?.message;
+
+      if (
+        bodyStatusCode === 401 ||
+        bodyMessage === "Please login again"
+      ) {
+        console.log(
+          "❌ Refresh token response indicates unauthorized via body. Forcing re-login."
+        );
+        this.redirectToLogin();
+
+        const authError = new Error(bodyMessage || "Please login again");
+        authError.response = {
+          status: 401,
+          data,
+        };
+
+        throw authError;
+      }
+
+      // Extract new token from response - try multiple possible formats
       const newToken =
         data?.token ||
         data?.accessToken ||
@@ -167,7 +207,7 @@ class AuthService {
         data?.data?.accessToken ||
         data?.responseBody?.data?.token ||
         data?.responseBody?.data?.accessToken ||
-        (typeof data === 'string' ? data : null);
+        (typeof data === "string" ? data : null);
 
       console.log(
         "🔄 Extracted token:",

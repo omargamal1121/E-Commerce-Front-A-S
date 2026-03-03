@@ -44,28 +44,37 @@ const ListCollection = ({
         let mainImg = col.images?.find((i) => i.isMain) || col.images?.[0] || null;
         let imgUrl = null;
 
+        // Helper to normalize any url-like string
+        const normalizeUrl = (raw) => {
+          if (!raw) return null;
+          if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
+          const path = raw.startsWith("/") ? raw : `/${raw}`;
+          return `${backendUrl}${path}`;
+        };
+
         if (mainImg) {
-          // Check for url property first
-          if (mainImg.url) {
-            // If it's already a full URL (starts with http/https), use it as is
-            if (mainImg.url.startsWith("http://") || mainImg.url.startsWith("https://")) {
-              imgUrl = mainImg.url;
-            } else {
-              // Otherwise, prepend backendUrl and ensure proper path formatting
-              const path = mainImg.url.startsWith('/') ? mainImg.url : `/${mainImg.url}`;
-              imgUrl = `${backendUrl}${path}`;
-            }
-          }
-          // Fallback to filePath if url is not available
-          else if (mainImg.filePath) {
-            const path = mainImg.filePath.startsWith('/') ? mainImg.filePath : `/${mainImg.filePath}`;
-            imgUrl = `${backendUrl}${path}`;
-          }
+          imgUrl =
+            normalizeUrl(mainImg.url) ||
+            normalizeUrl(mainImg.filePath) ||
+            normalizeUrl(mainImg.imageUrl) ||
+            normalizeUrl(mainImg.path);
         }
 
-        // Log for debugging if image URL is missing
-        if (!imgUrl && col.images?.length > 0) {
-          console.warn(`⚠️ Collection ${col.id} (${col.name}) has images but no valid URL:`, col.images);
+        // Fallback for list endpoint that only exposes top-level URLs
+        if (!imgUrl) {
+          imgUrl =
+            normalizeUrl(col.mainImageUrl) ||
+            normalizeUrl(col.imageUrl) ||
+            normalizeUrl(col.thumbnailUrl) ||
+            normalizeUrl(col.mainImage?.url) ||
+            normalizeUrl(col.image?.url);
+        }
+
+        if (!imgUrl && (col.images?.length > 0 || col.mainImageUrl || col.imageUrl)) {
+          console.warn(
+            `⚠️ Collection ${col.id} (${col.name}) has image metadata but no resolved URL:`,
+            { images: col.images, mainImageUrl: col.mainImageUrl, imageUrl: col.imageUrl }
+          );
         }
 
         return {
