@@ -159,7 +159,7 @@ const ProductList = ({ token }) => {
             const discountPercent = Number(p.discountPrecentage ?? p.discountPercentage ?? p.discount?.discountPercent ?? 0);
             const hasDiscount = discountPercent > 0;
             const finalPrice = p.finalPrice ?? p.price;
-            
+
             return (
               <div key={p.id} className="group relative bg-white rounded-[48px] border border-gray-100 p-4 hover:shadow-2xl hover:shadow-emerald-900/5 transition-all duration-500 hover:-translate-y-3">
                 {/* Product Image */}
@@ -281,6 +281,7 @@ const ProductList = ({ token }) => {
               onClick={() => setPage(p => p + 1)}
               className="p-4 rounded-full hover:bg-gray-100 disabled:opacity-20 transition-all text-gray-500"
             >
+              {/* test */}
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
             </button>
           </div>
