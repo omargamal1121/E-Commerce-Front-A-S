@@ -71,7 +71,6 @@ const DiscountManager = ({ token }) => {
       setDiscounts(data);
       setTotalItems(res?.responseBody?.totalCount || 0);
     } catch (e) {
-      console.error('❌ Error fetching discounts:', e);
       toast.error("Failed to load discounts");
     }
     finally { setLoading(false); }
@@ -107,21 +106,16 @@ const DiscountManager = ({ token }) => {
   const handleToggle = async (id, current) => {
     setToggleLoading(id); // Set loading state for this specific discount
     try {
-      console.log(`🔄 Toggling discount ${id} from ${current ? 'active' : 'inactive'} to ${!current ? 'active' : 'inactive'}`);
-
       // Call the API and wait for response
       const response = current
         ? await API.discounts.deactivate(id, token)
         : await API.discounts.activate(id, token);
-
-      console.log('✅ Toggle response:', response);
 
       toast.success(`Discount ${!current ? 'activated' : 'deactivated'} successfully`);
 
       // Refresh from server to get the updated state
       await fetchDiscounts();
     } catch (e) {
-      console.error('❌ Error toggling discount:', e);
       toast.error(e.response?.data?.message || "Update failed");
       // Refresh on error to ensure UI is in sync
       fetchDiscounts();
@@ -176,7 +170,6 @@ const DiscountManager = ({ token }) => {
       const data = res?.responseBody?.data || [];
       setDiscountProducts(data);
     } catch (e) {
-      console.error('❌ Error loading discount products:', e);
       toast.error("Failed to load associated products");
     } finally {
       setProductsLoading(false);
@@ -193,12 +186,10 @@ const DiscountManager = ({ token }) => {
       const res = await API.discounts.getById(id, token);
       const discountData = res?.responseBody?.data || res?.data;
       setViewDiscountData(discountData);
-      console.log('📊 Viewing discount:', discountData);
 
       // Fetch associated products
       await fetchProductsByDiscount(id);
     } catch (e) {
-      console.error('❌ Error loading discount details:', e);
       toast.error("Failed to load discount details");
       setActiveTab("registry");
     } finally {
@@ -217,7 +208,6 @@ const DiscountManager = ({ token }) => {
         fetchProductsByDiscount(viewDiscountId);
       }
     } catch (e) {
-      console.error('❌ Error removing product discount:', e);
       toast.error("Failed to remove discount");
     }
   };

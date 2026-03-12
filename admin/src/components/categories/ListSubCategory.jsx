@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -22,7 +22,7 @@ const ListSubCategory = ({
   const [subcategories, setSubCategories] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchSubCategories = async () => {
+  const fetchSubCategories = useCallback(async () => {
     setLoading(true);
     try {
       const res = await axios.get(`${backendUrl}/api/subcategories`, {
@@ -41,15 +41,37 @@ const ListSubCategory = ({
         const totalCount = res.data.responseBody.totalCount || subCats.length;
 
         const normalized = subCats.map((sc) => {
-          let mainImg = sc.mainImage || sc.images?.find((i) => i.isMain) || sc.images?.[0] || null;
+          const mainImg = sc.mainImage || sc.images?.find((i) => i.isMain) || sc.images?.[0] || null;
           let imgUrl = null;
+
+          const normalizeUrl = (raw) => {
+            if (!raw || typeof raw !== "string") return null;
+            if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
+            const cleanPath = raw.startsWith("/") ? raw.substring(1) : raw;
+            const baseUrl = backendUrl.endsWith("/") ? backendUrl : `${backendUrl}/`;
+            return `${baseUrl}${cleanPath}`;
+          };
+
           if (mainImg) {
-            if (mainImg.url) {
-              imgUrl = mainImg.url.startsWith("http") ? mainImg.url : `${backendUrl}/${mainImg.url}`;
-            } else if (mainImg.filePath) {
-              imgUrl = `${backendUrl}/${mainImg.filePath}`;
-            }
+            imgUrl =
+              normalizeUrl(mainImg.url) ||
+              normalizeUrl(mainImg.filePath) ||
+              normalizeUrl(mainImg.imageUrl) ||
+              normalizeUrl(mainImg.path) ||
+              (typeof mainImg === "string" ? normalizeUrl(mainImg) : null);
           }
+
+          if (!imgUrl) {
+            imgUrl =
+              normalizeUrl(sc.mainImageUrl) ||
+              normalizeUrl(sc.imageUrl) ||
+              normalizeUrl(sc.thumbnailUrl) ||
+              normalizeUrl(sc.mainImage?.url) ||
+              normalizeUrl(sc.image?.url) ||
+              (typeof sc.mainImage === "string" ? normalizeUrl(sc.mainImage) : null) ||
+              (typeof sc.image === "string" ? normalizeUrl(sc.image) : null);
+          }
+
           return {
             ...sc,
             mainImageUrl: imgUrl,
@@ -61,16 +83,15 @@ const ListSubCategory = ({
         setTotalPages(Math.ceil(totalCount / pageSize));
       }
     } catch (error) {
-      console.error("❌ API Error:", error);
       toast.error("Failed to load subcategories");
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, search, isActive, isDeleted, page, pageSize]);
 
   useEffect(() => {
     if (token) fetchSubCategories();
-  }, [token, search, isActive, isDeleted, page, pageSize]);
+  }, [token, fetchSubCategories]);
 
   const removeSubCategory = async (id) => {
     setDeleteLoading(true);

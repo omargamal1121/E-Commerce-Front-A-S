@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { backendUrl } from "../../App";
@@ -6,12 +6,11 @@ import { useNavigate } from "react-router-dom";
 
 const ListCollection = ({
   token,
-  collections,
-  setCollections,
   setActiveTab,
   handleEditCollection,
   handleViewCollection,
 }) => {
+  const [collections, setCollections] = useState([]);
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [isActive, setIsActive] = useState("");
@@ -23,13 +22,13 @@ const ListCollection = ({
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const fetchCollections = async () => {
+  const fetchCollections = useCallback(async () => {
     setLoading(true);
     try {
       const res = await axios.get(`${backendUrl}/api/Collection`, {
         headers: { Authorization: `Bearer ${token}` },
         params: {
-          search: search || undefined,
+          searchTerm: search || undefined,
           isActive: isActive || undefined,
           isDeleted: isDeleted || undefined,
           page,
@@ -41,40 +40,29 @@ const ListCollection = ({
       const totalCount = res.data?.responseBody?.totalCount || cols.length;
 
       const normalized = cols.map((col) => {
-        let mainImg = col.images?.find((i) => i.isMain) || col.images?.[0] || null;
-        let imgUrl = null;
-
         // Helper to normalize any url-like string
         const normalizeUrl = (raw) => {
-          if (!raw) return null;
+          if (!raw || typeof raw !== "string") return null;
           if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
-          const path = raw.startsWith("/") ? raw : `/${raw}`;
-          return `${backendUrl}${path}`;
+          const cleanPath = raw.startsWith("/") ? raw.substring(1) : raw;
+          const baseUrl = backendUrl.endsWith("/") ? backendUrl : `${backendUrl}/`;
+          return `${baseUrl}${cleanPath}`;
         };
 
-        if (mainImg) {
-          imgUrl =
-            normalizeUrl(mainImg.url) ||
-            normalizeUrl(mainImg.filePath) ||
-            normalizeUrl(mainImg.imageUrl) ||
-            normalizeUrl(mainImg.path);
+        let imgUrl = null;
+
+        if (col.images && Array.isArray(col.images)) {
+          const mainImg = col.images.find((i) => i.isMain) || col.images[0];
+          if (mainImg) {
+            imgUrl = normalizeUrl(mainImg.url) || normalizeUrl(mainImg.filePath);
+          }
         }
 
-        // Fallback for list endpoint that only exposes top-level URLs
         if (!imgUrl) {
           imgUrl =
             normalizeUrl(col.mainImageUrl) ||
             normalizeUrl(col.imageUrl) ||
-            normalizeUrl(col.thumbnailUrl) ||
-            normalizeUrl(col.mainImage?.url) ||
-            normalizeUrl(col.image?.url);
-        }
-
-        if (!imgUrl && (col.images?.length > 0 || col.mainImageUrl || col.imageUrl)) {
-          console.warn(
-            `⚠️ Collection ${col.id} (${col.name}) has image metadata but no resolved URL:`,
-            { images: col.images, mainImageUrl: col.mainImageUrl, imageUrl: col.imageUrl }
-          );
+            normalizeUrl(col.thumbnailUrl);
         }
 
         return {
@@ -87,16 +75,15 @@ const ListCollection = ({
       setCollections(normalized);
       setTotalPages(Math.ceil(totalCount / pageSize));
     } catch (err) {
-      console.error("Error fetching collections:", err);
       toast.error("Failed to load inventory repository");
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, search, isActive, isDeleted, page, pageSize]);
 
   useEffect(() => {
     fetchCollections();
-  }, [token, search, isActive, isDeleted, page, pageSize]);
+  }, [fetchCollections]);
 
   const removeCollection = async (id) => {
     try {

@@ -37,13 +37,7 @@ const SubCategoryDetails = ({ token }) => {
 
       const cats = res.data?.responseBody?.data || [];
       setCategories(cats);
-
-      console.log(
-        "📌 Available categories:",
-        cats.map((c) => ({ id: c.id, name: c.name }))
-      );
     } catch (error) {
-      console.error("Error fetching categories:", error);
       toast.error("Error fetching categories");
     }
   };
@@ -92,25 +86,22 @@ const SubCategoryDetails = ({ token }) => {
       <div className="flex flex-wrap gap-2 mb-6">
         <button
           onClick={() => setActiveTab("add-sub")}
-          className={`px-4 py-2 rounded ${
-            activeTab === "add-sub" ? "bg-blue-600 text-white" : "bg-gray-200"
-          }`}
+          className={`px-4 py-2 rounded ${activeTab === "add-sub" ? "bg-blue-600 text-white" : "bg-gray-200"
+            }`}
         >
           Add Sub-Category
         </button>
         <button
           onClick={() => setActiveTab("sub-list")}
-          className={`px-4 py-2 rounded ${
-            activeTab === "sub-list" ? "bg-blue-600 text-white" : "bg-gray-200"
-          }`}
+          className={`px-4 py-2 rounded ${activeTab === "sub-list" ? "bg-blue-600 text-white" : "bg-gray-200"
+            }`}
         >
           Sub-Categories List
         </button>
         <button
           onClick={() => setActiveTab("view")}
-          className={`px-4 py-2 rounded ${
-            activeTab === "view" ? "bg-blue-600 text-white" : "bg-gray-200"
-          }`}
+          className={`px-4 py-2 rounded ${activeTab === "view" ? "bg-blue-600 text-white" : "bg-gray-200"
+            }`}
         >
           View SubCategory
         </button>
@@ -143,7 +134,7 @@ const SubCategoryDetails = ({ token }) => {
         <ListSubCategory
           token={token}
           subCategories={[]}
-          setSubCategories={() => {}}
+          setSubCategories={() => { }}
           categories={categories}
           setActiveTab={setActiveTab}
           handleEditSubCategory={handleEditSubCategory}

@@ -31,12 +31,6 @@ class AuthService {
     axios.interceptors.response.use(
       (response) => response,
       async (error) => {
-        console.log("🔍 Interceptor caught error:", {
-          status: error.response?.status,
-          url: error.config?.url,
-          message: error.message,
-        });
-
         const originalRequest = error.config;
 
         // If this request is explicitly marked to skip auth refresh handling,
@@ -51,8 +45,6 @@ class AuthService {
             error.response?.data?.message ||
             error.response?.data?.errors?.messages?.[0] ||
             "Conflict error (resource already exists).";
-
-          console.warn("⚠️ Conflict detected:", serverMsg);
 
           // لو عندك Toast أو Alert في المشروع ممكن تضيفه هنا:
           if (window?.toast) {
@@ -74,12 +66,9 @@ class AuthService {
 
           // If there's no token in storage, force user to login again
           if (!existingToken) {
-            console.log("❌ 401 received and no token found. Redirecting to login.");
             this.redirectToLogin();
             return Promise.reject(error);
           }
-
-          console.log("🔄 401 detected, attempting token refresh...");
 
           if (this.isRefreshing) {
             return new Promise((resolve, reject) => {
@@ -96,19 +85,16 @@ class AuthService {
             const newToken = await this.refreshToken();
 
             if (newToken) {
-              console.log("✅ Token refresh successful, retrying request");
               localStorage.setItem("token", newToken);
               originalRequest.headers.Authorization = `Bearer ${newToken}`;
               this.processQueue(null, newToken);
               return axios(originalRequest);
             } else {
-              console.log("❌ Token refresh failed, redirecting to login");
               this.processQueue(new Error("Token refresh failed"), null);
               this.redirectToLogin();
               return Promise.reject(error);
             }
           } catch (refreshError) {
-            console.error("❌ Token refresh error:", refreshError);
             this.processQueue(refreshError, null);
             this.redirectToLogin();
             return Promise.reject(error);
@@ -127,8 +113,6 @@ class AuthService {
             (typeof serverData === 'string' ? serverData : null) ||
             error.message ||
             "An unexpected error occurred.";
-
-          console.warn(`⚠️ API Error (${error.response?.status || 'Network'}):`, serverMsg);
 
           if (window?.toast) {
             window.toast.error(`❌ ${serverMsg}`);
@@ -150,8 +134,6 @@ class AuthService {
       }
 
       const backendUrl = import.meta.env.VITE_BACKEND_URL;
-      console.log("🔄 Attempting to refresh token...");
-      console.log("🔄 Using cookie-based refresh token from server...");
 
       // Make GET request to refresh token endpoint with timeout
       // No Authorization header needed - refresh token is stored in cookies
@@ -165,8 +147,6 @@ class AuthService {
           skipAuthRefresh: true,
         }
       );
-
-      console.log("🔄 Refresh response status:", response.status);
 
       // If response is not 200, it's considered a failure for refresh
       if (response.status !== 200) {
@@ -185,9 +165,6 @@ class AuthService {
         bodyStatusCode === 401 ||
         bodyMessage === "Please login again"
       ) {
-        console.log(
-          "❌ Refresh token response indicates unauthorized via body. Forcing re-login."
-        );
         this.redirectToLogin();
 
         const authError = new Error(bodyMessage || "Please login again");
@@ -209,32 +186,17 @@ class AuthService {
         data?.responseBody?.data?.accessToken ||
         (typeof data === "string" ? data : null);
 
-      console.log(
-        "🔄 Extracted token:",
-        newToken ? newToken.substring(0, 20) + "..." : "null"
-      );
-
       if (newToken && typeof newToken === "string" && newToken.length > 10) {
-        console.log("✅ Token refreshed successfully");
         return newToken;
       } else {
-        console.error("❌ Invalid token response format:", response.data);
-        console.error("❌ Token type:", typeof newToken);
-        console.error("❌ Token length:", newToken?.length);
         throw new Error("Invalid token response format");
       }
     } catch (error) {
-      console.error("❌ Token refresh failed:", error.message);
-      console.error("❌ Error response:", error.response?.data);
-      console.error("❌ Error status:", error.response?.status);
-
       // If refresh token request returns 400 or 401, treat it as unauthorized and force login again
       if (
         error.response?.status === 400 ||
         error.response?.status === 401
       ) {
-        console.log("❌ Refresh token is invalid or expired. Forcing re-login.");
-
         // Immediately redirect user to login
         this.redirectToLogin();
 
@@ -298,12 +260,10 @@ class AuthService {
     } catch (error) {
       // If refresh token returns 400 or any error, redirect to login
       if (error.response?.status === 400 || error.response?.status >= 400) {
-        console.log("❌ Manual refresh failed - token invalid/expired");
         this.redirectToLogin();
         return null;
       }
 
-      console.error("❌ Manual refresh error:", error);
       this.redirectToLogin();
       return null;
     }
@@ -325,11 +285,8 @@ class AuthService {
     try {
       const currentToken = localStorage.getItem("token");
       if (!currentToken) {
-        console.log("❌ No token to test refresh");
         return false;
       }
-
-      console.log("🧪 Testing refresh token endpoint...");
 
       const backendUrl = import.meta.env.VITE_BACKEND_URL;
       const response = await axios.get(
@@ -340,14 +297,8 @@ class AuthService {
         }
       );
 
-      console.log("🧪 Test refresh response:", response.data);
       return true;
     } catch (error) {
-      console.error(
-        "🧪 Test refresh failed:",
-        error.response?.data || error.message
-      );
-      console.error("🧪 Error status:", error.response?.status);
       return false;
     }
   }
@@ -363,7 +314,6 @@ class AuthService {
         },
       });
     } catch (error) {
-      console.log("🧪 Test 401 triggered:", error.response?.status);
       return error.response?.status === 401;
     }
   }
@@ -372,7 +322,6 @@ class AuthService {
   async checkCookies() {
     try {
       const backendUrl = import.meta.env.VITE_BACKEND_URL;
-      console.log("🍪 Checking if cookies are being sent...");
       const response = await axios.get(
         `${backendUrl}/api/Account/refresh-token`,
         {
@@ -380,10 +329,8 @@ class AuthService {
           timeout: 5000,
         }
       );
-      console.log("🍪 Cookie request successful:", response.status);
       return true;
     } catch (error) {
-      console.log("🍪 Cookie request failed:", error.response?.status);
       return false;
     }
   }

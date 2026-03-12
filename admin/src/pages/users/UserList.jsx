@@ -38,13 +38,11 @@ const UserList = ({ token }) => {
       // Replace this block inside fetchUsers after the axios.get call
       if (response.data.statuscode === 200) {
         setUsers(response.data.responseBody?.data || [])
-        console.log('Sample user:', response.data.responseBody?.data);
       } else {
         toast.error(response.data.responseBody?.message || 'Failed to fetch users')
         setUsers([])
       }
     } catch (error) {
-      console.error('Error fetching users:', error)
       toast.error('Error fetching users. The API endpoint might not be implemented yet.')
       // For demonstration, create mock data
       const mockUsers = [
@@ -69,7 +67,6 @@ const UserList = ({ token }) => {
         setAvailableRoles(list)
       }
     } catch (err) {
-      console.warn('Failed to fetch roles, using defaults', err?.response?.data || err)
     }
   }
 
@@ -104,7 +101,6 @@ const UserList = ({ token }) => {
       } else {
         toast.error('Error deleting user')
       }
-      console.error('Delete user error:', err)
     } finally {
       setDeletingId(null)
     }
@@ -194,7 +190,6 @@ const UserList = ({ token }) => {
       } else {
         toast.error('Error adding role')
       }
-      console.error('Add role error:', err)
     } finally {
       setRoleSubmitting(false)
     }
@@ -244,7 +239,6 @@ const UserList = ({ token }) => {
       } else {
         toast.error('Error removing role')
       }
-      console.error('Remove role error:', err)
     } finally {
       setRemovingRole(null)
     }
@@ -281,7 +275,6 @@ const UserList = ({ token }) => {
       } else {
         toast.error('Error locking user')
       }
-      console.error('Lock user error:', err)
     } finally {
       setLockingId(null)
     }
@@ -316,7 +309,6 @@ const UserList = ({ token }) => {
       } else {
         toast.error('Error unlocking user')
       }
-      console.error('Unlock user error:', err)
     } finally {
       setUnlockingId(null)
     }
