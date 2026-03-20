@@ -5,6 +5,7 @@ const resources = {
   en: {
     translation: {
       HOME: 'HOME',
+      CATEGORY: 'CATEGORY',
       COLLECTION: 'COLLECTION',
       ABOUT: 'ABOUT',
       CONTACT: 'CONTACT',
@@ -134,6 +135,7 @@ const resources = {
   ar: {
     translation: {
       HOME: 'الرئيسية',
+      CATEGORY: 'الأقسام',
       COLLECTION: 'المجموعة',
       ABOUT: 'حول',
       CONTACT: 'اتصل',

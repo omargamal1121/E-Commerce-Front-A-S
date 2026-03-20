@@ -264,6 +264,8 @@ const ShopContextProvider = (props) => {
           },
           refreshToken
         );
+        // 🆕 Refresh server cart so the totalPrice stays in sync
+        await fetchUserCart();
       } catch (error) {
         console.log(error);
       }
@@ -271,6 +273,12 @@ const ShopContextProvider = (props) => {
   };
 
   const getCartAmount = () => {
+    // 🆕 Prioritize backend-calculated total for 100% accuracy
+    if (token && serverCart && typeof serverCart.totalPrice === 'number') {
+      return serverCart.totalPrice;
+    }
+
+    // 🟡 Fallback for guests or before first server sync
     let amount = 0;
     for (const itemId in cartItems) {
       for (const size in cartItems[itemId]) {
@@ -319,146 +327,56 @@ const ShopContextProvider = (props) => {
     } catch (error) {
       console.error("Primary API failed:", error);
       toast.error("Failed to load products from main API, trying backup...");
-
       try {
-        // 🟡 Fallback: use discountService to load products
-        const productsResult = await discountService.getAllProducts(
+        // 🟡 Optimized Fallback: use advancedSearch to get everything in one call
+        const searchResult = await discountService.advancedSearch(
+          {}, // empty criteria to get all products
           1,
           100,
           refreshToken
         );
-        if (!productsResult.success) throw new Error(productsResult.error);
 
-        const allProducts = productsResult.data;
+        if (!searchResult.success) throw new Error(searchResult.error);
 
-        // 🔄 Fetch discount details for each product
-        const productsWithDiscounts = await Promise.all(
-          allProducts.map(async (product) => {
-            try {
-              const discountResult = await discountService.getProductDetails(
-                product.id,
-                refreshToken
-              );
+        const allProducts = searchResult.data;
+        const wishlistIds = wishlistItems.map((item) => item.productId);
 
-              if (discountResult.success && discountResult.data) {
-                const productData = discountResult.data;
-                const discount = productData.discount;
+        const transformed = allProducts.map((p) => {
+          const originalPrice = p.price || 0;
+          const finalPrice = p.finalPrice || originalPrice;
+          const discountPercentage = p.discountPrecentage || 0;
 
-                if (discount && discount.isActive) {
-                  const originalPrice = productData.price || 0;
-                  const finalPrice = productData.finalPrice || originalPrice;
-                  const discountPercentage = discount.discountPercent || 0;
+          return {
+            _id: String(p.id),
+            name: p.name,
+            description: p.description,
+            price: originalPrice,
+            finalPrice,
+            discountPercentage,
+            discountPrecentage: discountPercentage,
+            discountName: p.discountName || null,
+            image: Array.isArray(p.images)
+              ? p.images
+                .map((img) => img.url || img.imageUrl || img.Url)
+                .filter(Boolean)
+              : p.mainImageUrl
+                ? [p.mainImageUrl]
+                : [],
+            isActive: p.isActive,
+            currency: currency,
+            category: p.categoryName || p.category?.name,
+            subCategory: p.subCategoryName || p.subCategory?.name,
+            sizes: (p.variants || [])
+              .map((v) => v.size)
+              .filter(Boolean),
+            isInWishlist: wishlistIds.includes(p.id),
+          };
+        });
 
-                  return {
-                    _id: String(productData.id),
-                    name: productData.name,
-                    description: productData.description,
-                    price: originalPrice,
-                    finalPrice,
-                    discountPercentage,
-                    discountPrecentage: discountPercentage, // (legacy)
-                    discountName: discount.name,
-                    discountDescription: discount.description,
-                    startDate: discount.startDate,
-                    endDate: discount.endDate,
-                    image: Array.isArray(productData.images)
-                      ? productData.images
-                        .map((img) => img.url || img.imageUrl || img.Url)
-                        .filter(Boolean)
-                      : productData.mainImageUrl
-                        ? [productData.mainImageUrl]
-                        : [],
-                    isActive: productData.isActive,
-                    currency: currency,
-                    category:
-                      productData.categoryName || productData.category?.name,
-                    subCategory:
-                      productData.subCategoryName ||
-                      productData.subCategory?.name,
-                    sizes: (productData.variants || [])
-                      .map((v) => v.size)
-                      .filter(Boolean),
-                  };
-                }
-              }
-
-              // 🧩 Fallback discount calculation if no API discount data
-              const originalPrice = product.price || 0;
-              const finalPrice = product.finalPrice || originalPrice;
-              const discountPercentage =
-                originalPrice > 0 && finalPrice < originalPrice
-                  ? Math.round(
-                    ((originalPrice - finalPrice) / originalPrice) * 100
-                  )
-                  : 0;
-
-              return {
-                _id: String(product.id),
-                name: product.name,
-                description: product.description,
-                price: originalPrice,
-                finalPrice,
-                discountPercentage,
-                discountPrecentage: discountPercentage,
-                discountName: product.discountName || null,
-                image: Array.isArray(product.images)
-                  ? product.images
-                    .map((img) => img.url || img.imageUrl || img.Url)
-                    .filter(Boolean)
-                  : product.mainImageUrl
-                    ? [product.mainImageUrl]
-                    : [],
-                isActive: product.isActive,
-                currency: currency,
-                category: product.categoryName || product.category?.name,
-                subCategory:
-                  product.subCategoryName || product.subCategory?.name,
-                sizes: (product.variants || [])
-                  .map((v) => v.size)
-                  .filter(Boolean),
-              };
-            } catch (err) {
-              console.error(
-                `Error fetching discount for product ${product.id}:`,
-                err
-              );
-              return {
-                _id: String(product.id),
-                name: product.name,
-                description: product.description,
-                price: product.price || 0,
-                finalPrice: product.finalPrice || product.price || 0,
-                discountPercentage: 0,
-                discountPrecentage: 0,
-                discountName: null,
-                image: Array.isArray(product.images)
-                  ? product.images
-                    .map((img) => img.url || img.imageUrl || img.Url)
-                    .filter(Boolean)
-                  : product.mainImageUrl
-                    ? [product.mainImageUrl]
-                    : [],
-                isActive: product.isActive,
-                currency: currency,
-                category: product.categoryName || product.category?.name,
-                subCategory:
-                  product.subCategoryName || product.subCategory?.name,
-                sizes: (product.variants || [])
-                  .map((v) => v.size)
-                  .filter(Boolean),
-              };
-            }
-          })
-        );
-
-        console.log(
-          "✅ Products loaded with discount data:",
-          productsWithDiscounts
-        );
-        setProducts(productsWithDiscounts);
-      } catch (backupError) {
-        console.error("Backup discount service also failed:", backupError);
-        toast.error("Failed to load products from all sources.");
+        setProducts(transformed);
+      } catch (err) {
+        console.error("Fallback API also failed:", err);
+        toast.error("Failed to load products from fallback API.");
         // Navigate to error page when all sources fail
         try {
           navigate('/error', { replace: true });

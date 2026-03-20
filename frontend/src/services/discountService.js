@@ -125,6 +125,65 @@ class DiscountService {
       };
     }
   }
+
+  /**
+   * Advanced search for products
+   * @param {Object} searchCriteria - Criteria to filter products
+   * @param {number} page - Page number
+   * @param {number} pageSize - Items per page
+   * @param {Function} refreshTokenFn - Function to refresh the token
+   * @returns {Promise<Object>} - API response
+   */
+  async advancedSearch(searchCriteria = {}, page = 1, pageSize = 10, refreshTokenFn) {
+    try {
+      const queryParams = new URLSearchParams({
+        page,
+        pageSize,
+        isActive: true,
+        includeDeleted: false
+      });
+
+      const response = await fetchWithTokenRefresh(
+        `${this.backendUrl}/api/Products/advanced-search?${queryParams.toString()}`,
+        {
+          method: 'POST',
+          headers: {
+            ...getAuthHeaders(),
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(searchCriteria)
+        },
+        refreshTokenFn
+      );
+
+      const data = await response.json();
+
+      if (response.status === 200 && data.responseBody) {
+        return {
+          success: true,
+          data: data.responseBody.data || [],
+          message: data.responseBody.message || 'Search successful'
+        };
+      } else if (response.status === 404) {
+        return {
+          success: true,
+          data: [],
+          message: data.responseBody?.message || 'No products found'
+        };
+      } else {
+        return {
+          success: false,
+          error: data.responseBody?.errors?.messages?.[0] || data.message || 'Search failed'
+        };
+      }
+    } catch (error) {
+      console.error('Error in advanced search:', error);
+      return {
+        success: false,
+        error: 'Error performing advanced search'
+      };
+    }
+  }
 }
 
 const discountService = new DiscountService();

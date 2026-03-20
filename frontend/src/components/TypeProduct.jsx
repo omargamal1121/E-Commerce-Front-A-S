@@ -17,99 +17,41 @@ const TypeProduct = () => {
   const [error, setError] = useState(null);
 
   // Fetch products with biggest discounts using the discount API
+  // Fetch products with biggest discounts using the single advanced-search API
   useEffect(() => {
     const fetchTopDiscountedProducts = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // Get all products
-        const productsResult = await discountService.getAllProducts(
+        // Use the advanced search endpoint to get products on sale in one call
+        const searchResult = await discountService.advancedSearch(
+          { onSale: true, sortBy: "discount", sortDescending: true },
           1,
-          100,
+          10,
           refreshToken
         );
-        if (!productsResult.success) throw new Error(productsResult.error);
 
-        const allProducts = productsResult.data;
+        if (!searchResult.success) throw new Error(searchResult.error);
 
-        // Fetch discount details for each product
-        const productsWithDiscounts = await Promise.all(
-          allProducts.map(async (product) => {
-            try {
-              const discountResult = await discountService.getProductDetails(
-                product.id,
-                refreshToken
-              );
+        const discountedProducts = searchResult.data.map(p => ({
+          ...p,
+          discountPercentage: p.discountPrecentage || 0,
+          originalPrice: p.price,
+          finalPrice: p.finalPrice
+        }));
 
-              if (discountResult.success && discountResult.data) {
-                const productData = discountResult.data;
-                const discount = productData.discount;
-
-                if (discount && discount.isActive) {
-                  const originalPrice = productData.price || 0;
-                  const finalPrice = productData.finalPrice || originalPrice;
-                  const discountPercentage = discount.discountPercent || 0;
-
-                  return {
-                    ...productData,
-                    discountPercentage,
-                    discountPrecentage: discountPercentage,
-                    discountName: discount.name,
-                    discountDescription: discount.description,
-                    startDate: discount.startDate,
-                    endDate: discount.endDate,
-                    originalPrice,
-                    finalPrice,
-                  };
-                }
-              }
-
-              // Fallback discount calculation
-              const originalPrice = product.price || 0;
-              const finalPrice = product.finalPrice || originalPrice;
-              const discountPercentage =
-                originalPrice > 0 && finalPrice < originalPrice
-                  ? Math.round(
-                      ((originalPrice - finalPrice) / originalPrice) * 100
-                    )
-                  : 0;
-
-              if (discountPercentage > 0) {
-                return {
-                  ...product,
-                  discountPercentage,
-                  discountPrecentage: discountPercentage,
-                  originalPrice,
-                  finalPrice,
-                };
-              }
-
-              return null;
-            } catch (error) {
-              console.error(
-                `Error fetching discount for product ${product.id}:`,
-                error
-              );
-              return null;
-            }
-          })
-        );
-
-        // Keep only valid discounted products
-        const validDiscountedProducts = productsWithDiscounts
-          .filter(
-            (product) => product !== null && product.discountPercentage > 0
-          )
+        // Keep only top 2 biggest discounts
+        const top2 = discountedProducts
           .sort((a, b) => b.discountPercentage - a.discountPercentage)
           .slice(0, 2);
 
-        setTopDiscountedProducts(validDiscountedProducts);
+        setTopDiscountedProducts(top2);
       } catch (error) {
         console.error("Error fetching discounted products:", error);
         setError(error.message);
 
-        // Local fallback
+        // Local fallback if API fails
         const fallbackProducts = products
           .filter((product) => {
             const originalPrice = product.price || 0;

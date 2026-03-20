@@ -1,0 +1,60 @@
+{
+  "type": "object",
+  "properties": {
+    "searchTerm": {
+      "type": "string",
+      "nullable": true
+    },
+    "subcategoryid": {
+      "type": "integer",
+      "format": "int32",
+      "nullable": true
+    },
+    "gender": {
+      "$ref": "#/components/schemas/Gender"
+    },
+    "fitType": {
+      "$ref": "#/components/schemas/FitType"
+    },
+    "minPrice": {
+      "type": "number",
+      "format": "double",
+      "nullable": true
+    },
+    "maxPrice": {
+      "type": "number",
+      "format": "double",
+      "nullable": true
+    },
+    "inStock": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "onSale": {
+      "type": "boolean",
+      "nullable": true
+    },
+    "sortBy": {
+      "type": "string",
+      "nullable": true
+    },
+    "sortDescending": {
+      "type": "boolean"
+    },
+    "color": {
+      "type": "string",
+      "nullable": true
+    },
+    "minSize": {
+      "type": "number",
+      "format": "double",
+      "nullable": true
+    },
+    "maxSize": {
+      "type": "number",
+      "format": "double",
+      "nullable": true
+    }
+  },
+  "additionalProperties": false
+}

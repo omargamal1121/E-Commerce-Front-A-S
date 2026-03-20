@@ -215,8 +215,9 @@ const Product = () => {
                         if (variantImages[c]?.[0]) setActiveImage(variantImages[c][0].url || variantImages[c][0]);
                       }}
                       className={`w-12 h-12 rounded-full border-2 transition-all p-1 ${selectedVariant?.color === c ? 'border-black' : 'border-transparent'}`}
+                      title={c}
                     >
-                      <div className="w-full h-full rounded-full shadow-inner" style={{ backgroundColor: c.toLowerCase() }} />
+                      <div className="w-full h-full rounded-full shadow-inner" style={{ backgroundColor: c.startsWith('#') ? c : (/^[0-9A-Fa-f]{3,8}$/.test(c) ? `#${c}` : c.toLowerCase()) }} />
                     </button>
                   ))}
                 </div>

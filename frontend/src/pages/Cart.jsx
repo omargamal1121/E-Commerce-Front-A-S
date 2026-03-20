@@ -266,7 +266,9 @@ const Cart = () => {
                         <div
                           className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border border-gray-300 flex items-center justify-center"
                           style={{
-                            backgroundColor: item.color?.toLowerCase() || '#000000',
+                            backgroundColor: item.color && item.color !== 'Unknown'
+                              ? (item.color.startsWith('#') ? item.color : (/^[0-9A-Fa-f]{3,8}$/.test(item.color) ? `#${item.color}` : item.color.toLowerCase()))
+                              : '#000000',
                             minWidth: '20px',
                             minHeight: '20px'
                           }}
@@ -276,9 +278,6 @@ const Cart = () => {
                             <span className="text-xs text-gray-500">?</span>
                           ) : null}
                         </div>
-                        {item.color && item.color !== 'Unknown' && (
-                          <span className="text-xs text-gray-600 hidden sm:inline">{item.color}</span>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -347,13 +346,24 @@ const Cart = () => {
 
                 setLoading(true);
                 try {
-                  const success = await checkout();
-                  if (success) {
-                    // Navigate to place order
+                  const response = await axios.post(
+                    `${backendUrl}/api/Cart/checkout`,
+                    {},
+                    {
+                      headers: { Authorization: `Bearer ${token}` }
+                    }
+                  );
+
+                  if (response.status === 200 || response.status === 201) {
+                    toast.success(response.data?.responseBody?.message || "Checkout successful");
+                    // Navigate to place order (payment and address page)
                     navigate("/place-order");
+                  } else {
+                    toast.error("Checkout failed.");
                   }
                 } catch (error) {
-                  toast.error("Checkout failed. Please try again.");
+                  const errMsg = error.response?.data?.responseBody?.message || "Checkout failed. Please try again.";
+                  toast.error(errMsg);
                   console.error("Checkout error:", error);
                 } finally {
                   setLoading(false);

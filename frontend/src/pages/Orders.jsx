@@ -81,28 +81,92 @@ const Orders = () => {
     return 'bg-gray-100 text-gray-800 border-gray-200';
   };
 
+  const getOrderProgressLevel = (status) => {
+    if (!status) return 0;
+    const s = String(status).toLowerCase().replace(/\s+/g, '');
+    
+    // Level 1: Confirmed
+    if (s === '1' || s === 'confirmed') return 1;
+    // Level 2: Processing
+    if (s === '2' || s === 'processing') return 2;
+    // Level 3: Shipped
+    if (s === '3' || s === 'shipped') return 3;
+    // Level 4: Delivered
+    if (s === '4' || s === 'delivered') return 4;
+    // Level 5: Complete
+    if (s === '10' || s === 'complete') return 5;
+    
+    return 0;
+  };
+
+  const getStepperSteps = (order) => {
+    if (!order) return [];
+    
+    const s = String(order.status).toLowerCase().replace(/\s+/g, '');
+    const steps = [{ label: 'Placed', icon: '📝', active: true }];
+
+    // Branch: Payment Expired
+    if (s === 'paymentexpired' || s === '8') {
+      steps.push({ label: 'Payment Expired', icon: '⏰', active: true, error: true });
+      steps.push({ label: 'Closed', icon: '🔒', active: true, error: true });
+      return steps;
+    }
+
+    // Branch: Cancelled (User or Admin)
+    if (s.includes('cancelled') || s === '5' || s === '9') {
+      const isConfirmed = order.statusDisplay !== 'PendingPayment' && s !== '0' && s !== '8';
+      if (isConfirmed) steps.push({ label: 'Confirmed', icon: '✅', active: true });
+      steps.push({ label: 'Cancelled', icon: '🛑', active: true, error: true });
+      return steps;
+    }
+
+    // Branch: Returns / Refunds
+    if (s === 'returned' || s === 'refunded' || s === '6' || s === '7') {
+      steps.push({ label: 'Confirmed', icon: '✅', active: true });
+      steps.push({ label: 'Shipped', icon: '🚚', active: true });
+      steps.push({ label: 'Delivered', icon: '🎁', active: true });
+      if (s === 'returned' || s === '7') steps.push({ label: 'Returned', icon: '🔄', active: true, neutral: true });
+      if (s === 'refunded' || s === '6') steps.push({ label: 'Refunded', icon: '💰', active: true, neutral: true });
+      return steps;
+    }
+
+    // Happy Path
+    const level = getOrderProgressLevel(order.status);
+    steps.push({ label: 'Confirmed', icon: '✅', active: level >= 1 });
+    steps.push({ label: 'Processing', icon: '⚙️', active: level >= 2 });
+    steps.push({ label: 'Shipped', icon: '🚚', active: level >= 3 });
+    steps.push({ label: 'Delivered', icon: '🎁', active: level >= 4 });
+    
+    if (level === 5) {
+      steps.push({ label: 'Complete', icon: '🏁', active: true });
+    }
+
+    return steps;
+  };
+
   const compareStatus = (orderStatus, filterValue) => {
     if (filterValue === 'All') return true;
+    
     const filterId = parseInt(filterValue);
-    const normalizedOrderStatus = (typeof orderStatus === 'string' && !isNaN(orderStatus) && orderStatus.trim() !== '')
-      ? Number(orderStatus)
-      : orderStatus;
+    const filterLabel = statusMap[filterId];
 
-    if (normalizedOrderStatus === filterId) return true;
+    if (String(orderStatus) === String(filterValue)) return true;
+    if (filterLabel && String(orderStatus).toLowerCase() === String(filterLabel).toLowerCase()) return true;
 
     if (typeof orderStatus === 'string') {
       const normalizedOrder = orderStatus.toLowerCase().replace(/\s+/g, '');
-      const normalizedMap = (statusMap[filterId] || '').toLowerCase().replace(/\s+/g, '');
+      const normalizedMap = (filterLabel || '').toLowerCase().replace(/\s+/g, '');
+      
       if (normalizedOrder === normalizedMap) return true;
 
       if (filterId === 0) return ['pending', 'pendingpayment', 'waiting', 'unpaid'].includes(normalizedOrder);
       if (filterId === 1) return ['confirmed', 'approved', 'paid', 'success'].includes(normalizedOrder);
-      if (filterId === 2) return ['processing', 'inprogress', 'preparing'].includes(normalizedOrder);
-      if (filterId === 3) return ['shipped', 'outfordelivery', 'intransit'].includes(normalizedOrder);
+      if (filterId === 8) return ['expired', 'paymentexpired'].includes(normalizedOrder);
       if (filterId === 4) return ['delivered', 'received', 'complete', 'completed'].includes(normalizedOrder);
       if (filterId === 5) return ['cancelled', 'canceled', 'usercancelled'].includes(normalizedOrder);
     }
-    return String(orderStatus) === String(filterValue);
+    
+    return false;
   };
 
   const loadOrderData = async (status = statusFilter) => {
@@ -116,64 +180,40 @@ const Orders = () => {
       const res = await fetch(`${backendUrl}/api/Order?${queryParams}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
+
+      if (res.status === 401) {
+        navigate('/login');
+        return;
+      }
+
       const data = await res.json();
-      const orders = data?.responseBody?.data || [];
+      const ordersInResponse = data?.responseBody?.data || [];
 
-      const detailedOrders = await Promise.all(
-        orders.map(async (order) => {
-          try {
-            const detailRes = await axios.get(`${backendUrl}/api/Order/${order.id}`, {
-              headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const orderDetail = detailRes.data?.responseBody?.data;
+      // 🚀 NO MORE N+1! We use the summary data directly from the list response.
+      const mappedOrders = ordersInResponse.map(order => {
+        // Backend returns status as descriptive strings now (e.g. "PaymentExpired")
+        const rawStatus = order.status;
+        
+        return {
+          id: order.id,
+          orderNumber: order.orderNumber,
+          status: rawStatus,
+          statusDisplay: order.status || getStatusDisplay(rawStatus),
+          total: order.total,
+          date: order.createdAt,
+          image: (order.imageurl || order.imageUrl || order.imageURL) ? [order.imageurl || order.imageUrl || order.imageURL] : ['/api/placeholder/80/80'],
+          name: `Order #${order.orderNumber}`,
+          price: order.total,
+          quantity: order.itemCount || 1, // Summary count
+          paymentMethod: order.paymentMethod || 'N/A',
+          paymentStatus: order.paymentStatus || 'N/A',
+          canBeCancelled: order.canBeCancelled // Provided by new API
+        };
+      });
 
-            const payments = orderDetail?.payment || [];
-            const lastPayment = payments.length > 0 ? payments[payments.length - 1] : null;
-
-            return (orderDetail?.items || []).map(item => {
-              const rawStatus = orderDetail?.status !== undefined ? orderDetail.status : order.status;
-              const statusNum = (typeof rawStatus === 'number' || (typeof rawStatus === 'string' && !isNaN(rawStatus) && rawStatus.trim() !== ''))
-                ? Number(rawStatus)
-                : rawStatus;
-
-              return {
-                id: orderDetail?.id || order.id,
-                orderNumber: orderDetail?.orderNumber || order.orderNumber,
-                status: statusNum,
-                statusDisplay: getStatusDisplay(statusNum),
-                total: orderDetail?.total || order.total,
-                date: orderDetail?.createdAt || order.createdAt,
-                image: item.product?.mainImageUrl ? [item.product.mainImageUrl] : ['/api/placeholder/80/80'],
-                name: item.product?.name || `Order #${orderDetail?.orderNumber || order.orderNumber}`,
-                price: item.unitPrice || item.product?.finalPrice || item.product?.price || item.totalPrice,
-                quantity: item.quantity || 1,
-                size: item.product?.productVariantForCartDto?.size || 'N/A',
-                color: item.product?.productVariantForCartDto?.color || 'N/A',
-                paymentMethod: lastPayment?.paymentMethod?.paymentMethod || lastPayment?.paymentMethod || 'N/A',
-                paymentStatus: lastPayment?.status,
-                canBeCancelled: orderDetail?.canBeCancelled
-              };
-            });
-          } catch (error) {
-            return [{
-              id: order.id,
-              orderNumber: order.orderNumber,
-              status: order.status,
-              statusDisplay: getStatusDisplay(order.status),
-              total: order.total,
-              date: order.createdAt,
-              image: ['/api/placeholder/80/80'],
-              name: `Order #${order.orderNumber}`,
-              price: order.total,
-              quantity: 1,
-              paymentMethod: 'N/A'
-            }];
-          }
-        })
-      );
-
-      setOrderData(detailedOrders.flat().reverse());
+      setOrderData(mappedOrders); // List is already sorted by backend usually
     } catch (error) {
+      console.error("Orders load error:", error);
       toast.error("Failed to load orders");
     } finally {
       setLoading(false);
@@ -189,6 +229,10 @@ const Orders = () => {
       });
       setSelectedOrderDetails(response.data?.responseBody?.data);
     } catch (error) {
+      if (error.response?.status === 401) {
+        navigate('/login');
+        return;
+      }
       toast.error('Failed to load details');
       setShowModal(false);
     } finally {
@@ -209,6 +253,10 @@ const Orders = () => {
       toast.success('Order cancelled');
       await loadOrderData();
     } catch (error) {
+      if (error.response?.status === 401) {
+        navigate('/login');
+        return;
+      }
       toast.error('Failed to cancel');
     } finally {
       setLoading(false);
@@ -316,9 +364,15 @@ const Orders = () => {
                   <h3 className='text-lg font-black text-gray-900'>{item.name}</h3>
                   <div className='flex flex-wrap items-center gap-4 text-xs font-semibold text-gray-500'>
                     <p className='text-black font-black text-sm'>{currency}{item.price}</p>
-                    <p>Qty: {item.quantity}</p>
-                    <p>• {item.size} / {item.color}</p>
+                    <p>Includes {item.quantity} {item.quantity === 1 ? 'item' : 'items'}</p>
                     <p>• {new Date(item.date).toLocaleDateString()}</p>
+                  </div>
+                  <div className='flex items-center gap-2 mt-2'>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Payment:</span>
+                    <span className="text-[10px] font-black text-gray-900">{item.paymentMethod}</span>
+                    <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase ${item.paymentStatus === 'Paid' || item.paymentStatus === 'Success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                      {item.paymentStatus}
+                    </span>
                   </div>
                 </div>
 
@@ -359,8 +413,9 @@ const Orders = () => {
                   <div className="animate-spin h-12 w-12 border-b-2 border-black mb-4"></div>
                   <p className="font-black tracking-widest uppercase text-xs">Fetching Vibe Details...</p>
                 </div>
-              ) : selectedOrderDetails && (
-                <>
+              ) : (
+                selectedOrderDetails && (
+                  <>
                   {/* Header */}
                   <div className="p-8 border-b flex justify-between items-center bg-gray-50/50">
                     <div>
@@ -374,20 +429,15 @@ const Orders = () => {
 
                   <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar">
                     {/* Stepper Progress */}
-                    <div className="relative flex justify-between items-start max-w-2xl mx-auto mb-10">
-                      {[
-                        { label: 'Placed', icon: '📝', active: true },
-                        { label: 'Confirmed', icon: '✅', active: selectedOrderDetails.status !== 'PendingPayment' && selectedOrderDetails.status !== 'Cancelled' },
-                        { label: 'Shipped', icon: '🚚', active: selectedOrderDetails.isShipped },
-                        { label: 'Delivered', icon: '🎁', active: selectedOrderDetails.isDelivered }
-                      ].map((step, i, arr) => (
-                        <div key={i} className="flex flex-col items-center relative z-10">
-                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-lg transition-all duration-1000 ${step.active ? 'bg-black scale-110' : 'bg-gray-100 grayscale opacity-40'}`}>
+                    <div className="relative flex justify-between items-start w-full max-w-3xl mx-auto mb-10 px-4">
+                      {getStepperSteps(selectedOrderDetails).map((step, i, arr) => (
+                        <div key={i} className="flex flex-col items-center relative z-10 flex-1">
+                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-lg transition-all duration-500 ${step.error ? 'bg-red-600' : step.neutral ? 'bg-blue-600' : step.active ? 'bg-black' : 'bg-gray-100 grayscale opacity-40'} ${step.active && !step.error && !step.neutral ? 'scale-110' : ''}`}>
                             {step.icon}
                           </div>
-                          <span className={`text-[10px] font-black uppercase tracking-widest mt-3 transition-colors ${step.active ? 'text-black' : 'text-gray-300'}`}>{step.label}</span>
+                          <span className={`text-[9px] font-black uppercase tracking-tighter mt-3 text-center transition-colors ${step.active ? 'text-black' : 'text-gray-300'}`}>{step.label}</span>
                           {i < arr.length - 1 && (
-                            <div className={`absolute top-6 left-1/2 w-[calc(200%-3rem)] h-1 -z-10 transition-all duration-1000 ${step.active && arr[i + 1].active ? 'bg-black' : 'bg-gray-100'}`} />
+                            <div className={`absolute top-6 left-[60%] w-[calc(100%-2rem)] h-1 -z-10 transition-all duration-1000 ${step.active && arr[i + 1].active ? (arr[i+1].error ? 'bg-red-200' : 'bg-black') : 'bg-gray-100'}`} />
                           )}
                         </div>
                       ))}
@@ -490,11 +540,12 @@ const Orders = () => {
                     <button onClick={() => setShowModal(false)} className="px-10 py-3 bg-black text-white font-black uppercase text-[10px] tracking-widest rounded-full hover:scale-105 active:scale-95 transition-all shadow-xl">Close View</button>
                   </div>
                 </>
-              )}
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+              )
+            )}
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
 
       <style>{`
         .section-title-small { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.3em; color: #999; }

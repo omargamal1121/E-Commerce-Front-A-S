@@ -1,4 +1,5 @@
 import React, { useContext, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ShopContext } from '../context/ShopContext';
 import { useTranslation } from 'react-i18next';
 
@@ -11,6 +12,7 @@ const WishlistButton = ({
   isInWishlist: isInWishlistProp = null
 }) => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const {
     addToWishlist,
     removeFromWishlist,
@@ -35,7 +37,7 @@ const WishlistButton = ({
 
     if (!user) {
       // Redirect to login if not authenticated
-      window.location.href = '/login';
+      navigate('/login');
       return;
     }
 

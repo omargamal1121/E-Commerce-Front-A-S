@@ -42,13 +42,13 @@ const CollectionProducts = () => {
         let collectionResponse;
         try {
           collectionResponse = await axios.get(
-            `${backendUrl}/api/Collection/${collectionId}`,
+            `${backendUrl}/api/Collection/${collectionId}?isActive=true&isDeleted=false`,
             { headers: baseHeaders }
           );
         } catch (e) {
           if (e.response && e.response.status === 401 && authToken) {
             collectionResponse = await axios.get(
-              `${backendUrl}/api/Collection/${collectionId}`,
+              `${backendUrl}/api/Collection/${collectionId}?isActive=true&isDeleted=false`,
               { headers: authHeaders }
             );
           } else {
@@ -70,7 +70,7 @@ const CollectionProducts = () => {
           let productsResponse;
           try {
             productsResponse = await axios.get(
-              `${backendUrl}/api/Collection/${collectionId}/products`,
+              `${backendUrl}/api/Collection/${collectionId}/products?isActive=true&isDeleted=false`,
               { headers: baseHeaders }
             );
             console.log("Products response (unauthenticated):", productsResponse.data);
@@ -79,7 +79,7 @@ const CollectionProducts = () => {
             if (errFirst.response && errFirst.response.status === 401 && authToken) {
               console.log("Retrying with authentication...");
               productsResponse = await axios.get(
-                `${backendUrl}/api/Collection/${collectionId}/products`,
+                `${backendUrl}/api/Collection/${collectionId}/products?isActive=true&isDeleted=false`,
                 { headers: authHeaders }
               );
               console.log("Products response (authenticated):", productsResponse.data);
@@ -208,7 +208,7 @@ const CollectionProducts = () => {
 
   return (
     <>
-      <HeroImage height={60}/>
+      <HeroImage height={60} />
       <div className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
         {/* Collection Header */}
         <div className="text-center mb-8">

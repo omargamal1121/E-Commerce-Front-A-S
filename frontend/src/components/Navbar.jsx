@@ -17,7 +17,6 @@ const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const { t } = useTranslation();
   const [hovered, setHovered] = useState(false);
-  const [hoveredCategoryId, setHoveredCategoryId] = useState(null);
 
   const [user, setUser] = useState(() => {
     const stored = localStorage.getItem("user");
@@ -74,57 +73,31 @@ const Navbar = () => {
 
         // Get categories from responseBody
         if (Array.isArray(data.responseBody?.data)) {
-          // Set categories directly from API response
-          setCategories(data.responseBody.data);
+          const fetchedCategories = data.responseBody.data;
+          setCategories(fetchedCategories);
+          
+          const subcats = {};
+          fetchedCategories.forEach(cat => {
+            subcats[cat.id] = Array.isArray(cat.subCategorySimples) 
+                ? cat.subCategorySimples 
+                : [];
+          });
+          setCategorySubcategories(subcats);
+          console.log("Navbar Categories Data:", fetchedCategories);
         } else {
           setCategories([]); // fallback to prevent errors
+          setCategorySubcategories({});
         }
       } catch (err) {
         console.error("Error fetching categories:", err);
         setCategories([]);
+        setCategorySubcategories({});
       }
     };
     fetchCategories();
   }, [backendUrl]);
 
-  useEffect(() => {
-    const fetchCategoriesWithSubcategories = async () => {
-      try {
-        const promises = categories.map(async (category) => {
-          const categoryRes = await fetch(
-            `${backendUrl}/api/categories/${category.id}?isActive=true&includeDeleted=false`
-          );
-          const categoryData = await categoryRes.json();
-
-          // Get subcategories from category detail response
-          if (categoryData.responseBody?.data?.subCategories) {
-            return {
-              [category.id]:
-                categoryData.responseBody.data.subCategories.filter(
-                  (sub) => sub.isActive
-                ),
-            };
-          }
-          return { [category.id]: [] };
-        });
-
-        const subcategories = await Promise.all(promises);
-        const mergedSubcategories = subcategories.reduce(
-          (acc, curr) => ({ ...acc, ...curr }),
-          {}
-        );
-
-        setCategorySubcategories(mergedSubcategories);
-      } catch (err) {
-        console.error("Error fetching categories with subcategories:", err);
-        setCategorySubcategories({});
-      }
-    };
-
-    if (categories.length > 0) {
-      fetchCategoriesWithSubcategories();
-    }
-  }, [categories, backendUrl]);
+  // Removed N+1 fetchCategoriesWithSubcategories using new subCategorySimples array
 
   const navbarVariants = {
     hidden: { y: -100, opacity: 0 },
@@ -177,57 +150,61 @@ const Navbar = () => {
           <div className="relative group">
             <NavLink
               to="/collection"
-              className="flex items-center gap-1 focus:outline-none"
+              className="flex items-center gap-1 focus:outline-none uppercase tracking-widest"
             >
-              SHOP <span className="ml-1">&#9662;</span>
+              {t("CATEGORY")} <span className="ml-1 text-[10px]">&#9662;</span>
             </NavLink>
 
-            {/* Menu */}
-            <div className="absolute left-1/2 -translate-x-1/3 mt-2 w-80 bg-white shadow-lg z-[100] opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-opacity duration-200">
-              <ul className="flex flex-col py-2">
+            {/* Main Categories Dropdown */}
+            <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-72 bg-white shadow-2xl z-[100] hidden group-hover:block transition-all duration-300 border border-gray-100 rounded-b-2xl">
+              <ul className="flex flex-col py-3">
                 {Array.isArray(categories) && categories.length > 0 ? (
                   categories.map((cat) => (
                     <li
                       key={cat.id}
-                      className="relative"
-                      onMouseEnter={() => setHoveredCategoryId(cat.id)}
-                      onMouseLeave={() => setHoveredCategoryId(null)}
+                      className="relative px-3 group/sub"
                     >
                       <Link
                         to={`/category/${cat.id}`}
-                        className="block px-6 py-3 hover:bg-gray-100 cursor-pointer text-gray-700 font-medium transition-colors duration-150"
+                        className="flex justify-between items-center px-4 py-3.5 hover:bg-black hover:text-white rounded-xl cursor-pointer text-gray-800 font-black transition-all duration-200"
                       >
-                        <div className="flex justify-between items-center">
-                          <span>{cat.name}</span>
-                        </div>
+                        <span className="text-sm tracking-tight">{cat.name}</span>
+                        {Array.isArray(categorySubcategories[cat.id]) &&
+                          categorySubcategories[cat.id].length > 0 && (
+                            <span className="text-[10px] ml-2 font-black transition-transform group-hover/sub:translate-x-1">❯</span>
+                          )}
                       </Link>
 
-                      {/* Subcategories */}
+                      {/* Nested Subcategories Popout - Using Hidden/Block for Reliability */}
                       {Array.isArray(categorySubcategories[cat.id]) &&
                         categorySubcategories[cat.id].length > 0 && (
-                          <ul
-                            className={`absolute left-full top-0 w-64 bg-white shadow-lg transition-all duration-200 z-50 ${hoveredCategoryId === cat.id
-                              ? "opacity-100 visible"
-                              : "opacity-0 invisible"
-                              }`}
+                          <div
+                            className="absolute left-[calc(100%-10px)] top-0 pl-4 hidden group-hover/sub:block z-[110]"
                           >
-                            {categorySubcategories[cat.id].map((sub) => (
-                              <li key={sub.id}>
-                                <Link
-                                  to={`/subcategory/${sub.id}`}
-                                  className="block px-6 py-3 hover:bg-gray-100 cursor-pointer text-gray-700 transition-colors duration-150"
-                                >
-                                  {sub.name}
-                                </Link>
+                            <ul className="w-64 bg-white shadow-2xl border border-gray-100 rounded-2xl py-3 transform transition-all duration-300">
+                              <li className="px-5 py-2 border-b border-gray-50 mb-2">
+                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">
+                                  Explore {cat.name}
+                                </span>
                               </li>
-                            ))}
-                          </ul>
+                              {categorySubcategories[cat.id].map((sub) => (
+                                <li key={sub.id} className="px-3">
+                                  <Link
+                                    to={`/subcategory/${sub.id}`}
+                                    className="block px-4 py-2.5 hover:bg-gray-50 hover:pl-6 rounded-xl cursor-pointer text-gray-600 text-xs font-bold transition-all duration-200"
+                                  >
+                                    {sub.name}
+                                  </Link>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
                         )}
                     </li>
                   ))
                 ) : (
-                  <li className="px-6 py-3 text-gray-500">
-                    No categories available
+                  <li className="px-8 py-5 text-gray-400 text-[10px] font-black uppercase tracking-widest text-center italic">
+                    Loading Categories...
                   </li>
                 )}
               </ul>
