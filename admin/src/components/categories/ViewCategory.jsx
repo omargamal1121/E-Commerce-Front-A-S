@@ -215,186 +215,145 @@ const ViewCategory = ({ token, categoryId, isActive = null, includeDeleted = nul
   if (!category) return null;
 
   const images = category.images || [];
+  const subCategories = category.subCategories || [];
+  const isDeletedFlag = !!(category.isDeleted || category.deleted || category.deletedAt);
 
   return (
-    <div className="flex flex-col gap-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Top Banner & Control */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+    <div className="flex flex-col gap-16 animate-in fade-in slide-in-from-bottom-6 duration-1000">
+      {/* Control Center */}
+      <div className="bg-gray-900 rounded-[50px] p-10 flex flex-wrap items-center justify-between gap-8 shadow-2xl shadow-gray-200 border border-gray-800">
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-3">
-            <h2 className="text-3xl font-black text-gray-900 tracking-tight">{category.name}</h2>
-            <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${category.isActive ? "bg-green-100 text-green-700" : "bg-rose-100 text-rose-700"}`}>
-              {category.isActive ? "Live" : "Internal"}
+          <p className="text-blue-400 text-xs font-black uppercase tracking-[0.3em] mb-1">Category Deployment</p>
+          <h2 className="text-5xl font-black text-white tracking-tighter">{category.name}</h2>
+          <div className="flex items-center gap-4 mt-4">
+            <div className={`px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest ${category.isActive ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"}`}>
+              {category.isActive ? "Live" : "Inactive"}
             </div>
-            {category.isDeleted && (
-              <div className="px-3 py-1 rounded-full bg-gray-900 text-white text-[10px] font-black uppercase tracking-widest">
-                In Trash
-              </div>
-            )}
+            {isDeletedFlag && <div className="px-6 py-2 rounded-full bg-white/10 text-white text-xs font-black uppercase tracking-widest border border-white/10">Archived</div>}
           </div>
-          <p className="text-gray-400 font-bold text-xs uppercase tracking-tighter">System Reference UID: {category.id}</p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex items-center gap-4">
           <button
             onClick={triggerUpdate}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-sm font-black shadow-lg shadow-blue-100 transition-all active:scale-95"
+            className="px-8 py-4 bg-white/5 text-white border border-white/10 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-white hover:text-gray-900 transition-all shadow-xl"
           >
             Edit Metadata
           </button>
 
-          <div className="w-px h-10 bg-gray-100 mx-2 hidden md:block" />
-
           {category.isActive ? (
-            <button onClick={deactivateCategory} className="p-3 bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white rounded-2xl transition-all" title="Deactivate">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
-              </svg>
-            </button>
+            <button onClick={deactivateCategory} className="px-8 py-4 bg-amber-500 text-gray-900 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-amber-400 transition-all font-bold shadow-lg">Deactivate</button>
           ) : (
-            <button onClick={activateCategory} className="p-3 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white rounded-2xl transition-all" title="Activate">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-            </button>
+            <button onClick={activateCategory} className="px-8 py-4 bg-emerald-500 text-gray-900 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-emerald-400 transition-all font-bold shadow-lg">Activate</button>
           )}
 
-          {!category.isDeleted ? (
-            <button onClick={deleteCategory} className="p-3 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded-2xl transition-all" title="Trash">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-            </button>
+          {!isDeletedFlag ? (
+            <button onClick={deleteCategory} className="px-8 py-4 bg-rose-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-rose-500 transition-all font-bold shadow-lg">Delete</button>
           ) : (
-            <button onClick={restoreCategory} className="p-3 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-2xl transition-all" title="Restore">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
+            <button onClick={restoreCategory} className="px-8 py-4 bg-blue-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-500 transition-all font-bold shadow-lg">Restore</button>
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-        {/* Left Column: Media Gallery */}
-        <div className="lg:col-span-12 flex flex-col gap-6">
-          <div className="bg-gray-50 rounded-[48px] p-8 border border-gray-100">
-            {images.length > 0 ? (
-              <div className="flex flex-col gap-6">
-                <div className="relative group aspect-video lg:aspect-[21/9] bg-white rounded-[32px] overflow-hidden shadow-2xl shadow-gray-200">
-                  <img
-                    src={images[selectedImageIndex].url}
-                    className="w-full h-full object-contain"
-                    alt="Gallery item"
-                  />
-                  <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                    <button
-                      onClick={() => deleteImageById(images[selectedImageIndex].id)}
-                      className="p-3 bg-white/20 backdrop-blur-md text-white border border-white/20 rounded-2xl hover:bg-rose-600 hover:border-rose-600 transition-all font-bold text-xs uppercase tracking-widest"
-                    >
-                      Purge Asset
-                    </button>
-                  </div>
-
-                  {images[selectedImageIndex].isMain && (
-                    <div className="absolute top-4 left-4 px-4 py-2 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl shadow-lg">
-                      Hero Asset
-                    </div>
-                  )}
-                </div>
-
-                {images.length > 1 && (
-                  <div className="flex flex-wrap gap-3 mt-4">
-                    {images.map((img, idx) => (
-                      <button
-                        key={img.id}
-                        onClick={() => setSelectedImageIndex(idx)}
-                        className={`w-20 h-20 rounded-2xl border-2 transition-all overflow-hidden ${selectedImageIndex === idx ? "border-blue-600 ring-4 ring-blue-50" : "border-gray-100 hover:border-gray-200"}`}
-                      >
-                        <img src={img.url} className="w-full h-full object-cover" alt="thumbnail" />
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+        {/* Visual Gallery */}
+        <div className="lg:col-span-8 flex flex-col gap-8">
+          <div className="relative aspect-square sm:aspect-video rounded-[56px] overflow-hidden bg-white border border-gray-100 group shadow-sm transition-all hover:bg-gray-50/20">
+            {images[selectedImageIndex] ? (
+              <img src={images[selectedImageIndex].url} className="w-full h-full object-contain p-2" alt="Asset Preview" />
             ) : (
-              <div className="aspect-[21/9] flex flex-col items-center justify-center text-gray-300 gap-2 font-bold">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              <div className="w-full h-full flex items-center justify-center text-gray-300 font-bold uppercase tracking-widest text-sm">No Visual Data</div>
+            )}
+
+            {images[selectedImageIndex] && !actionLoading && (
+              <button
+                onClick={() => deleteImageById(images[selectedImageIndex].id)}
+                className="absolute top-8 right-8 p-5 bg-white/80 backdrop-blur-md text-rose-600 rounded-3xl opacity-0 group-hover:opacity-100 transition-all shadow-xl hover:bg-rose-600 hover:text-white"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
-                No Visual Materials Uploaded
+              </button>
+            )}
+
+            {images.length > 1 && (
+              <div className="absolute inset-x-8 top-1/2 -translate-y-1/2 flex justify-between pointer-events-none">
+                <button onClick={() => setSelectedImageIndex(i => (i === 0 ? images.length - 1 : i - 1))} className="p-6 bg-white/90 backdrop-blur-md rounded-3xl pointer-events-auto shadow-2xl border border-gray-100/50 hover:bg-blue-600 hover:text-white transition-all">←</button>
+                <button onClick={() => setSelectedImageIndex(i => (i === images.length - 1 ? 0 : i + 1))} className="p-6 bg-white/90 backdrop-blur-md rounded-3xl pointer-events-auto shadow-2xl border border-gray-100/50 hover:bg-blue-600 hover:text-white transition-all">→</button>
               </div>
             )}
           </div>
+
+          <div className="grid grid-cols-5 sm:grid-cols-7 gap-6">
+            {images.map((img, idx) => (
+              <button
+                key={img.id}
+                onClick={() => setSelectedImageIndex(idx)}
+                className={`relative aspect-square rounded-[28px] overflow-hidden border-4 transition-all ${selectedImageIndex === idx ? "border-blue-600 scale-105 shadow-2xl" : "border-white hover:border-gray-100 shadow-sm"}`}
+              >
+                <img src={img.url} className="w-full h-full object-cover" alt="Thumbnail" />
+                {img.isMain && <div className="absolute bottom-3 inset-x-3 bg-blue-600 text-white text-[9px] font-black uppercase text-center py-1.5 rounded-xl">Hero</div>}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Info Grid */}
-        <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm flex flex-col gap-4">
-            <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Chronology</h3>
-            <div className="flex flex-col gap-4">
-              <div>
-                <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Created</p>
-                <p className="text-sm font-bold text-gray-900">{new Date(category.createdAt).toLocaleString()}</p>
+        {/* Information Panel */}
+        <div className="lg:col-span-4 flex flex-col gap-8">
+          <div className="bg-white rounded-[50px] p-12 border border-gray-100 shadow-sm flex flex-col gap-10">
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-black uppercase tracking-widest text-gray-400">Inventory Narrative</p>
+              <p className="text-gray-600 font-medium leading-relaxed text-lg">{category.description || "No description provided."}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-8 pt-10 border-t border-gray-50">
+              <div className="flex flex-col gap-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Category UID</p>
+                <p className="font-black text-gray-900 tracking-tight text-xl">#{category.id}</p>
               </div>
-              <div className="w-full h-px bg-gray-50" />
-              <div>
-                <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Last Evolution</p>
-                <p className="text-sm font-bold text-gray-900">{new Date(category.modifiedAt).toLocaleString()}</p>
+              <div className="flex flex-col gap-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Display Rank</p>
+                <p className="font-black text-gray-900 tracking-tight text-xl">{category.displayOrder}</p>
+              </div>
+              <div className="flex flex-col gap-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Created At</p>
+                <p className="font-black text-gray-900 tracking-tight text-sm">{new Date(category.createdAt).toLocaleDateString()}</p>
+              </div>
+              <div className="flex flex-col gap-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Last Evolution</p>
+                <p className="font-black text-gray-900 tracking-tight text-sm">{new Date(category.modifiedAt || category.createdAt).toLocaleDateString()}</p>
               </div>
             </div>
           </div>
 
-          <div className="md:col-span-2 bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm flex flex-col gap-4">
-            <h3 className="text-xs font-black uppercase tracking-widest text-gray-400">Inventory Narrative</h3>
-            <p className="text-gray-600 font-medium leading-relaxed">{category.description || "No narrative established for this category yet. Consider adding a description to improve SEO and customer experience."}</p>
-            <div className="mt-auto flex items-center gap-4">
-              <div className="bg-gray-50 px-4 py-2 rounded-xl">
-                <p className="text-[10px] text-gray-400 font-bold uppercase">Display Index</p>
-                <p className="text-lg font-black text-gray-900">{category.displayOrder}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Sub-Categories Section */}
-        {category.subCategories && category.subCategories.length > 0 && (
-          <div className="lg:col-span-12 flex flex-col gap-8">
+          {/* Connected Sub-categories */}
+          <div className="bg-gray-50/50 rounded-[50px] p-10 border border-gray-100 flex flex-col gap-8 shadow-inner overflow-hidden">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-black text-gray-900 tracking-tight">Connected Sub-Categories</h3>
-              <span className="bg-gray-100 px-3 py-1 rounded-lg text-xs font-bold text-gray-500">{category.subCategories.length} Nodes</span>
+              <h3 className="font-black text-gray-900 uppercase tracking-widest text-xs">Sub-segments ({subCategories.length})</h3>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {category.subCategories.map((sub) => {
-                const subMain = sub.images?.find((i) => i.isMain) || sub.images?.[0];
-                return (
-                  <button
-                    key={sub.id}
-                    onClick={() => handleSelectId(sub.id)}
-                    className="group flex flex-col text-left bg-white border border-gray-100 rounded-[32px] overflow-hidden hover:border-blue-200 hover:shadow-2xl transition-all duration-300"
-                  >
-                    <div className="aspect-[4/3] w-full overflow-hidden bg-gray-50">
-                      {subMain ? (
-                        <img src={subMain.url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt={sub.name} />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-300 font-black text-xs uppercase">No Visual</div>
-                      )}
-                    </div>
-                    <div className="p-6">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-bold text-gray-900 line-clamp-1">{sub.name}</h4>
-                        <div className={`w-2 h-2 rounded-full ${sub.isActive ? "bg-green-500" : "bg-rose-500"}`} title={sub.isActive ? "Live" : "Inactive"} />
-                      </div>
-                      <p className="text-xs text-gray-500 line-clamp-2 font-medium">{sub.description || "Node narrative missing."}</p>
-                    </div>
-                  </button>
-                );
-              })}
+            <div className="flex flex-col gap-4">
+              {subCategories.slice(0, 8).map(sub => (
+                <button
+                  key={sub.id}
+                  onClick={() => handleSelectId(sub.id)}
+                  className="flex items-center gap-6 bg-white p-4 rounded-3xl border border-gray-100 hover:shadow-xl transition-all text-left group"
+                >
+                  <div className="w-16 h-16 bg-gray-50 rounded-2xl overflow-hidden shadow-sm shrink-0 border border-gray-50">
+                    <img src={sub.images?.find(i => i.isMain)?.url || sub.images?.[0]?.url || ""} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-black text-gray-900 truncate text-base group-hover:text-blue-600 transition-colors">{sub.name}</p>
+                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">Rank: {sub.displayOrder}</p>
+                  </div>
+                  <div className={`w-3 h-3 rounded-full ${sub.isActive ? "bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]" : "bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.4)]"}`} />
+                </button>
+              ))}
+              {subCategories.length > 8 && <p className="text-center text-[10px] font-black uppercase tracking-widest text-gray-400 py-2">+{subCategories.length - 8} deeper layers</p>}
+              {subCategories.length === 0 && <p className="text-center text-xs font-bold text-gray-400 py-10 uppercase tracking-widest">No associated segments</p>}
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

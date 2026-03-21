@@ -89,6 +89,21 @@ const ViewProduct = ({ token, productId }) => {
     }
   };
 
+  const handleRemoveDiscount = async () => {
+    if (!product) return;
+    if (!window.confirm("Are you sure you want to remove the discount from this product?")) return;
+    setActionLoading(true);
+    try {
+      await API.products.removeDiscount(product.id, token);
+      toast.success("Discount removed");
+      fetchProduct();
+    } catch {
+      toast.error("Failed to remove discount");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   if (loading && !product) return (
     <div className="flex flex-col gap-10 animate-pulse">
       <div className="h-[500px] bg-gray-100 rounded-[48px]" />
@@ -142,31 +157,31 @@ const ViewProduct = ({ token, productId }) => {
         </div>
       )}
 
-      {/* Immersive Product Showcase */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+      {/* Product Showcase */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
 
-        {/* Visual Engine */}
-        <div className="lg:col-span-7 flex flex-col gap-6">
+        {/* Product Gallery */}
+        <div className="lg:col-span-8 flex flex-col gap-8">
           <div className={`relative aspect-[4/5] bg-white rounded-[56px] overflow-hidden border shadow-2xl group ${isDeleted ? "border-rose-500/50" : "border-gray-100"}`}>
             {isDeleted && (
               <div className="absolute inset-0 bg-rose-500/20 backdrop-blur-[2px] z-10 flex items-center justify-center">
                 <div className="text-center">
                   <div className="text-6xl mb-4">🗑️</div>
-                  <span className="text-2xl font-black text-rose-600 uppercase tracking-widest">Deleted</span>
+                  <span className="text-2xl font-black text-rose-600 uppercase tracking-widest text-white drop-shadow-lg">Deleted</span>
                 </div>
               </div>
             )}
             {images[selectedImageIndex] ? (
               <img
                 src={images[selectedImageIndex].url}
-                className={`w-full h-full object-cover transition-transform duration-[2000ms] group-hover:scale-110 ${isDeleted ? "opacity-50 grayscale" : ""}`}
+                className={`w-full h-full object-cover transition-transform duration-[2000ms] group-hover:scale-110 ${isDeleted ? "opacity-30 grayscale" : ""}`}
                 alt={product.name}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gray-50 text-gray-200 text-9xl">🖼️</div>
             )}
 
-            {/* Status & Overlays */}
+            {/* Badges */}
             <div className="absolute top-10 left-10 flex flex-col gap-3">
               {isDeleted ? (
                 <span className="px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest bg-rose-600 text-white border border-rose-500 backdrop-blur-xl">
@@ -178,20 +193,20 @@ const ViewProduct = ({ token, productId }) => {
                 </span>
               )}
               {hasDiscount && (
-                <span className="px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest bg-emerald-400 text-gray-900 border border-emerald-300 backdrop-blur-xl">
+                <span className="px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest bg-amber-400 text-gray-900 border border-amber-300 backdrop-blur-xl">
                   -{discountPercent}% Discount
                 </span>
               )}
             </div>
           </div>
 
-          {/* Thumbnail Array */}
+          {/* Thumbnails */}
           <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
             {images.map((img, idx) => (
               <button
                 key={img.id || idx}
                 onClick={() => setSelectedImageIndex(idx)}
-                className={`flex-shrink-0 w-24 h-32 rounded-[24px] overflow-hidden border-4 transition-all ${selectedImageIndex === idx ? "border-emerald-500 scale-105 shadow-xl" : "border-transparent opacity-50 hover:opacity-100"}`}
+                className={`flex-shrink-0 w-32 h-40 rounded-[28px] overflow-hidden border-4 transition-all ${selectedImageIndex === idx ? "border-emerald-500 scale-105 shadow-xl" : "border-transparent opacity-50 hover:opacity-100"}`}
               >
                 <img src={img.url} className="w-full h-full object-cover" alt="" />
               </button>
@@ -199,17 +214,12 @@ const ViewProduct = ({ token, productId }) => {
           </div>
         </div>
 
-        {/* Intelligence Context */}
-        <div className="lg:col-span-5 flex flex-col gap-8">
+        {/* Product Details */}
+        <div className="lg:col-span-4 flex flex-col gap-8">
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-4">
-              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500">ID: {product.id}</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-emerald-500">Product ID: {product.id}</span>
               <div className="h-px flex-1 bg-gray-100" />
-              {isDeleted && (
-                <span className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-600 text-white border border-rose-500 animate-pulse">
-                  DELETED
-                </span>
-              )}
             </div>
             <h1 className={`text-5xl font-black leading-[0.9] uppercase tracking-tighter ${isDeleted ? "text-rose-500 line-through" : "text-gray-900"}`}>
               {product.name}
@@ -219,10 +229,10 @@ const ViewProduct = ({ token, productId }) => {
             </p>
           </div>
 
-          {/* Financial Summary */}
+          {/* Pricing & Inventory */}
           <div className="bg-gray-900 p-10 rounded-[48px] text-white shadow-2xl shadow-emerald-900/20">
             <div className="flex flex-col gap-2 mb-8">
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Price Info</span>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-400">Financial Summary</p>
               <div className="flex items-baseline gap-4 flex-wrap">
                 {hasDiscount && product.finalPrice ? (
                   <>
@@ -238,15 +248,15 @@ const ViewProduct = ({ token, productId }) => {
 
             <div className="grid grid-cols-2 gap-4 pb-8 border-b border-white/10">
               <div className="flex flex-col gap-1">
-                <span className="text-[9px] font-bold uppercase text-gray-500 tracking-widest">Current Stock</span>
+                <span className="text-[9px] font-bold uppercase text-gray-500 tracking-widest">Available Stock</span>
                 <span className={`text-lg font-black ${product.availableQuantity > 0 ? "text-emerald-400" : "text-rose-400"}`}>
                   {product.availableQuantity} Units
                 </span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-[9px] font-bold uppercase text-gray-500 tracking-widest">Category ID</span>
+                <span className="text-[9px] font-bold uppercase text-gray-500 tracking-widest">Subcategory</span>
                 <span className="text-lg font-black uppercase tracking-tighter">
-                  {product.subCategoryId || "N/A"}
+                  #{product.subCategoryId || "N/A"}
                 </span>
               </div>
             </div>
@@ -257,6 +267,15 @@ const ViewProduct = ({ token, productId }) => {
                   <button onClick={() => navigate(`/add?edit=${product.id}`)} className="w-full py-5 bg-emerald-500 hover:bg-emerald-400 text-gray-900 rounded-[32px] text-xs font-black uppercase tracking-[0.2em] transition-all shadow-xl hover:scale-[1.02]">
                     Edit Product
                   </button>
+                  {hasDiscount && (
+                    <button 
+                      onClick={handleRemoveDiscount} 
+                      disabled={actionLoading}
+                      className="w-full py-5 bg-rose-600 text-white rounded-[32px] text-xs font-black uppercase tracking-[0.2em] transition-all shadow-xl hover:scale-[1.02] disabled:opacity-50"
+                    >
+                      {actionLoading ? "Removing..." : "Remove Discount"}
+                    </button>
+                  )}
                   <button onClick={() => navigate(`/products/${product.id}/variants`)} className="w-full py-5 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-[32px] text-xs font-black uppercase tracking-[0.2em] transition-all">
                     Manage Variants
                   </button>
@@ -292,13 +311,13 @@ const ViewProduct = ({ token, productId }) => {
             </div>
           </div>
 
-          {/* Technical Specs */}
+          {/* Technical Specs & Metadata */}
           <div className="grid grid-cols-2 gap-4">
             {[
-              { icon: "🧶", label: "Material", value: product.material || "Standard" },
-              { icon: "🧼", label: "Care", value: product.careInstructions || "Standard" },
-              { icon: "📦", label: "Shipping", value: product.shippingInfo || "Standard" },
-              { icon: "🕰️", label: "Modified", value: new Date(product.modifiedAt || product.createdAt).toLocaleDateString() },
+              { icon: "🛍️", label: "Status", value: product.isActive ? "Active Asset" : "Inactive" },
+              { icon: "📦", label: "Availability", value: product.availableQuantity > 0 ? "In Stock" : "Unavailable" },
+              { icon: "📅", label: "Deployment", value: new Date(product.createdAt).toLocaleDateString() },
+              { icon: "🕰️", label: "Updates", value: new Date(product.modifiedAt || product.createdAt).toLocaleDateString() },
             ].map((spec, i) => (
               <div key={i} className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm flex flex-col gap-2">
                 <div className="flex items-center gap-2">

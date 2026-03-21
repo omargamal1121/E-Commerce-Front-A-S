@@ -235,21 +235,20 @@ const ListCategory = ({
           <p className="text-gray-500 mt-1">Try adjusting your search or filters</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8 pb-10">
           {categories.map((cat) => (
             <div
               key={cat.id}
-              className="group relative bg-white border border-gray-100 rounded-[32px] p-4 hover:border-blue-200 hover:shadow-2xl hover:shadow-blue-500/5 transition-all duration-300"
+              className="group relative bg-white border border-gray-100 rounded-[40px] p-5 hover:border-blue-200 hover:shadow-2xl transition-all duration-500 flex flex-col"
             >
-              {/* Image Container */}
-              <div className="relative aspect-[4/3] rounded-3xl overflow-hidden bg-gray-50 mb-5">
+              {/* Image Hub */}
+              <div className="relative aspect-square rounded-[32px] overflow-hidden bg-gray-50 mb-6">
                 {cat.mainImage?.url ? (
                   <img
                     src={cat.mainImage.url}
                     alt={cat.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
                     onError={(e) => {
-                      console.error('Image failed to load:', cat.mainImage.url);
                       e.target.style.display = 'none';
                     }}
                   />
@@ -258,102 +257,85 @@ const ListCategory = ({
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    <span className="text-xs font-bold uppercase tracking-widest">No Image</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest">No Image</span>
                   </div>
                 )}
 
-                {/* Status Badges on Image */}
-                <div className="absolute top-3 left-3 flex flex-col gap-2">
-                  <div className={`px-3 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-tighter shadow-lg backdrop-blur-md ${cat.isActive ? 'bg-green-500/90 text-white' : 'bg-rose-500/90 text-white'
-                    }`}>
+                {/* Status Badges */}
+                <div className="absolute top-4 left-4 flex flex-col gap-2">
+                  <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-md shadow-lg ${cat.isActive ? 'bg-green-500/90 text-white' : 'bg-rose-500/90 text-white'}`}>
                     {cat.isActive ? 'Active' : 'Inactive'}
                   </div>
                   {(cat.isDeleted || cat.wasDeleted) && (
-                    <div className="px-3 py-1.5 rounded-2xl bg-gray-900/90 text-white text-[10px] font-black uppercase tracking-tighter shadow-lg backdrop-blur-md">
+                    <div className="px-4 py-1.5 rounded-full bg-gray-900/90 text-white text-[10px] font-black uppercase tracking-widest backdrop-blur-md shadow-lg">
                       Deleted
                     </div>
                   )}
                 </div>
-              </div>
 
-              {/* Text Info */}
-              <div className="px-1 mb-6">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-extrabold text-gray-900 text-lg leading-tight line-clamp-1 group-hover:text-blue-600 transition-colors">
-                    {cat.name}
-                  </h3>
-                  <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-lg">
-                    ID: {cat.id}
-                  </span>
-                </div>
-                <p className="text-gray-500 text-sm font-medium line-clamp-2 leading-relaxed h-[40px]">
-                  {cat.description || "Establish a new frontier of organization for this category."}
-                </p>
-              </div>
-
-              {/* Action Bar */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleViewCategory(cat)}
-                  className="flex-1 px-4 py-2.5 bg-gray-50 hover:bg-blue-50 text-gray-600 hover:text-blue-600 rounded-2xl text-xs font-bold transition-all border border-transparent hover:border-blue-100"
-                >
-                  View
-                </button>
-                <div className="flex gap-1.5">
+                {/* Hover Quick Actions */}
+                <div className="absolute inset-x-4 bottom-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-300 flex gap-2">
+                  <button
+                    onClick={() => handleViewCategory(cat)}
+                    className="flex-1 py-3 bg-white hover:bg-gray-900 text-gray-900 hover:text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl"
+                  >
+                    Details
+                  </button>
                   <button
                     onClick={() => handleEditCategory(cat)}
-                    className="p-2.5 bg-gray-50 hover:bg-amber-50 text-gray-600 hover:text-amber-600 rounded-2xl transition-all"
-                    title="Edit"
+                    className="p-3 bg-white hover:bg-amber-500 text-gray-900 hover:text-white rounded-2xl transition-all shadow-xl"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                     </svg>
                   </button>
+                </div>
+              </div>
 
-                  {cat.isActive ? (
-                    <button
-                      onClick={() => deactivateCategory(cat.id)}
-                      className="p-2.5 bg-gray-50 hover:bg-rose-50 text-gray-600 hover:text-rose-600 rounded-2xl transition-all"
-                      title="Deactivate"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
-                      </svg>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => activateCategory(cat)}
-                      className="p-2.5 bg-gray-50 hover:bg-green-50 text-gray-600 hover:text-green-600 rounded-2xl transition-all"
-                      title="Activate"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                    </button>
-                  )}
+              {/* Data Field */}
+              <div className="flex flex-col gap-1 px-1 flex-1">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-extrabold text-gray-900 text-lg leading-tight line-clamp-1 group-hover:text-blue-600 transition-colors">
+                    {cat.name}
+                  </h3>
+                  <span className="text-[10px] font-bold text-gray-400">#{cat.id}</span>
+                </div>
+                <p className="text-gray-500 text-xs font-medium line-clamp-2 leading-relaxed h-[32px] mt-1 mb-6">
+                  {cat.description || "Establish a new frontier of organization for this category."}
+                </p>
 
-                  {!cat.isDeleted ? (
-                    <button
-                      onClick={() => setDeleteId(cat.id)}
-                      className="p-2.5 bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white rounded-2xl transition-all"
-                      title="Delete"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => restoreCategory(cat.id)}
-                      className="p-2.5 bg-green-50 hover:bg-green-600 text-green-600 hover:text-white rounded-2xl transition-all"
-                      title="Restore"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                      </svg>
-                    </button>
-                  )}
+                {/* Bottom Control Bar */}
+                <div className="mt-auto flex items-center gap-2 border-t border-gray-50 pt-5">
+                  <button
+                    onClick={() => cat.isActive ? deactivateCategory(cat.id) : activateCategory(cat)}
+                    className={`flex-1 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${cat.isActive ? "bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white" : "bg-green-50 text-green-600 hover:bg-green-600 hover:text-white"}`}
+                  >
+                    {cat.isActive ? "Deactivate" : "Activate"}
+                  </button>
+
+                  <div className="flex gap-1.5">
+                    {!cat.isDeleted ? (
+                      <button
+                        onClick={() => setDeleteId(cat.id)}
+                        className="p-3 bg-rose-50 text-rose-600 rounded-2xl hover:bg-rose-600 hover:text-white transition-all"
+                        title="Delete"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => restoreCategory(cat.id)}
+                        className="p-3 bg-blue-50 text-blue-600 rounded-2xl hover:bg-blue-600 hover:text-white transition-all"
+                        title="Restore"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

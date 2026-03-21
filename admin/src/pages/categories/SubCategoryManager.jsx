@@ -52,13 +52,15 @@ const SubCategoryManager = ({ token }) => {
 
   // Handlers to reuse existing component logic
   const handleEditSubCategory = (subCat) => {
-    setEditSubCategoryMode(true);
-    setEditSubCategoryId(subCat.id);
-    setSubCategoryName(subCat.name);
-    setSubCategoryDescription(subCat.description);
-    setSubCategoryDisplayOrder(subCat.displayOrder || 1);
-    setParentCategoryId(Number(subCat.parentCategoryId || subCat.categoryId));
-    setActiveTab("add-sub");
+    if (subCat) {
+      setEditSubCategoryMode(true);
+      setEditSubCategoryId(subCat.id);
+      setActiveTab("add-sub");
+    } else {
+      setEditSubCategoryMode(false);
+      setEditSubCategoryId(null);
+      setActiveTab("add-sub");
+    }
   };
 
   const handleViewSubCategory = (subCat) => {
@@ -67,7 +69,7 @@ const SubCategoryManager = ({ token }) => {
   };
 
   return (
-    <div className="flex flex-col gap-6 max-w-[1600px] mx-auto animate-in fade-in duration-500">
+    <div className="flex flex-col gap-6 w-full mx-auto animate-in fade-in duration-500">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <div>
@@ -107,7 +109,7 @@ const SubCategoryManager = ({ token }) => {
           </div>
 
           <button
-            onClick={() => navigate('/category')}
+            onClick={() => navigate('/collections')}
             className="flex items-center gap-2 px-5 py-2.5 border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl text-sm font-bold transition-all duration-200"
           >
             ← Back to Categories

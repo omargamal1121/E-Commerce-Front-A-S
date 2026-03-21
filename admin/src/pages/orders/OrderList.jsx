@@ -2,10 +2,13 @@ import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { backendUrl, currency } from "../../App";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 const OrderList = ({ token }) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const statusFromUrl = searchParams.get("status");
+
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -13,6 +16,12 @@ const OrderList = ({ token }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [updatingStatus, setUpdatingStatus] = useState(null);
+
+  useEffect(() => {
+    if (statusFromUrl !== null && statusFromUrl !== undefined) {
+      setStatusFilter(statusFromUrl);
+    }
+  }, [statusFromUrl]);
 
   const STATUS_ENUM = {
     PendingPayment: 0,
@@ -239,7 +248,11 @@ const OrderList = ({ token }) => {
                 const allowedStatuses = new Set([currentStatusInt, ...getAllowedStatuses(currentStatusInt)]);
 
                 return (
-                  <tr key={order.id} className="hover:bg-gray-50/50 transition-colors group">
+                  <tr 
+                    key={order.id} 
+                    onClick={() => navigate(`/orders/view/${order.orderNumber}`)}
+                    className="hover:bg-gray-50/50 transition-colors group cursor-pointer"
+                  >
                     <td className="px-8 py-6">
                       <div className="flex flex-col gap-1">
                         <span className="font-black text-gray-900 text-lg tracking-tight group-hover:text-blue-600 transition-colors">#{order.orderNumber}</span>
@@ -262,6 +275,7 @@ const OrderList = ({ token }) => {
                             value={currentStatusInt}
                             onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
                             disabled={updatingStatus === order.id}
+                            onClick={(e) => e.stopPropagation()}
                             className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-10"
                             title="Change Status"
                           >
@@ -271,7 +285,10 @@ const OrderList = ({ token }) => {
                                 <option key={code} value={code}>{label}</option>
                               ))}
                           </select>
-                          <button className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-blue-600 transition-colors">
+                          <button 
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-blue-600 transition-colors"
+                          >
                             {updatingStatus === order.id ? (
                               <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -295,7 +312,10 @@ const OrderList = ({ token }) => {
                     </td>
                     <td className="px-8 py-6 text-right">
                       <button
-                        onClick={() => navigate(`/orders/view/${order.orderNumber}`)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/orders/view/${order.orderNumber}`);
+                        }}
                         className="px-6 py-2.5 bg-gray-50 hover:bg-gray-900 text-gray-600 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm border border-gray-100"
                       >
                         View

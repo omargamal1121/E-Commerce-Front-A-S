@@ -34,6 +34,17 @@ const AddCollection = ({
   };
 
   useEffect(() => {
+    if (!editCollectionMode) {
+      setName("");
+      setDescription("");
+      setDisplayOrder(1);
+      setImages([]);
+      setMainImage(null);
+      setOldImages([]);
+      setOldMainImage(null);
+      return;
+    }
+
     const fetchCollectionDetails = async () => {
       if (editCollectionMode && editCollectionId && token) {
         try {
@@ -64,6 +75,26 @@ const AddCollection = ({
 
     fetchCollectionDetails();
   }, [editCollectionMode, editCollectionId, token]);
+
+  const removeOldImage = async (imgId, isMain = false) => {
+    if (!editCollectionId) return;
+    if (!window.confirm("Permanently delete this visual asset?")) return;
+
+    try {
+      await axios.delete(
+        `${backendUrl}/api/Collection/${editCollectionId}/images/${imgId}`,
+        { headers: { Authorization: `Bearer ${token}`, Accept: "text/plain" } }
+      );
+      toast.success("Image removed");
+      if (isMain) {
+        setOldMainImage(null);
+      } else {
+        setOldImages(prev => prev.filter(img => img.id !== imgId));
+      }
+    } catch {
+      toast.error("Failed to delete image");
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -206,7 +237,7 @@ const AddCollection = ({
             </div>
 
             <div className="relative group">
-              <label className="flex flex-col items-center justify-center w-full aspect-[16/9] border-2 border-dashed border-gray-200 rounded-3xl cursor-pointer hover:border-rose-400 hover:bg-rose-50/20 transition-all overflow-hidden bg-gray-50/50">
+              <label className="flex flex-col items-center justify-center w-full aspect-[16/9] border-2 border-dashed border-gray-100 rounded-3xl cursor-pointer hover:border-rose-400 hover:bg-rose-50/20 transition-all overflow-hidden bg-gray-50/50">
                 {(mainImage || oldMainImage) ? (
                   <img
                     src={mainImage ? URL.createObjectURL(mainImage) : oldMainImage.url}
@@ -228,6 +259,20 @@ const AddCollection = ({
                   accept="image/*"
                 />
               </label>
+              {(mainImage || oldMainImage) && (
+                <div className="absolute inset-0 bg-gray-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 pointer-events-auto">
+                  <span className="bg-white/20 backdrop-blur-md text-white text-[10px] font-black uppercase px-4 py-2 rounded-2xl border border-white/30 pointer-events-none">Click to change</span>
+                  {oldMainImage && !mainImage && (
+                    <button
+                      type="button"
+                      onClick={() => removeOldImage(oldMainImage.id, true)}
+                      className="bg-rose-600 text-white text-[10px] font-black uppercase px-4 py-2 rounded-2xl border border-rose-500 hover:bg-rose-700 transition-all shadow-xl active:scale-90"
+                    >
+                      Purge Asset
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -239,16 +284,37 @@ const AddCollection = ({
             </div>
 
             <div className="grid grid-cols-3 gap-3">
-              {[...oldImages, ...images].slice(0, 5).map((img, idx) => (
-                <div key={idx} className="aspect-square rounded-2xl overflow-hidden bg-gray-100 border border-gray-100">
-                  <img
-                    src={img instanceof File ? URL.createObjectURL(img) : img.url}
-                    className="w-full h-full object-cover"
-                    alt={`Preview ${idx}`}
-                  />
+              {oldImages.map((img) => (
+                <div key={img.id} className="relative aspect-square rounded-2xl overflow-hidden bg-gray-100 border border-gray-100 group">
+                  <img src={img.url} className="w-full h-full object-cover" alt="Gallery item" />
+                  <button
+                    type="button"
+                    onClick={() => removeOldImage(img.id)}
+                    className="absolute top-2 right-2 p-2 bg-rose-600/90 text-white rounded-xl opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:bg-rose-700 active:scale-90"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                  <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-gray-900 text-white text-[7px] font-black uppercase rounded-full">Saved</div>
                 </div>
               ))}
-              <label className="aspect-square rounded-2xl border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-400 hover:bg-gray-50 cursor-pointer hover:border-rose-300 transition-all">
+              {images.map((file, idx) => (
+                <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden bg-gray-100 border border-gray-100 group">
+                  <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" alt="Gallery item" />
+                  <button
+                    type="button"
+                    onClick={() => setImages(prev => prev.filter((_, i) => i !== idx))}
+                    className="absolute top-2 right-2 p-2 bg-rose-600/90 text-white rounded-xl opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:bg-rose-700 active:scale-90"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                  <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-emerald-500 text-white text-[7px] font-black uppercase rounded-full">New</div>
+                </div>
+              ))}
+              <label className="aspect-square rounded-2xl border-2 border-dashed border-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-50 cursor-pointer hover:border-rose-300 transition-all">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>

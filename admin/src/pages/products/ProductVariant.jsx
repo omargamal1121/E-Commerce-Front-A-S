@@ -28,6 +28,19 @@ const ProductVariant = ({ token }) => {
     { value: 3, label: "L" }, { value: 4, label: "XL" }, { value: 5, label: "XXL" }, { value: 6, label: "XXXL" },
   ];
 
+  const PRESET_COLORS = [
+    { name: "White", hex: "#FFFFFF" },
+    { name: "Black", hex: "#000000" },
+    { name: "Red", hex: "#FF0000" },
+    { name: "Blue", hex: "#0000FF" },
+    { name: "Green", hex: "#008000" },
+    { name: "Yellow", hex: "#FFFF00" },
+    { name: "Gray", hex: "#808080" },
+    { name: "Navy", hex: "#000080" },
+    { name: "Purple", hex: "#800080" },
+    { name: "Orange", hex: "#FFA500" },
+  ];
+
   const fetchProduct = async () => {
     setLoading(true);
     try {
@@ -193,8 +206,44 @@ const ProductVariant = ({ token }) => {
               </div>
             ) : (
               <form onSubmit={handleAddVariant} className="flex flex-col gap-6">
+                <div className="flex flex-col gap-2">
+                  <label className="text-[9px] font-bold uppercase text-gray-500 tracking-widest ml-1">Color (Hex or Name)</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text" value={color} onChange={(e) => setColor(e.target.value)}
+                      className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-6 py-3.5 outline-none focus:border-blue-500 font-bold text-sm transition-all text-white"
+                      placeholder="#FFFFFF or Black"
+                    />
+                    <div className="relative group">
+                      <input
+                        type="color" value={color.startsWith('#') ? color : "#000000"} onChange={(e) => setColor(e.target.value.toUpperCase())}
+                        className="w-12 h-[50px] bg-transparent border-none cursor-pointer p-0 opacity-0 absolute inset-0 z-10"
+                      />
+                      <div 
+                        className="w-12 h-[50px] rounded-2xl border border-white/10 flex items-center justify-center text-lg transition-all"
+                        style={{ backgroundColor: color || 'transparent' }}
+                      >
+                        {!color && "🎨"}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Preset Colors */}
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {PRESET_COLORS.map(c => (
+                      <button
+                        key={c.hex}
+                        type="button"
+                        onClick={() => setColor(c.hex)}
+                        title={c.name}
+                        className={`w-6 h-6 rounded-full border-2 transition-all hover:scale-125 ${color === c.hex ? 'border-blue-500 scale-110' : 'border-white/20'}`}
+                        style={{ backgroundColor: c.hex }}
+                      />
+                    ))}
+                  </div>
+                </div>
+
                 {[
-                  { label: "Color", state: color, set: setColor, type: "text", p: "e.g. Black, Red..." },
                   { label: "Waist Size", state: waist, set: setWaist, type: "number", p: "0" },
                   { label: "Length Size", state: length, set: setLength, type: "number", p: "0" },
                   { label: "Initial Stock", state: quantity, set: setQuantity, type: "number", p: "0" },
@@ -250,7 +299,13 @@ const ProductVariant = ({ token }) => {
                   <div className="flex justify-between items-start">
                     <div className="flex flex-col">
                       <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Color</span>
-                      <span className="text-xl font-black text-gray-900 uppercase tracking-tight">{v.color || "Static"}</span>
+                      <div className="flex items-center gap-3">
+                        <div 
+                          className="w-4 h-4 rounded-full border border-gray-200 shadow-sm"
+                          style={{ backgroundColor: v.color || 'transparent' }}
+                        />
+                        <span className="text-xl font-black text-gray-900 uppercase tracking-tight">{v.color || "Static"}</span>
+                      </div>
                     </div>
                     <button
                       onClick={() => handleToggleStatus(v)}

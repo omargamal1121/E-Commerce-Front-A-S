@@ -43,12 +43,15 @@ const DiscountList = ({
           </thead>
           <tbody className="divide-y divide-gray-50">
             {discounts.map((d) => (
-              <tr key={d.id} className="group hover:bg-purple-50/30 transition-colors">
+              <tr 
+                key={d.id} 
+                className="group hover:bg-purple-50 transition-all duration-300 cursor-pointer relative"
+                onClick={() => handleViewDiscount && handleViewDiscount(d.id)}
+              >
                 <td className="px-8 py-6">
                   <div className="flex flex-col">
                     <span
-                      className="text-sm font-black text-gray-900 uppercase tracking-tight cursor-pointer hover:text-purple-600 transition-colors"
-                      onClick={() => handleViewDiscount && handleViewDiscount(d.id)}
+                      className="text-sm font-black text-gray-900 uppercase tracking-tight group-hover:text-purple-600 transition-colors"
                       title="Click to view details"
                     >
                       {d.name}
@@ -65,16 +68,16 @@ const DiscountList = ({
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                      <span className="text-[10px] font-bold text-gray-600">{new Date(d.startDate).toLocaleDateString()}</span>
+                      <span className="text-[10px] font-bold text-gray-600">{new Date(d.startDate).toLocaleDateString('en-GB', { timeZone: 'Africa/Cairo' })}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-                      <span className="text-[10px] font-bold text-gray-600">{new Date(d.endDate).toLocaleDateString()}</span>
+                      <span className="text-[10px] font-bold text-gray-600">{new Date(d.endDate).toLocaleDateString('en-GB', { timeZone: 'Africa/Cairo' })}</span>
                     </div>
                   </div>
                 </td>
                 <td className="px-8 py-6">
-                  {d.deletedAt !== null ? (
+                  {d.isDeleted ? (
                     <span className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border bg-rose-600 text-white border-rose-500">
                       Deleted
                     </span>
@@ -86,7 +89,7 @@ const DiscountList = ({
                 </td>
                 <td className="px-8 py-6">
                   <div className="flex items-center justify-end gap-2">
-                    {d.deletedAt !== null ? (
+                    {d.isDeleted ? (
                       handleRestoreDiscount && (
                         <button
                           onClick={() => handleRestoreDiscount(d.id)}

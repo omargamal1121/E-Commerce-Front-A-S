@@ -119,31 +119,20 @@ const CategoryManager = ({ token }) => {
   // ✅ Handle Edit Category
   const handleEditCategory = (cat) => {
     if (cat) {
-      // 🟢 وضع التعديل
       setEditMode(true);
       setEditCategoryId(cat.id);
-
-      setName(cat.name || "");
-      setDescription(cat.description || "");
-      setDisplayOrder(cat.displayOrder || 1);
-      setImages(cat.images || []);
-      setMainImage(cat.mainImage || null);
-
-      // Stay on the collections page and switch to the Add (edit) tab
       setActiveTab("add");
     } else {
-      // 🔴 وضع الإضافة (تفريغ الحقول)
       setEditMode(false);
       setEditCategoryId(null);
-
-      setName("");
-      setDescription("");
-      setDisplayOrder(1);
-      setImages([]);
-      setMainImage(null);
-
       setActiveTab("add");
     }
+  };
+
+  const fetchCategories = () => {
+    // This will be called by Child to refresh list if needed
+    // In this complex layout, ListCategory has its own fetcher
+    // We can use a refresh trigger state if we want real sync
   };
 
   // ✅ Handle View Category
@@ -160,10 +149,8 @@ const CategoryManager = ({ token }) => {
     navigate(`/subcategories/${id}`);
   };
 
-  // Subcategory view handled in SubCategoryManager page
-
   return (
-    <div className="flex flex-col gap-6 max-w-[1600px] mx-auto animate-in fade-in duration-500">
+    <div className="flex flex-col gap-6 w-full mx-auto animate-in fade-in duration-500">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <div>
@@ -279,20 +266,8 @@ const CategoryManager = ({ token }) => {
                 token={token}
                 fetchCategories={fetchCategories}
                 setActiveTab={setActiveTab}
-                editMode={editMode}
-                editCategoryId={editCategoryId}
-                name={name}
-                setName={setName}
-                description={description}
-                setDescription={setDescription}
-                displayOrder={displayOrder}
-                setDisplayOrder={setDisplayOrder}
-                images={images}
-                setImages={setImages}
-                mainImage={mainImage}
-                setMainImage={setMainImage}
-                setEditMode={setEditMode}
                 editCategoryMode={editMode}
+                editCategoryId={editCategoryId}
               />
             </div>
           )}

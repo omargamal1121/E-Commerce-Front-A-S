@@ -4,8 +4,9 @@ import { toast } from "react-toastify";
 import { backendUrl } from "../../App";
 import { useNavigate } from "react-router-dom";
 
-const ViewCollection = ({ token, collectionId, isActive = null, includeDeleted = null }) => {
+const ViewCollection = ({ token, collectionId, isActive = null, includeDeleted = null, onUpdateCollection }) => {
   const [collection, setCollection] = useState(null);
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
@@ -35,23 +36,6 @@ const ViewCollection = ({ token, collectionId, isActive = null, includeDeleted =
               url: img.url?.startsWith("http") ? img.url : `${backendUrl}/${img.url}`
             }));
           }
-          if (col.products) {
-            col.products = col.products.map(p => ({
-              ...p,
-              productImages: p.productImages?.map(img => ({
-                ...img,
-                url: img.url?.startsWith("http") ? img.url : `${backendUrl}/${img.url}`
-              })) || [],
-              mainImage: p.mainImage ? {
-                ...p.mainImage,
-                url: p.mainImage.url?.startsWith("http") ? p.mainImage.url : `${backendUrl}/${p.mainImage.url}`
-              } : null,
-              images: p.images?.map(img => ({
-                ...img,
-                url: img.url?.startsWith("http") ? img.url : `${backendUrl}/${img.url}`
-              })) || []
-            }));
-          }
         }
         setCollection(col);
         setError(null);
@@ -64,9 +48,43 @@ const ViewCollection = ({ token, collectionId, isActive = null, includeDeleted =
     }
   }, [collectionId, token, isActive, includeDeleted]);
 
+  const fetchProductsByCollection = useCallback(async () => {
+    if (!collectionId) return;
+    try {
+      const response = await axios.get(`${backendUrl}/api/Collection/${collectionId}/products`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.status === 200) {
+        const productData = response.data?.responseBody?.data || [];
+        const normalizedProducts = productData.map(p => ({
+          ...p,
+          productImages: p.productImages?.map(img => ({
+            ...img,
+            url: img.url?.startsWith("http") ? img.url : `${backendUrl}/${img.url}`
+          })) || [],
+          mainImage: p.mainImage ? {
+            ...p.mainImage,
+            url: p.mainImage.url?.startsWith("http") ? p.mainImage.url : `${backendUrl}/${p.mainImage.url}`
+          } : null,
+          images: p.images?.map(img => ({
+            ...img,
+            url: img.url?.startsWith("http") ? img.url : `${backendUrl}/${img.url}`
+          })) || []
+        }));
+        setProducts(normalizedProducts);
+      }
+    } catch (err) {
+      console.error("❌ Error fetching collection products:", err);
+    }
+  }, [collectionId, token]);
+
   useEffect(() => {
-    if (collectionId) fetchCollection();
-  }, [collectionId, fetchCollection]);
+    if (collectionId) {
+      fetchCollection();
+      fetchProductsByCollection();
+    }
+  }, [collectionId, fetchCollection, fetchProductsByCollection]);
 
   const handleAction = async (action, successMsg) => {
     if (!collection) return;
@@ -139,163 +157,139 @@ const ViewCollection = ({ token, collectionId, isActive = null, includeDeleted =
   if (!collection) return null;
 
   const images = collection.images || [];
-
+  const isDeletedFlag = !!(collection.isDeleted || collection.deleted || collection.deletedAt);
   return (
-    <div className="flex flex-col gap-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Schematic Overview */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+    <div className="flex flex-col gap-16 animate-in slide-in-from-bottom-6 duration-1000">
+      {/* Control Center Header */}
+      <div className="bg-gray-900 rounded-[50px] p-10 flex flex-wrap items-center justify-between gap-8 shadow-2xl shadow-gray-200 border border-gray-800">
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-4">
-            <h2 className="text-4xl font-black text-gray-900 tracking-tighter">{collection.name}</h2>
-            <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg ${collection.isActive ? "bg-green-500 text-white" : "bg-rose-500 text-white"}`}>
-              {collection.isActive ? "Live projection" : "Internal Cache"}
+          <p className="text-rose-400 text-xs font-black uppercase tracking-[0.3em] mb-1">Collection Management</p>
+          <h2 className="text-5xl font-black text-white tracking-tighter">{collection.name}</h2>
+          <div className="flex items-center gap-4 mt-4">
+            <div className={`px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest ${collection.isActive ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"}`}>
+              {collection.isActive ? "Live" : "Inactive"}
             </div>
+            {isDeletedFlag && <div className="px-6 py-2 rounded-full bg-white/10 text-white text-xs font-black uppercase tracking-widest border border-white/10">Archived</div>}
           </div>
-          <p className="text-gray-400 font-bold text-[10px] uppercase tracking-[0.2em]">Deployment UID: {collection.id}</p>
         </div>
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => onUpdateCollection(collection)}
+            className="px-8 py-4 bg-white/5 text-white border border-white/10 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-white hover:text-gray-900 transition-all shadow-xl"
+          >
+            Edit Metadata
+          </button>
           {collection.isActive ? (
-            <button
-              onClick={() => handleAction('deactivate', 'Deployment paused')}
-              className="p-4 bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white rounded-[24px] transition-all shadow-xl shadow-amber-100 group"
-              title="Pause Projection"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </button>
+            <button onClick={() => handleAction('deactivate', 'Deployment paused')} className="px-8 py-4 bg-amber-500 text-gray-900 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-amber-400 transition-all font-bold shadow-lg">Deactivate</button>
           ) : (
-            <button
-              onClick={() => handleAction('activate', 'Deployment synchronized')}
-              className="p-4 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white rounded-[24px] transition-all shadow-xl shadow-green-100 group"
-              title="Resume Projection"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </button>
+            <button onClick={() => handleAction('activate', 'Deployment synchronized')} className="px-8 py-4 bg-emerald-500 text-gray-900 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-emerald-400 transition-all font-bold shadow-lg">Activate</button>
           )}
-          <button
-            onClick={() => handleAction('Restore', 'Node restored')}
-            className="p-4 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-[24px] transition-all shadow-xl shadow-blue-100 group"
-            title="Restore Structure"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-          </button>
-          <button
-            onClick={() => handleAction('delete', 'Moved to archive')}
-            className="p-4 bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white rounded-[24px] transition-all shadow-xl shadow-rose-100 group"
-            title="Archive Node"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-          </button>
+          {!isDeletedFlag ? (
+            <button onClick={() => handleAction('delete', 'Moved to archive')} className="px-8 py-4 bg-rose-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-rose-500 transition-all font-bold shadow-lg">Delete</button>
+          ) : (
+            <button onClick={() => handleAction('restore', 'Node restored')} className="px-8 py-4 bg-blue-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-500 transition-all font-bold shadow-lg">Restore</button>
+          )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-        {/* Visual Matrix */}
-        <div className="lg:col-span-5 flex flex-col gap-6">
-          <div className="bg-gray-50 rounded-[48px] p-10 border border-gray-100">
-            {images.length > 0 ? (
-              <div className="flex flex-col gap-8">
-                <div className="relative group aspect-square bg-white rounded-[40px] overflow-hidden shadow-2xl shadow-gray-200 border border-gray-50">
-                  <img src={images[selectedImageIndex].url} className="w-full h-full object-cover" alt="Focus Asset" />
-                  <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-all">
-                    <button
-                      onClick={() => deleteImage(images[selectedImageIndex].id)}
-                      className="p-4 bg-rose-600 text-white rounded-[20px] shadow-xl hover:scale-110 transition-all font-black"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                  {images[selectedImageIndex].isMain && (
-                    <div className="absolute top-6 left-6 px-4 py-2 bg-rose-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg">
-                      Hero Asset
-                    </div>
-                  )}
-                </div>
-
-                {images.length > 1 && (
-                  <div className="grid grid-cols-5 gap-3">
-                    {images.map((img, idx) => (
-                      <button
-                        key={img.id}
-                        onClick={() => setSelectedImageIndex(idx)}
-                        className={`aspect-square rounded-[18px] border-2 transition-all overflow-hidden ${selectedImageIndex === idx ? "border-rose-600 ring-4 ring-rose-50" : "border-transparent hover:border-gray-200"}`}
-                      >
-                        <img src={img.url} className="w-full h-full object-cover" alt="thumbnail" />
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+        {/* Gallery / Media Panel */}
+        <div className="lg:col-span-8 flex flex-col gap-8">
+          <div className="relative aspect-square sm:aspect-video rounded-[56px] overflow-hidden bg-white border border-gray-100 group shadow-sm transition-all hover:bg-gray-50/20">
+            {images[selectedImageIndex] ? (
+              <img src={images[selectedImageIndex].url} className="w-full h-full object-contain p-2" alt="Collection Asset" />
             ) : (
-              <div className="aspect-square flex flex-col items-center justify-center text-gray-300 gap-4 font-black">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              <div className="w-full h-full flex items-center justify-center text-gray-300 font-bold uppercase tracking-widest text-sm">No Primary Media</div>
+            )}
+
+            {images[selectedImageIndex] && !actionLoading && (
+              <button
+                onClick={() => deleteImage(images[selectedImageIndex].id)}
+                className="absolute top-8 right-8 p-5 bg-white/80 backdrop-blur-md text-rose-600 rounded-3xl opacity-0 group-hover:opacity-100 transition-all shadow-xl hover:bg-rose-600 hover:text-white"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
-                <p className="uppercase tracking-widest text-xs">No Visual Materials Found</p>
+              </button>
+            )}
+
+            {images.length > 1 && (
+              <div className="absolute inset-x-8 top-1/2 -translate-y-1/2 flex justify-between pointer-events-none">
+                <button onClick={() => setSelectedImageIndex(i => (i === 0 ? images.length - 1 : i - 1))} className="p-6 bg-white/90 backdrop-blur-md rounded-3xl pointer-events-auto shadow-2xl border border-gray-100/50 hover:bg-blue-600 hover:text-white transition-all">←</button>
+                <button onClick={() => setSelectedImageIndex(i => (i === images.length - 1 ? 0 : i + 1))} className="p-6 bg-white/90 backdrop-blur-md rounded-3xl pointer-events-auto shadow-2xl border border-gray-100/50 hover:bg-blue-600 hover:text-white transition-all">→</button>
               </div>
             )}
           </div>
-        </div>
 
-        {/* Intelligence Data Matrix */}
-        <div className="lg:col-span-7 flex flex-col gap-8">
-          <div className="grid grid-cols-2 gap-6">
-            <div className="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm flex flex-col gap-4">
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Node Priority</h3>
-              <p className="text-3xl font-black text-gray-900">{collection.displayOrder || "Default"}</p>
-            </div>
-            <div className="bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm flex flex-col gap-4">
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Chronicle</h3>
-              <p className="text-xs font-bold text-gray-500">INIT: {new Date(collection.createdAt).toLocaleDateString()}</p>
-              <p className="text-xs font-bold text-gray-500">EVOLVE: {new Date(collection.modifiedAt).toLocaleDateString()}</p>
-            </div>
-          </div>
-
-          <div className="bg-white p-10 rounded-[48px] border border-gray-100 shadow-sm flex flex-col gap-6 flex-1">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Inventory Narrative</h3>
-            <p className="text-gray-600 font-medium leading-[1.8] text-lg">
-              {collection.description || "Schematic narrative missing for this aggregate. Deploy metadata for enhanced indexing."}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="flex-1 h-px bg-gray-100" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-gray-300">Connected Units</span>
-            <div className="flex-1 h-px bg-gray-100" />
+          <div className="grid grid-cols-5 sm:grid-cols-7 gap-6">
+            {images.map((img, idx) => (
+              <button
+                key={img.id}
+                onClick={() => setSelectedImageIndex(idx)}
+                className={`relative aspect-square rounded-[28px] overflow-hidden border-4 transition-all ${selectedImageIndex === idx ? "border-rose-600 scale-105 shadow-2xl" : "border-white hover:border-gray-100 shadow-sm"}`}
+              >
+                <img src={img.url} className="w-full h-full object-cover" alt="Thumbnail" />
+                {img.isMain && <div className="absolute bottom-3 inset-x-3 bg-rose-600 text-white text-[9px] font-black uppercase text-center py-1.5 rounded-xl">Hero</div>}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Child Node Matrix (Products) */}
-        <div className="lg:col-span-12">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-2xl font-black text-gray-900 flex items-center gap-3">
-              Associated Units
-              <span className="bg-rose-50 text-rose-600 px-4 py-1.5 rounded-full text-xs font-black">{(collection.products || []).length}</span>
-            </h3>
+        {/* Data / Info Panel */}
+        <div className="lg:col-span-4 flex flex-col gap-8">
+          <div className="bg-white rounded-[50px] p-12 border border-gray-100 shadow-sm flex flex-col gap-10">
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-black uppercase tracking-widest text-gray-400">Inventory Narrative</p>
+              <p className="text-gray-600 font-medium leading-relaxed text-lg">{collection.description || "Establish a new thematic frontier for this collection."}</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-8 pt-10 border-t border-gray-50">
+              <div className="flex flex-col gap-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Unique UID</p>
+                <p className="font-black text-gray-900 tracking-tight text-xl">#{collection.id}</p>
+              </div>
+              <div className="flex flex-col gap-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Created At</p>
+                <p className="font-black text-gray-900 tracking-tight text-sm">{new Date(collection.createdAt).toLocaleDateString()}</p>
+              </div>
+              <div className="flex flex-col gap-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Last Evolution</p>
+                <p className="font-black text-gray-900 tracking-tight text-sm">{new Date(collection.modifiedAt || collection.createdAt).toLocaleDateString()}</p>
+              </div>
+              <div className="flex flex-col gap-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Asset Count</p>
+                <p className="font-black text-rose-600 tracking-tight text-xl">{products.length}</p>
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-6">
-            {(collection.products || []).map((product) => {
-              const mainImg = product.productImages?.find(img => img.isMain)?.url || product.mainImage?.url || (product.images && product.images[0]?.url);
-              return (
-                <div key={product.id} onClick={() => navigate(`/products/${product.id}`)} className="group cursor-pointer">
-                  <div className="aspect-[3/4] rounded-[24px] overflow-hidden bg-gray-50 border border-transparent group-hover:border-rose-200 group-hover:shadow-xl transition-all duration-500">
-                    <img src={mainImg} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={product.name} />
+          <div className="bg-gray-50/50 rounded-[50px] p-10 border border-gray-100 flex flex-col gap-8 shadow-inner overflow-hidden">
+            <div className="flex items-center justify-between">
+              <h3 className="font-black text-gray-900 uppercase tracking-widest text-xs">Linked Inventory ({products.length})</h3>
+              <button onClick={() => navigate(`/products?collection=${collectionId}`)} className="text-[9px] font-black uppercase tracking-widest text-rose-600 hover:text-rose-800 transition-colors">View All →</button>
+            </div>
+
+            <div className="flex flex-col gap-4">
+              {products.slice(0, 8).map(product => (
+                <button
+                  key={product.id}
+                  onClick={() => navigate(`/products/${product.id}`)}
+                  className="flex items-center gap-6 bg-white p-4 rounded-3xl border border-gray-100 hover:shadow-xl transition-all text-left group"
+                >
+                  <div className="w-16 h-16 bg-gray-50 rounded-2xl overflow-hidden shadow-sm shrink-0 border border-gray-50">
+                    <img src={product.mainImage?.url || product.productImages?.[0]?.url || product.images?.[0]?.url || ""} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
                   </div>
-                  <h4 className="mt-3 text-[11px] font-black text-gray-900 group-hover:text-rose-600 transition-colors uppercase tracking-wider line-clamp-1 px-1">{product.name}</h4>
-                </div>
-              );
-            })}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-black text-gray-900 truncate text-base group-hover:text-rose-600 transition-colors">{product.name}</p>
+                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">EGP {product.price}</p>
+                  </div>
+                  <div className={`w-3 h-3 rounded-full ${product.isActive ? "bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]" : "bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.4)]"}`} />
+                </button>
+              ))}
+              {products.length > 8 && <p className="text-center text-[10px] font-black uppercase tracking-widest text-gray-400 py-2">+{products.length - 8} deeper layers</p>}
+              {products.length === 0 && <p className="text-center text-xs font-bold text-gray-400 py-10 uppercase tracking-widest">No associated assets</p>}
+            </div>
           </div>
         </div>
       </div>

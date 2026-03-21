@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import axios from "axios";
 import API from "../../services/api";
-import { currency } from "../../App";
+import { currency, backendUrl } from "../../App";
 
-const ProductCard = React.memo(({ p, navigate, toggleStatus, handleRestore, handleDelete, currency }) => {
+const ProductCard = React.memo(({ p, navigate, toggleStatus, handleRestore, handleDelete, handleRemoveDiscount, currency }) => {
   const discountPercent = Number(p.discountPrecentage ?? p.discountPercentage ?? p.discount?.discountPercent ?? 0);
   const hasDiscount = discountPercent > 0;
   const finalPrice = p.finalPrice ?? p.price;
@@ -78,6 +79,15 @@ const ProductCard = React.memo(({ p, navigate, toggleStatus, handleRestore, hand
           </div>
 
           <div className="flex items-center gap-2">
+            {hasDiscount && !(p.deletedAt !== null && p.deletedAt !== undefined) && (
+              <button
+                onClick={() => handleRemoveDiscount && handleRemoveDiscount(p.id)}
+                className="p-3 bg-rose-50 text-rose-500 border border-rose-100 rounded-2xl hover:bg-rose-500 hover:text-white transition-all shadow-sm"
+                title="Remove Discount"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            )}
             {!(p.deletedAt !== null && p.deletedAt !== undefined) && (
               <button
                 onClick={() => toggleStatus(p)}
@@ -113,14 +123,20 @@ const ProductCard = React.memo(({ p, navigate, toggleStatus, handleRestore, hand
 
 const ProductList = ({ token }) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const subcategoryIdFromUrl = searchParams.get("subcategory") || searchParams.get("subcategoryId");
+  const collectionIdFromUrl = searchParams.get("collection") || searchParams.get("collectionId");
+
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState("all"); // all, active, inactive
-  const [deletedFilter, setDeletedFilter] = useState("not_deleted"); // all, deleted, not_deleted
+  const [statusFilter, setStatusFilter] = useState("all"); 
+  const [deletedFilter, setDeletedFilter] = useState("not_deleted");
+  const [specialFilter, setSpecialFilter] = useState("all"); // all, newarrivals, bestsellers
+  const [stockFilter, setStockFilter] = useState("all"); // all, instock, outofstock
   const pageSize = 12;
 
   // Debounce search term
@@ -134,22 +150,55 @@ const ProductList = ({ token }) => {
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
-      const filters = {
-        searchTerm: debouncedSearch,
-        page,
-        pageSize,
-        isActive: statusFilter === "active" ? true : statusFilter === "inactive" ? false : null,
-      };
+      let res;
+      
+      // Select the correct endpoint based on URL params or special filters
+      if (collectionIdFromUrl) {
+        res = (await axios.get(`${backendUrl}/api/Collection/${collectionIdFromUrl}/products`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })).data;
+      } else if (subcategoryIdFromUrl) {
+        res = (await axios.get(`${backendUrl}/api/Products/subcategory/${subcategoryIdFromUrl}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { page, pageSize }
+        })).data;
+      } else if (specialFilter !== "all") {
+        const specialParams = { page, pageSize };
+        if (statusFilter === "active") specialParams.isActive = true;
+        else if (statusFilter === "inactive") specialParams.isActive = false;
+        if (deletedFilter === "deleted") specialParams.includeDeleted = true;
 
-      if (deletedFilter === "all") {
-        filters.includeDeleted = null;
-      } else if (deletedFilter === "deleted") {
-        filters.includeDeleted = true;
+        const rawRes = await axios.get(`${backendUrl}/api/Products/${specialFilter}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: specialParams
+        });
+        // Handle both wrapped and unwrapped response shapes from specialty endpoints
+        res = rawRes.data;
+      } else {
+        const filters = {
+          searchTerm: debouncedSearch,
+          page,
+          pageSize,
+          isActive: statusFilter === "active" ? true : statusFilter === "inactive" ? false : null,
+        };
+
+        // Send inStock only when explicitly filtered (true or false) — omit when "all"
+        if (stockFilter === "instock") filters.inStock = true;
+        else if (stockFilter === "outofstock") filters.inStock = false;
+
+        if (deletedFilter === "all") {
+          filters.includeDeleted = null;
+        } else if (deletedFilter === "deleted") {
+          filters.includeDeleted = true;
+        }
+
+        res = await API.products.list(filters, token);
       }
 
-      const res = await API.products.list(filters, token);
-      const data = res?.responseBody?.data || [];
-      const total = res?.responseBody?.totalCount || 0;
+      // Support multiple response wrapper shapes from different endpoints
+      const body = res?.responseBody ?? res;
+      const data = body?.data || [];
+      const total = body?.totalCount ?? body?.total ?? 0;
 
       const normalizeUrl = (raw) => {
         if (!raw || typeof raw !== "string") return null;
@@ -177,7 +226,7 @@ const ProductList = ({ token }) => {
     } finally {
       setLoading(false);
     }
-  }, [token, debouncedSearch, page, statusFilter, deletedFilter]);
+  }, [token, debouncedSearch, page, statusFilter, deletedFilter, subcategoryIdFromUrl, collectionIdFromUrl, specialFilter, stockFilter]);
 
   useEffect(() => {
     fetchProducts();
@@ -185,7 +234,7 @@ const ProductList = ({ token }) => {
 
   useEffect(() => {
     setPage(1);
-  }, [statusFilter, deletedFilter, debouncedSearch]);
+  }, [statusFilter, deletedFilter, debouncedSearch, specialFilter, stockFilter]);
 
   const toggleStatus = useCallback(async (product) => {
     try {
@@ -205,6 +254,15 @@ const ProductList = ({ token }) => {
     } catch (e) { toast.error("Delete failed"); }
   }, [token, fetchProducts]);
 
+  const handleRemoveDiscount = useCallback(async (id) => {
+    if (!window.confirm("Remove discount from this product?")) return;
+    try {
+      await API.products.removeDiscount(id, token);
+      toast.success("Discount removed");
+      fetchProducts();
+    } catch (e) { toast.error("Failed to remove discount"); }
+  }, [token, fetchProducts]);
+
   const handleRestore = useCallback(async (id) => {
     try {
       await API.products.restore(id, token);
@@ -215,21 +273,63 @@ const ProductList = ({ token }) => {
 
   return (
     <div className="flex flex-col gap-10 animate-in slide-in-from-bottom-6 duration-700">
+      
+      {/* Contextual Filter Indicator */}
+      {(subcategoryIdFromUrl || collectionIdFromUrl) && (
+        <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-[32px] flex items-center justify-between animate-in slide-in-from-top-4 duration-500">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white font-black text-xs shadow-lg">🎯</div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Active Content Matrix</span>
+              <span className="text-sm font-bold text-emerald-900 leading-none">
+                {subcategoryIdFromUrl ? `Filtering Products by Subcategory #${subcategoryIdFromUrl}` : `Filtering Products by Collection #${collectionIdFromUrl}`}
+              </span>
+            </div>
+          </div>
+          <button 
+            onClick={() => {
+              navigate("/products");
+            }}
+            className="px-6 py-2.5 bg-white border border-emerald-200 text-emerald-600 text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-emerald-600 hover:text-white transition-all shadow-sm"
+          >
+            Clear Filter Matrix
+          </button>
+        </div>
+      )}
       <div className="bg-white/80 backdrop-blur-md p-8 rounded-[40px] border border-gray-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="relative w-full max-w-xl group">
-          <input
-            type="text"
-            placeholder="Search products by ID or name..."
-            className="w-full pl-14 pr-6 py-4 bg-gray-50 border border-gray-100 rounded-[28px] outline-none focus:ring-8 focus:ring-emerald-50 focus:border-emerald-300 transition-all font-bold text-sm"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <svg className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-hover:text-emerald-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+        <div className="relative w-full max-w-xl group flex flex-col gap-4">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search products by ID or name..."
+              className="w-full pl-14 pr-6 py-4 bg-gray-50 border border-gray-100 rounded-[28px] outline-none focus:ring-8 focus:ring-emerald-50 focus:border-emerald-300 transition-all font-bold text-sm"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <svg className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-hover:text-emerald-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          </div>
+
+          {/* Metric Flow Selectors */}
+          <div className="flex bg-gray-50 p-1.5 rounded-[22px] border border-gray-100 self-start shadow-inner">
+            {[
+              { id: 'all', label: 'All', icon: '🌍' },
+              { id: 'newarrivals', label: 'Recent', icon: '✨' },
+              { id: 'bestsellers', label: 'Selling', icon: '📈' }
+            ].map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setSpecialFilter(f.id)}
+                className={`flex items-center gap-2 px-6 py-2.5 rounded-[18px] text-[10px] font-black uppercase tracking-widest transition-all ${specialFilter === f.id ? "bg-white text-emerald-600 shadow-xl" : "text-gray-400 hover:text-gray-600"}`}
+              >
+                <span>{f.icon}</span> {f.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex flex-col gap-2">
-            <div className="flex bg-gray-100 p-1.5 rounded-[22px] border border-gray-200 shadow-inner">
+            <div className="flex bg-gray-100 p-1.5 rounded-[22px] border border-gray-100 shadow-inner">
               <div className="flex items-center px-3">
                 <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Status:</span>
               </div>
@@ -245,7 +345,7 @@ const ProductList = ({ token }) => {
             </div>
             <div className="flex bg-gray-100 p-1.5 rounded-[22px] border border-gray-200 shadow-inner">
               <div className="flex items-center px-3">
-                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Delete:</span>
+                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Archive:</span>
               </div>
               <select
                 value={deletedFilter}
@@ -254,7 +354,21 @@ const ProductList = ({ token }) => {
               >
                 <option value="all">All</option>
                 <option value="deleted">Deleted</option>
-                <option value="not_deleted">Not Deleted</option>
+                <option value="not_deleted">Active</option>
+              </select>
+            </div>
+            <div className="flex bg-gray-100 p-1.5 rounded-[22px] border border-gray-200 shadow-inner">
+              <div className="flex items-center px-3">
+                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Stock:</span>
+              </div>
+              <select
+                value={stockFilter}
+                onChange={(e) => setStockFilter(e.target.value)}
+                className="bg-transparent text-[11px] font-black uppercase tracking-widest px-4 py-2 outline-none cursor-pointer hover:text-emerald-600 transition-colors"
+              >
+                <option value="all">All</option>
+                <option value="instock">In Stock</option>
+                <option value="outofstock">Out of Stock</option>
               </select>
             </div>
           </div>
@@ -284,6 +398,7 @@ const ProductList = ({ token }) => {
               toggleStatus={toggleStatus}
               handleRestore={handleRestore}
               handleDelete={handleDelete}
+              handleRemoveDiscount={handleRemoveDiscount}
               currency={currency}
             />
           ))

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import axios from "axios";
-import { backendUrl } from "../../App";
+import { backendUrl, currency } from "../../App";
 
 const ViewSubCategory = ({ token, subCategoryId, isActive = null, includeDeleted = null }) => {
   const [subCategory, setSubCategory] = useState(null);
@@ -30,7 +30,7 @@ const ViewSubCategory = ({ token, subCategoryId, isActive = null, includeDeleted
       if (response.status === 200) {
         const responseData = response.data?.responseBody?.data;
         if (responseData) {
-          const { products: subCategoryProducts, ...subCategoryData } = responseData;
+          const subCategoryData = { ...responseData };
 
           // Normalize subcategory images
           if (subCategoryData.images) {
@@ -41,18 +41,6 @@ const ViewSubCategory = ({ token, subCategoryId, isActive = null, includeDeleted
           }
 
           setSubCategory(subCategoryData);
-
-          if (Array.isArray(subCategoryProducts)) {
-            // Normalize product images
-            const normalizedProducts = subCategoryProducts.map(p => ({
-              ...p,
-              images: p.images?.map(img => ({
-                ...img,
-                url: img.url?.startsWith("http") ? img.url : `${backendUrl}/${img.url}`
-              }))
-            }));
-            setProducts(normalizedProducts);
-          }
         } else {
           setSubCategory(null);
         }
@@ -66,9 +54,36 @@ const ViewSubCategory = ({ token, subCategoryId, isActive = null, includeDeleted
     }
   }, [subCategoryId, token, isActive, includeDeleted]);
 
+  const fetchProducts = useCallback(async () => {
+    if (!subCategoryId) return;
+    try {
+      const response = await axios.get(`${backendUrl}/api/Products/subcategory/${subCategoryId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { page: 1, pageSize: 20 }
+      });
+
+      if (response.status === 200) {
+        const productData = response.data?.responseBody?.data || [];
+        const normalizedProducts = productData.map(p => ({
+          ...p,
+          images: p.images?.map(img => ({
+            ...img,
+            url: img.url?.startsWith("http") ? img.url : `${backendUrl}/${img.url}`
+          })) || []
+        }));
+        setProducts(normalizedProducts);
+      }
+    } catch (err) {
+      console.error("❌ Error fetching subcategory products:", err);
+    }
+  }, [subCategoryId, token]);
+
   useEffect(() => {
-    if (subCategoryId) fetchSubCategory();
-  }, [subCategoryId, fetchSubCategory]);
+    if (subCategoryId) {
+      fetchSubCategory();
+      fetchProducts();
+    }
+  }, [subCategoryId, fetchSubCategory, fetchProducts]);
 
   const handleAction = async (action, successMsg) => {
     if (!subCategory) return;
@@ -138,134 +153,140 @@ const ViewSubCategory = ({ token, subCategoryId, isActive = null, includeDeleted
 
   const images = subCategory.images || [];
   const isDeletedFlag = !!(subCategory.isDeleted || subCategory.deleted || subCategory.deletedAt);
-
   return (
-    <div className="flex flex-col gap-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      {/* Action Command Center */}
-      <div className="bg-gray-900 rounded-[40px] p-8 flex flex-wrap items-center justify-between gap-6 shadow-2xl shadow-gray-200">
-        <div className="flex flex-col gap-1">
-          <p className="text-blue-400 text-[10px] font-black uppercase tracking-[0.2em]">Node Intelligence</p>
-          <h2 className="text-3xl font-black text-white">{subCategory.name}</h2>
-          <div className="flex items-center gap-3 mt-2">
-            <div className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${subCategory.isActive ? "bg-green-500/10 text-green-400" : "bg-rose-500/10 text-rose-400"}`}>
-              {subCategory.isActive ? "Live Sequence" : "Paused Sequence"}
+    <div className="flex flex-col gap-16 animate-in fade-in slide-in-from-bottom-6 duration-1000">
+      {/* Control Center */}
+      <div className="bg-gray-900 rounded-[50px] p-10 flex flex-wrap items-center justify-between gap-8 shadow-2xl shadow-gray-200 border border-gray-800">
+        <div className="flex flex-col gap-2">
+          <p className="text-blue-400 text-xs font-black uppercase tracking-[0.3em] mb-1">Sub-Category Node</p>
+          <h2 className="text-5xl font-black text-white tracking-tighter">{subCategory.name}</h2>
+          <div className="flex items-center gap-4 mt-4">
+            <div className={`px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest ${subCategory.isActive ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"}`}>
+              {subCategory.isActive ? "Live" : "Inactive"}
             </div>
-            {isDeletedFlag && <div className="px-4 py-1 rounded-full bg-white/10 text-white text-[10px] font-black uppercase tracking-widest">In Warehouse Archive</div>}
+            {isDeletedFlag && <div className="px-6 py-2 rounded-full bg-white/10 text-white text-xs font-black uppercase tracking-widest border border-white/10">Archived</div>}
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate('/collections')}
+            className="px-8 py-4 bg-white/5 text-white border border-white/10 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-white hover:text-gray-900 transition-all shadow-xl"
+          >
+            ← Back to Categories
+          </button>
+
           {subCategory.isActive ? (
-            <button onClick={() => handleAction('deactivate', 'Sequence paused')} className="px-6 py-3 bg-amber-500 text-gray-900 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-amber-400 transition-all">Pause Node</button>
+            <button onClick={() => handleAction('deactivate', 'Subcategory deactivated')} className="px-8 py-4 bg-amber-500 text-gray-900 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-amber-400 transition-all font-bold shadow-lg">Deactivate</button>
           ) : (
-            <button onClick={() => handleAction('activate', 'Sequence launched')} className="px-6 py-3 bg-green-500 text-gray-900 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-green-400 transition-all">Launch Node</button>
+            <button onClick={() => handleAction('activate', 'Subcategory activated')} className="px-8 py-4 bg-emerald-500 text-gray-900 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-emerald-400 transition-all font-bold shadow-lg">Activate</button>
           )}
 
           {!isDeletedFlag ? (
-            <button onClick={() => handleAction('delete', 'Moved to archive')} className="px-6 py-3 bg-rose-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-rose-500 transition-all">Archive</button>
+            <button onClick={() => handleAction('delete', 'Subcategory moved to archive')} className="px-8 py-4 bg-rose-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-rose-500 transition-all font-bold shadow-lg">Delete</button>
           ) : (
-            <button onClick={() => handleAction('restore', 'Restored to grid')} className="px-6 py-3 bg-blue-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-500 transition-all">Restore</button>
+            <button onClick={() => handleAction('restore', 'Subcategory restored')} className="px-8 py-4 bg-blue-600 text-white rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-500 transition-all font-bold shadow-lg">Restore</button>
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        {/* Visual Matrix */}
-        <div className="lg:col-span-7 flex flex-col gap-6">
-          <div className="relative aspect-square sm:aspect-video rounded-[48px] overflow-hidden bg-gray-50 border border-gray-100 group shadow-lg">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+        {/* Visual Gallery */}
+        <div className="lg:col-span-8 flex flex-col gap-8">
+          <div className="relative aspect-square sm:aspect-video rounded-[56px] overflow-hidden bg-white border border-gray-100 group shadow-sm transition-all hover:bg-gray-50/20">
             {images[selectedImageIndex] ? (
-              <img src={images[selectedImageIndex].url} className="w-full h-full object-contain p-8" alt="Asset Preview" />
+              <img src={images[selectedImageIndex].url} className="w-full h-full object-contain p-2" alt="Asset Preview" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-gray-300 font-bold uppercase tracking-widest text-xs">No Visual Data</div>
+              <div className="w-full h-full flex items-center justify-center text-gray-300 font-bold uppercase tracking-widest text-sm">No Visual Data</div>
             )}
 
-            {images[selectedImageIndex] && (
+            {images[selectedImageIndex] && !actionLoading && (
               <button
                 onClick={() => deleteImage(images[selectedImageIndex].id)}
-                className="absolute top-6 right-6 p-4 bg-white/80 backdrop-blur-md text-rose-600 rounded-2xl opacity-0 group-hover:opacity-100 transition-all shadow-xl hover:bg-rose-600 hover:text-white"
+                className="absolute top-8 right-8 p-5 bg-white/80 backdrop-blur-md text-rose-600 rounded-3xl opacity-0 group-hover:opacity-100 transition-all shadow-xl hover:bg-rose-600 hover:text-white"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
               </button>
             )}
 
             {images.length > 1 && (
-              <div className="absolute inset-x-6 top-1/2 -translate-y-1/2 flex justify-between pointer-events-none">
-                <button onClick={() => setSelectedImageIndex(i => (i === 0 ? images.length - 1 : i - 1))} className="p-4 bg-white/80 backdrop-blur-md rounded-2xl pointer-events-auto shadow-xl hover:bg-blue-600 hover:text-white transition-all">←</button>
-                <button onClick={() => setSelectedImageIndex(i => (i === images.length - 1 ? 0 : i + 1))} className="p-4 bg-white/80 backdrop-blur-md rounded-2xl pointer-events-auto shadow-xl hover:bg-blue-600 hover:text-white transition-all">→</button>
+              <div className="absolute inset-x-8 top-1/2 -translate-y-1/2 flex justify-between pointer-events-none">
+                <button onClick={() => setSelectedImageIndex(i => (i === 0 ? images.length - 1 : i - 1))} className="p-6 bg-white/90 backdrop-blur-md rounded-3xl pointer-events-auto shadow-2xl border border-gray-100/50 hover:bg-blue-600 hover:text-white transition-all">←</button>
+                <button onClick={() => setSelectedImageIndex(i => (i === images.length - 1 ? 0 : i + 1))} className="p-6 bg-white/90 backdrop-blur-md rounded-3xl pointer-events-auto shadow-2xl border border-gray-100/50 hover:bg-blue-600 hover:text-white transition-all">→</button>
               </div>
             )}
           </div>
 
-          <div className="grid grid-cols-4 sm:grid-cols-6 gap-4">
+          <div className="grid grid-cols-5 sm:grid-cols-7 gap-6">
             {images.map((img, idx) => (
               <button
                 key={img.id}
                 onClick={() => setSelectedImageIndex(idx)}
-                className={`relative aspect-square rounded-[24px] overflow-hidden border-4 transition-all ${selectedImageIndex === idx ? "border-blue-600 scale-105 shadow-xl" : "border-white hover:border-gray-100 shadow-sm"}`}
+                className={`relative aspect-square rounded-[28px] overflow-hidden border-4 transition-all ${selectedImageIndex === idx ? "border-blue-600 scale-105 shadow-2xl" : "border-white hover:border-gray-100 shadow-sm"}`}
               >
                 <img src={img.url} className="w-full h-full object-cover" alt="Thumbnail" />
-                {img.isMain && <div className="absolute bottom-2 inset-x-2 bg-blue-600 text-white text-[8px] font-black uppercase text-center py-1 rounded-lg">Main</div>}
+                {img.isMain && <div className="absolute bottom-3 inset-x-3 bg-blue-600 text-white text-[9px] font-black uppercase text-center py-1.5 rounded-xl">Hero</div>}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Intelligence Schema */}
-        <div className="lg:col-span-5 flex flex-col gap-6">
-          <div className="bg-white rounded-[40px] p-8 border border-gray-100 shadow-sm flex flex-col gap-8">
-            <div className="flex flex-col gap-1">
-              <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Narrative Overview</p>
-              <p className="text-gray-600 font-medium leading-relaxed">{subCategory.description || "Node sequence narrative is not defined in current protocol."}</p>
+        {/* Information Panel */}
+        <div className="lg:col-span-4 flex flex-col gap-8">
+          <div className="bg-white rounded-[50px] p-12 border border-gray-100 shadow-sm flex flex-col gap-10">
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-black uppercase tracking-widest text-gray-400">Inventory Narrative</p>
+              <p className="text-gray-600 font-medium leading-relaxed text-lg">{subCategory.description || "No description provided."}</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-6 pt-6 border-t border-gray-50">
-              <div className="flex flex-col gap-1">
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Node Identifier</p>
-                <p className="font-black text-gray-900 tracking-tight">#{subCategory.id}</p>
+            <div className="grid grid-cols-2 gap-8 pt-10 border-t border-gray-50">
+              <div className="flex flex-col gap-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Unique UID</p>
+                <p className="font-black text-gray-900 tracking-tight text-xl">#{subCategory.id}</p>
               </div>
-              <div className="flex flex-col gap-1">
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Primary Root</p>
-                <p className="font-black text-gray-900 tracking-tight">#{subCategory.categoryId}</p>
+              <div className="flex flex-col gap-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Display Rank</p>
+                <p className="font-black text-gray-900 tracking-tight text-xl">{subCategory.displayOrder}</p>
               </div>
-              <div className="flex flex-col gap-1">
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Display Priority</p>
-                <p className="font-black text-gray-900 tracking-tight">{subCategory.displayOrder}</p>
+              <div className="flex flex-col gap-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Parent Anchor</p>
+                <p className="font-black text-blue-600 tracking-tight text-sm uppercase">{subCategory.parentCategoryName || "Root"}</p>
               </div>
-              <div className="flex flex-col gap-1">
-                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Initialization</p>
-                <p className="font-black text-gray-900 tracking-tight text-xs">{new Date(subCategory.createdAt).toLocaleDateString()}</p>
+              <div className="flex flex-col gap-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Created At</p>
+                <p className="font-black text-gray-900 tracking-tight text-sm">{new Date(subCategory.createdAt).toLocaleDateString()}</p>
               </div>
             </div>
           </div>
 
-          {/* Child Node Grid (Products) */}
-          <div className="bg-gray-50/50 rounded-[40px] p-8 border border-gray-100 flex flex-col gap-6">
+          {/* Connected Products */}
+          <div className="bg-gray-50/50 rounded-[50px] p-10 border border-gray-100 flex flex-col gap-8 shadow-inner overflow-hidden">
             <div className="flex items-center justify-between">
-              <h3 className="font-black text-gray-900 uppercase tracking-widest text-xs">Connected Child Nodes ({products.length})</h3>
-              <button className="text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-800 transition-colors">Expand Logic</button>
+              <h3 className="font-black text-gray-900 uppercase tracking-widest text-xs">Linked Inventory ({products.length})</h3>
+              <button onClick={() => navigate(`/products?subcategory=${subCategoryId}`)} className="text-[9px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-800 transition-colors">View All →</button>
             </div>
 
-            <div className="flex flex-col gap-3">
-              {products.slice(0, 5).map(product => (
+            <div className="flex flex-col gap-4">
+              {products.slice(0, 8).map(product => (
                 <button
                   key={product.id}
-                  onClick={() => navigate(`/product/${product.id}`)}
-                  className="flex items-center gap-4 bg-white p-3 rounded-2xl border border-gray-100 hover:shadow-lg transition-all text-left"
+                  onClick={() => navigate(`/products/${product.id}`)}
+                  className="flex items-center gap-6 bg-white p-4 rounded-3xl border border-gray-100 hover:shadow-xl transition-all text-left group"
                 >
-                  <div className="w-12 h-12 bg-gray-50 rounded-xl overflow-hidden shadow-sm shrink-0">
-                    <img src={product.images?.[0]?.url || ""} className="w-full h-full object-cover" alt="" />
+                  <div className="w-16 h-16 bg-gray-50 rounded-2xl overflow-hidden shadow-sm shrink-0 border border-gray-50">
+                    <img src={product.mainImage?.url || product.productImages?.[0]?.url || product.images?.[0]?.url || ""} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-black text-gray-900 truncate text-sm">{product.name}</p>
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Valuation: ${product.price}</p>
+                    <p className="font-black text-gray-900 truncate text-base group-hover:text-blue-600 transition-colors">{product.name}</p>
+                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">EGP {product.price}</p>
                   </div>
-                  <div className={`w-2 h-2 rounded-full ${product.isActive ? "bg-green-500" : "bg-rose-500 shadow-rose-200 shadow-lg"}`} />
+                  <div className={`w-3 h-3 rounded-full ${product.isActive ? "bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]" : "bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.4)]"}`} />
                 </button>
               ))}
-              {products.length > 5 && <p className="text-center text-[10px] font-black uppercase tracking-widest text-gray-400 py-2">And {products.length - 5} additional nodes...</p>}
-              {products.length === 0 && <p className="text-center text-[10px] font-black uppercase tracking-widest text-gray-400 py-6">No child nodes detected.</p>}
+              {products.length > 8 && <p className="text-center text-[10px] font-black uppercase tracking-widest text-gray-400 py-2">+{products.length - 8} deeper layers</p>}
+              {products.length === 0 && <p className="text-center text-xs font-bold text-gray-400 py-10 uppercase tracking-widest">No associated assets</p>}
             </div>
           </div>
         </div>

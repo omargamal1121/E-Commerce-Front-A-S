@@ -207,11 +207,11 @@ const ListCollection = ({
           <p className="text-gray-500 mt-2 font-medium">Try adjusting your filters</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8 pb-10">
           {collections.map((col) => (
             <div
               key={col.id}
-              className="group relative bg-white border border-gray-100 rounded-[40px] p-5 hover:border-rose-200 hover:shadow-2xl hover:shadow-rose-500/5 transition-all duration-500 flex flex-col"
+              className="group relative bg-white border border-gray-100 rounded-[40px] p-5 hover:border-rose-200 hover:shadow-2xl transition-all duration-500 flex flex-col"
             >
               {/* Image Hub */}
               <div className="relative aspect-square rounded-[32px] overflow-hidden bg-gray-50 mb-6">
@@ -221,7 +221,6 @@ const ListCollection = ({
                     alt={col.name}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
                     onError={(e) => {
-                      console.error('❌ Collection image failed to load:', col.mainImage.url);
                       e.target.style.display = 'none';
                     }}
                   />
@@ -252,12 +251,11 @@ const ListCollection = ({
                     onClick={() => handleViewCollection(col)}
                     className="flex-1 py-3 bg-white hover:bg-gray-900 text-gray-900 hover:text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-xl"
                   >
-                    View
+                    Details
                   </button>
                   <button
                     onClick={() => handleEditCollection(col)}
                     className="p-3 bg-white hover:bg-amber-500 text-gray-900 hover:text-white rounded-2xl transition-all shadow-xl"
-                    title="Edit"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />

@@ -3,6 +3,70 @@ import { backendUrl } from "../App";
 
 const logApiError = () => { };
 
+// Helper to convert UTC dates from server to Egypt local time (Africa/Cairo)
+const toEgyptTime = (date) => {
+  if (!date) return date;
+  try {
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return date; // Return original if invalid
+    
+    // sv-SE gives YYYY-MM-DD HH:mm:ss
+    return new Intl.DateTimeFormat('sv-SE', {
+      timeZone: 'Africa/Cairo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    }).format(d).replace(' ', 'T');
+  } catch (e) {
+    return date;
+  }
+};
+
+const fromEgyptTime = (dateStr) => {
+  if (!dateStr) return dateStr;
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+
+    // Use Intl to find the offset for Cairo on this specific date
+    const parts = new Intl.DateTimeFormat('en-AU', {
+      timeZone: 'Africa/Cairo',
+      timeZoneName: 'shortOffset'
+    }).formatToParts(d);
+    
+    // offsetPart.value is like "GMT+2" or "GMT+3"
+    const offset = parts.find(p => p.type === 'timeZoneName')?.value.replace('GMT', '') || "";
+    
+    // Append the offset to ensure it's parsed as Cairo time, then convert to UTC
+    return new Date(dateStr + offset).toISOString();
+  } catch (e) {
+    return dateStr;
+  }
+};
+
+const convertDiscountDates = (d) => {
+  if (!d) return d;
+  return {
+    ...d,
+    startDate: toEgyptTime(d.startDate),
+    endDate: toEgyptTime(d.endDate),
+    isDeleted: d.deletedAt !== null && d.deletedAt !== undefined
+  };
+};
+
+const prepareDiscountForServer = (d) => {
+  if (!d) return d;
+  return {
+    ...d,
+    startDate: fromEgyptTime(d.startDate),
+    endDate: fromEgyptTime(d.endDate)
+  };
+};
+
 // API service for products, discounts, bulk discounts, images, customer addresses, and orders
 const API = {
   // Order APIs
@@ -99,8 +163,8 @@ const API = {
           filters.fitType ||
           filters.minPrice ||
           filters.maxPrice ||
-          filters.inStock ||
-          filters.onSale ||
+          filters.inStock !== undefined ||
+          filters.onSale === true ||
           filters.color ||
           filters.minSize ||
           filters.maxSize ||
@@ -111,44 +175,52 @@ const API = {
           queryParams.append("page", page);
           queryParams.append("pageSize", pageSize);
 
-          if (filters.isActive !== undefined && filters.isActive !== null) {
+          // Only append isActive when explicitly active or inactive — omit when "all"
+          if (filters.isActive === true || filters.isActive === false) {
             queryParams.append("isActive", filters.isActive);
-          } else if (filters.isActive === null) {
-            queryParams.append("isActive", "null");
           }
 
-          if (filters.includeDeleted !== undefined) {
-            if (filters.includeDeleted === null) {
-              queryParams.append("includeDeleted", "null");
-            } else {
-              queryParams.append("includeDeleted", filters.includeDeleted);
-            }
+          // Only append includeDeleted when explicitly set
+          if (filters.includeDeleted === true) {
+            queryParams.append("includeDeleted", true);
           }
-          const requestBody = {
-            searchTerm: filters.searchTerm || "",
-            subcategoryid: filters.subcategoryId ? parseInt(filters.subcategoryId) : 0,
-            gender: filters.gender ? parseInt(filters.gender) : 0,
-            fitType: filters.fitType ? parseInt(filters.fitType) : 0,
-            minPrice: filters.minPrice ? parseFloat(filters.minPrice) : 0,
-            maxPrice: filters.maxPrice ? parseFloat(filters.maxPrice) : 0,
-            inStock: filters.inStock || false,
-            onSale: filters.onSale || false,
-            sortBy: filters.sortBy || "price",
-            sortDescending: filters.sortDescending !== undefined ? filters.sortDescending : true,
-            color: filters.color || "",
-            minSize: filters.minSize ? parseInt(filters.minSize) : 0,
-            maxSize: filters.maxSize ? parseInt(filters.maxSize) : 0,
-            page: page,
-            pageSize: pageSize,
-          };
+          const requestBody = {};
+
+          if (filters.subcategoryId && parseInt(filters.subcategoryId) !== 0)
+            requestBody.subcategoryid = parseInt(filters.subcategoryId);
+          if (filters.gender && parseInt(filters.gender) !== 0)
+            requestBody.gender = parseInt(filters.gender);
+          if (filters.fitType && parseInt(filters.fitType) !== 0)
+            requestBody.fitType = parseInt(filters.fitType);
+          if (filters.minPrice && parseFloat(filters.minPrice) !== 0)
+            requestBody.minPrice = parseFloat(filters.minPrice);
+          if (filters.maxPrice && parseFloat(filters.maxPrice) !== 0)
+            requestBody.maxPrice = parseFloat(filters.maxPrice);
+          // inStock: send true or false when explicitly set, omit when not filtered
+          if (filters.inStock === true) requestBody.inStock = true;
+          else if (filters.inStock === false) requestBody.inStock = false;
+          if (filters.onSale === true) requestBody.onSale = true;
+          if (filters.sortBy && filters.sortBy !== "")
+            requestBody.sortBy = filters.sortBy;
+          if (filters.sortDescending !== undefined && filters.sortDescending !== null)
+            requestBody.sortDescending = filters.sortDescending;
+          if (filters.color && filters.color !== "")
+            requestBody.color = filters.color;
+          if (filters.minSize && parseInt(filters.minSize) !== 0)
+            requestBody.minSize = parseInt(filters.minSize);
+          if (filters.maxSize && parseInt(filters.maxSize) !== 0)
+            requestBody.maxSize = parseInt(filters.maxSize);
 
           try {
+            const url = `${backendUrl}/api/Products/advanced-search?${queryParams.toString()}`;
+            console.log("🔍 Advanced Search Request:", { url, body: requestBody });
             const response = await axios.post(
-              `${backendUrl}/api/Products/advanced-search?${queryParams.toString()}`,
+              url,
               requestBody,
               {
                 headers: {
-                  "Content-Type": "application/json",
+                  "accept": "text/plain",
+                  "Content-Type": "application/json-patch+json",
                   Authorization: `Bearer ${token}`,
                 },
               }
@@ -213,8 +285,8 @@ const API = {
         if (mergedFilters.fitType) params.append("fitType", mergedFilters.fitType);
         if (mergedFilters.minPrice) params.append("minPrice", mergedFilters.minPrice);
         if (mergedFilters.maxPrice) params.append("maxPrice", mergedFilters.maxPrice);
-        if (mergedFilters.inStock) params.append("inStock", mergedFilters.inStock);
-        if (mergedFilters.onSale) params.append("onSale", mergedFilters.onSale);
+        if (mergedFilters.inStock === true) params.append("inStock", "true");
+        if (mergedFilters.onSale === true) params.append("onSale", "true");
         if (mergedFilters.sortBy) params.append("sortBy", mergedFilters.sortBy);
         if (mergedFilters.sortDescending !== undefined) params.append("sortDescending", mergedFilters.sortDescending);
         if (mergedFilters.color) params.append("color", mergedFilters.color);
@@ -329,7 +401,11 @@ const API = {
             },
           }
         );
-        return response.data;
+        const data = response.data;
+        if (data?.responseBody?.data) {
+          data.responseBody.data = convertDiscountDates(data.responseBody.data);
+        }
+        return data;
       } catch (error) {
         throw error;
       }
@@ -440,9 +516,10 @@ const API = {
   discounts: {
     create: async (discountData, token) => {
       try {
+        const payload = prepareDiscountForServer(discountData);
         const response = await axios.post(
           `${backendUrl}/api/Discount`,
-          discountData,
+          payload,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -582,7 +659,11 @@ const API = {
           headers: { Authorization: `Bearer ${token}` },
           params: params,
         });
-        return response.data;
+        const data = response.data;
+        if (data?.responseBody?.data && Array.isArray(data.responseBody.data)) {
+          data.responseBody.data = data.responseBody.data.map(convertDiscountDates);
+        }
+        return data;
       } catch (error) {
         throw error;
       }
@@ -596,7 +677,11 @@ const API = {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
-        return response.data;
+        const data = response.data;
+        if (data?.responseBody?.data) {
+          data.responseBody.data = convertDiscountDates(data.responseBody.data);
+        }
+        return data;
       } catch (error) {
         throw error;
       }
@@ -604,15 +689,16 @@ const API = {
 
     update: async (discountId, discountData, token) => {
       try {
+        const payload = prepareDiscountForServer({
+          name: discountData.name,
+          discountPercent: discountData.discountPercent,
+          startDate: discountData.startDate,
+          endDate: discountData.endDate,
+          description: discountData.description,
+        });
         const response = await axios.put(
           `${backendUrl}/api/Discount/${discountId}`,
-          {
-            name: discountData.name,
-            discountPercent: discountData.discountPercent,
-            startDate: discountData.startDate,
-            endDate: discountData.endDate,
-            description: discountData.description,
-          },
+          payload,
           {
             headers: {
               Authorization: `Bearer ${token}`,

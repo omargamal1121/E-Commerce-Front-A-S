@@ -120,7 +120,7 @@ const Dashboard = ({ token }) => {
               { label: 'Total Products', val: stats.totalProducts, icon: '📦', color: 'blue', link: '/products' },
               { label: 'Total Orders', val: stats.totalOrders, icon: '🛍️', color: 'emerald', link: '/orders' },
               { label: 'Total Revenue', val: `${currency}${stats.totalRevenue.toFixed(2)}`, icon: '💰', color: 'amber' },
-              { label: 'Pending Orders', val: stats.pendingOrders, icon: '⏳', color: 'rose', link: '/orders?filter=active' }
+              { label: 'Pending Orders', val: stats.pendingOrders, icon: '⏳', color: 'rose', link: '/orders?status=1' }
             ].map((s, i) => (
               <button
                 key={i}

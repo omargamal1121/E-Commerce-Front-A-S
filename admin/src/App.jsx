@@ -13,6 +13,7 @@ import ProductDetails from "./pages/products/ProductDetails";
 
 // Orders
 import OrderManager from "./pages/orders/OrderManager";
+import OrderDetails from "./pages/orders/OrderDetails";
 
 // Categories
 import CategoryManager from "./pages/categories/CategoryManager";
@@ -24,6 +25,7 @@ import CollectionManager from "./pages/collections/CollectionManager";
 
 // Discounts
 import DiscountManager from "./pages/discounts/DiscountManager";
+import DiscountDetails from "./pages/discounts/DiscountDetails";
 import BulkDiscountPage from "./pages/discounts/BulkDiscountPage";
 
 // Users
@@ -129,7 +131,7 @@ function App() {
           <Navbar setToken={setToken} toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
           <div className="flex w-full items-start">
             <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} deliveryOnly={isDeliveryOnly} />
-            <main className="flex-1 w-full mx-auto px-3 sm:px-6 md:px-8 text-gray-700 text-base max-w-screen-lg lg:max-w-[1400px] overflow-x-hidden">
+            <main className="flex-1 w-full mx-auto px-3 sm:px-6 md:px-8 text-gray-700 text-base max-w-screen-lg lg:max-w-[1800px] overflow-x-hidden">
               <Routes>
                 {isDeliveryOnly ? (
                   <>
@@ -147,12 +149,13 @@ function App() {
                     <Route path="/products/:productId/discount" element={<ProductDiscountPage token={token} />} />
 
                     <Route path="/discounts" element={<DiscountManager token={token} />} />
+                    <Route path="/discounts/:id" element={<DiscountDetails token={token} />} />
                     <Route path="/bulk-discount" element={<BulkDiscountPage token={token} />} />
                     <Route path="/sub-category" element={<SubCategoryManager token={token} />} />
                     <Route path="/collections" element={<CategoryManager token={token} backendUrl={backendUrl} />} />
                     <Route path="/orders" element={<OrderManager token={token} />} />
                     <Route path="/orders/create" element={<OrderManager token={token} />} />
-                    <Route path="/orders/view/:orderId" element={<OrderManager token={token} />} />
+                    <Route path="/orders/view/:orderId" element={<OrderDetails token={token} />} />
                     <Route path="/users" element={<UserList token={token} />} />
                     <Route path="/admin-operations" element={<AdminOperations token={token} />} />
                     <Route path="/settings" element={<Settings token={token} />} />

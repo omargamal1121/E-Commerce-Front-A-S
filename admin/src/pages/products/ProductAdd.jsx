@@ -34,12 +34,28 @@ const ProductAdd = ({ token }) => {
       try {
         const res = await API.products.getById(editId, token);
         const p = res?.responseBody?.data;
-        if (p) setFormData({
-          name: p.name || "", description: p.description || "", subcategoryid: p.subCategoryId || "",
-          fitType: p.fitType?.toString() || "", gender: p.gender?.toString() || "", price: p.price?.toString() || "",
-          isActive: p.isActive ?? true, inStock: p.inStock ?? true, onSale: p.onSale ?? false,
-          material: p.material || "", careInstructions: p.careInstructions || "", shippingInfo: p.shippingInfo || ""
-        });
+        if (p) {
+          setFormData({
+            name: p.name || "", description: p.description || "", subcategoryid: p.subCategoryId || "",
+            fitType: p.fitType?.toString() || "", gender: p.gender?.toString() || "", price: p.price?.toString() || "",
+            isActive: p.isActive ?? true, inStock: p.inStock ?? true, onSale: p.onSale ?? false,
+            material: p.material || "", careInstructions: p.careInstructions || "", shippingInfo: p.shippingInfo || ""
+          });
+
+          // Set existing images for preview with backend URL resolution
+          const normalizeUrl = (u) => u?.startsWith("http") ? u : (u ? `${import.meta.env.VITE_BACKEND_URL}/${u}` : null);
+          
+          const mainImg = p.images?.find(i => i.isMain);
+          const extraImgs = p.images?.filter(i => !i.isMain) || [];
+          setPreviews({
+            main: normalizeUrl(mainImg?.url),
+            additional: extraImgs.map(img => ({ 
+              url: normalizeUrl(img.url), 
+              id: img.id,
+              isNew: false 
+            }))
+          });
+        }
       } catch (e) { toast.error("Failed to load product details"); }
     })();
   }, [editId, token]);
@@ -60,8 +76,36 @@ const ProductAdd = ({ token }) => {
   const handleAdditionalImagesChange = (e) => {
     const files = Array.from(e.target.files);
     setImages(prev => ({ ...prev, additional: [...prev.additional, ...files] }));
-    const newPreviews = files.map(file => URL.createObjectURL(file));
+    const newPreviews = files.map(file => ({ url: URL.createObjectURL(file), isNew: true }));
     setPreviews(prev => ({ ...prev, additional: [...prev.additional, ...newPreviews] }));
+  };
+
+  const removeImage = async (imgId, isNew, idx) => {
+    if (isNew) {
+      setImages(prev => ({
+        ...prev,
+        additional: prev.additional.filter((_, i) => i !== idx)
+      }));
+      setPreviews(prev => ({
+        ...prev,
+        additional: prev.additional.filter((_, i) => i !== idx)
+      }));
+      return;
+    }
+
+    if (!editId) return;
+    if (!window.confirm("Delete this image permanently?")) return;
+
+    try {
+      await API.images.delete(editId, imgId, token);
+      toast.success("Image deleted");
+      setPreviews(prev => ({
+        ...prev,
+        additional: prev.additional.filter(img => img.id !== imgId)
+      }));
+    } catch {
+      toast.error("Failed to delete image");
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -166,25 +210,6 @@ const ProductAdd = ({ token }) => {
             </div>
           </div>
 
-          <div className="bg-white p-10 rounded-[48px] border border-gray-100 shadow-sm flex flex-col gap-8">
-            <h3 className="text-xl font-black text-gray-900 tracking-tighter uppercase">Product Features</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {[
-                { label: "Material", name: "material", p: "e.g. 100% Cotton" },
-                { label: "Care Instructions", name: "careInstructions", p: "e.g. Wash cold" },
-                { label: "Shipping Information", name: "shippingInfo", p: "e.g. Ships in 3-5 days" },
-              ].map(f => (
-                <div key={f.name} className="flex flex-col gap-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">{f.label}</label>
-                  <input
-                    name={f.name} value={formData[f.name]} onChange={handleInputChange}
-                    className="w-full bg-gray-50 border border-gray-100 rounded-[20px] px-6 py-3.5 outline-none focus:ring-4 focus:ring-emerald-50 font-bold text-sm"
-                    placeholder={f.p}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
 
         {/* Images & Settings */}
@@ -208,13 +233,23 @@ const ProductAdd = ({ token }) => {
             </div>
           </div>
 
-          {/* Additional Asset Matrix */}
+          {/* Gallery Assets */}
           <div className="bg-white p-8 rounded-[48px] border border-gray-100 shadow-sm flex flex-col gap-6">
             <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 px-2">Gallery Images</h4>
             <div className="grid grid-cols-3 gap-3">
-              {previews.additional.map((src, idx) => (
-                <div key={idx} className="aspect-square rounded-[24px] overflow-hidden bg-gray-50 border border-gray-100 shadow-inner">
-                  <img src={src} className="w-full h-full object-cover" alt="" />
+              {previews.additional.map((img, idx) => (
+                <div key={idx} className="relative aspect-square rounded-[24px] overflow-hidden bg-gray-50 border border-gray-100 shadow-inner group">
+                  <img src={img.url || img} className="w-full h-full object-cover" alt="" />
+                  <button
+                    type="button"
+                    onClick={() => removeImage(img.id, img.isNew, idx)}
+                    className="absolute top-2 right-2 p-2 bg-rose-600/90 text-white rounded-xl opacity-0 group-hover:opacity-100 transition-all shadow-lg hover:bg-rose-700 active:scale-90"
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                  {img.isNew && <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-emerald-500 text-white text-[7px] font-black uppercase rounded-full">New</div>}
                 </div>
               ))}
               <div className="relative aspect-square rounded-[24px] bg-gray-50 border border-dashed border-gray-200 flex items-center justify-center hover:bg-emerald-50 hover:border-emerald-200 transition-all cursor-pointer group">

@@ -7,58 +7,21 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
 // Import components
 import OrderList from "./OrderList";
 import OrderCreate from "./OrderCreate";
-import ViewOrderModal from "../../components/modals/ViewOrderModal";
 
 const OrderManager = ({ token }) => {
-    const { orderId } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
-    const searchParams = new URLSearchParams(location.search);
 
     const [activeTab, setActiveTab] = useState("list");
-    const [selectedOrder, setSelectedOrder] = useState(null);
-    const [showViewModal, setShowViewModal] = useState(false);
 
     // Sync state with URL
     useEffect(() => {
         if (location.pathname.includes("/orders/create")) {
             setActiveTab("create");
-        } else if (location.pathname.includes("/orders/view/")) {
-            setActiveTab("list"); // Keep list open but show modal or dedicated view
-            // Handle fetching order details for the view
-            fetchOrderDetails(orderId);
         } else {
             setActiveTab("list");
         }
-    }, [location.pathname, orderId]);
-
-    const fetchOrderDetails = async (id) => {
-        if (!id) return;
-        try {
-            // First try by order number (common for this app)
-            const res = await axios.get(`${backendUrl}/api/Order/number/${id}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            const data = res.data?.responseBody?.data;
-            if (data) {
-                setSelectedOrder(data);
-                setShowViewModal(true);
-            } else {
-                // Try by ID
-                const resId = await axios.get(`${backendUrl}/api/Order/${id}`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                const dataId = resId.data?.responseBody?.data;
-                if (dataId) {
-                    setSelectedOrder(dataId);
-                    setShowViewModal(true);
-                }
-            }
-        } catch (error) {
-            console.error("Error fetching order details:", error);
-            toast.error("Failed to load order details");
-        }
-    };
+    }, [location.pathname]);
 
     return (
         <div className="flex flex-col gap-6 max-w-[1600px] mx-auto animate-in fade-in duration-500 pb-10">
@@ -102,16 +65,6 @@ const OrderManager = ({ token }) => {
                 {activeTab === "create" && <OrderCreate token={token} />}
             </div>
 
-            {/* Reusable View Modal with Premium Design */}
-            {showViewModal && selectedOrder && (
-                <ViewOrderModal
-                    selectedOrder={selectedOrder}
-                    setShowViewModal={(val) => {
-                        setShowViewModal(val);
-                        if (!val) navigate("/orders");
-                    }}
-                />
-            )}
         </div>
     );
 };

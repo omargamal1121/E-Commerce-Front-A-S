@@ -96,6 +96,10 @@ const CollectionManager = ({ token }) => {
     navigate(`/collection/view/${col.id}`);
   };
 
+  const fetchCollections = () => {
+    // ListCollection handles its own fetching
+  };
+
   return (
     <div className="flex flex-col gap-6 max-w-[1600px] mx-auto animate-in fade-in duration-500">
       {/* Header Section */}
@@ -161,15 +165,6 @@ const CollectionManager = ({ token }) => {
           }}
         />
         <div className="flex gap-2">
-          <select
-            value={searchActive}
-            onChange={(e) => setSearchActive(e.target.value)}
-            className="p-1.5 text-[10px] font-black uppercase bg-gray-50 border-none rounded-lg focus:ring-0"
-          >
-            <option value="">Status: All</option>
-            <option value="true">Active</option>
-            <option value="false">Inactive</option>
-          </select>
           <button
             onClick={() => {
               if (!searchId) return toast.error("Enter collection ID");
