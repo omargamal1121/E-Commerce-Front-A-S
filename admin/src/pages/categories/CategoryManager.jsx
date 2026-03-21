@@ -18,7 +18,6 @@ const CategoryManager = ({ token }) => {
 
   const [activeTab, setActiveTab] = useState("list");
   const [hasInitializedFromUrl, setHasInitializedFromUrl] = useState(false);
-  const [categories, setCategories] = useState([]);
 
   // form states for category
   const [name, setName] = useState("");
@@ -42,32 +41,11 @@ const CategoryManager = ({ token }) => {
     searchParams.get("includeDeleted") || ""
   );
 
-  // Fetch categories
-  const fetchCategories = async () => {
-    try {
-      const res = await axios.get(`${backendUrl}/api/categories`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const cats = res.data?.responseBody?.data || [];
-      setCategories(cats);
-
-      console.log(
-        "📌 Available categories:",
-        cats.map((c) => ({ id: c.id, name: c.name }))
-      );
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-      toast.error("Error fetching categories");
-    }
-  };
-
   useEffect(() => {
     if (!token) {
       toast.error("Please login again.");
       return;
     }
-    fetchCategories();
   }, [token]);
 
   // Update search states when URL parameters change
@@ -106,7 +84,6 @@ const CategoryManager = ({ token }) => {
               setImages(cat.images.filter((img) => !img.isMain));
             }
           } catch (err) {
-            console.error("❌ Error fetching category:", err);
             toast.error("Failed to load category details");
           }
         };
@@ -120,17 +97,20 @@ const CategoryManager = ({ token }) => {
 
       setHasInitializedFromUrl(true);
     }
-    if (searchParams.get("isActive")) {
-      setSearchActive(searchParams.get("isActive"));
+    const isActiveParam = searchParams.get("isActive");
+    const includeDeletedParam = searchParams.get("includeDeleted");
+
+    if (isActiveParam) {
+      setSearchActive(isActiveParam);
     }
-    if (searchParams.get("includeDeleted")) {
-      setSearchDeleted(searchParams.get("includeDeleted"));
+    if (includeDeletedParam) {
+      setSearchDeleted(includeDeletedParam);
     }
   }, [
     categoryId,
-    searchParams,
-    hasInitializedFromUrl,
+    location.search,
     location.pathname,
+    hasInitializedFromUrl,
     token,
   ]);
 
@@ -209,8 +189,8 @@ const CategoryManager = ({ token }) => {
                   if (tab.id === "add" && !editMode) handleEditCategory(null);
                 }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${activeTab === tab.id
-                    ? "bg-white text-blue-600 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
                   }`}
               >
                 <span>{tab.icon}</span>
@@ -321,12 +301,9 @@ const CategoryManager = ({ token }) => {
             <div className="p-2 md:p-4">
               <ListCategory
                 token={token}
-                categories={categories}
-                setCategories={setCategories}
                 setActiveTab={setActiveTab}
                 handleEditCategory={handleEditCategory}
                 handleViewCategory={handleViewCategory}
-                fetchCategories={fetchCategories}
               />
             </div>
           )}

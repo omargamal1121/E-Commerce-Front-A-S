@@ -95,7 +95,6 @@ const OrderList = ({ token }) => {
       setOrders(data);
       setTotalCount(total);
     } catch (error) {
-      console.error("Error fetching orders:", error);
       toast.error("Failed to load orders");
     } finally {
       setLoading(false);
@@ -115,7 +114,6 @@ const OrderList = ({ token }) => {
       toast.success("Order status updated successfully");
       fetchOrders();
     } catch (error) {
-      console.error("Error updating status:", error);
       toast.error("Failed to update status");
     } finally {
       setUpdatingStatus(null);

@@ -83,25 +83,15 @@ function App() {
   // Token validation on app load
   useEffect(() => {
     const validateTokenOnLoad = async () => {
-      console.log("🚀 App starting, checking token...");
       const currentToken = localStorage.getItem("token");
       if (currentToken) {
-        console.log("🔍 Token found, validating...");
         const isValid = authService.hasValidToken(); // simple client-side check
         if (!isValid) {
-          console.log("❌ Token is invalid, attempting refresh...");
           const newToken = await authService.manualRefresh();
           if (newToken) {
-            console.log("✅ Token refreshed successfully");
             setToken(newToken);
-          } else {
-            console.log("❌ Token refresh failed, will redirect to login");
           }
-        } else {
-          console.log("✅ Token is valid");
         }
-      } else {
-        console.log("⚠️ No token found");
       }
     };
 

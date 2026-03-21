@@ -1,15 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { backendUrl } from "../../App";
 
 const ListCategory = ({
   token,
-  categories,
-  setCategories,
   handleEditCategory,
   handleViewCategory,
 }) => {
+  const [categories, setCategories] = useState([]);
   const [search, setSearch] = useState("");
   const [isActive, setIsActive] = useState("");
   const [isDeleted, setIsDeleted] = useState("");
@@ -20,7 +19,7 @@ const ListCategory = ({
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     setLoading(true);
     try {
       const res = await axios.get(`${backendUrl}/api/categories`, {
@@ -38,42 +37,31 @@ const ListCategory = ({
       const totalCount = res.data?.responseBody?.totalCount || cats.length;
 
       const normalized = cats.map((cat) => {
-        let mainImg = cat.images?.find((i) => i.isMain) || cat.images?.[0] || null;
-        let imgUrl = null;
-
         // Helper to normalize any url-like string
         const normalizeUrl = (raw) => {
-          if (!raw) return null;
+          if (!raw || typeof raw !== "string") return null;
           if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
-          const path = raw.startsWith("/") ? raw : `/${raw}`;
-          return `${backendUrl}${path}`;
+          const cleanPath = raw.startsWith("/") ? raw.substring(1) : raw;
+          const baseUrl = backendUrl.endsWith("/") ? backendUrl : `${backendUrl}/`;
+          return `${baseUrl}${cleanPath}`;
         };
 
-        if (mainImg) {
-          // Common patterns from API
-          imgUrl =
-            normalizeUrl(mainImg.url) ||
-            normalizeUrl(mainImg.filePath) ||
-            normalizeUrl(mainImg.imageUrl) ||
-            normalizeUrl(mainImg.path);
+        let imgUrl = null;
+        
+        // 1. Try to find the main image in the images array
+        if (cat.images && Array.isArray(cat.images)) {
+          const mainImg = cat.images.find((i) => i.isMain) || cat.images[0];
+          if (mainImg) {
+            imgUrl = normalizeUrl(mainImg.url) || normalizeUrl(mainImg.filePath);
+          }
         }
 
-        // Fallback: sometimes list endpoint only sends a top-level image URL
+        // 2. Fallback to top-level properties often found in list APIs
         if (!imgUrl) {
           imgUrl =
             normalizeUrl(cat.mainImageUrl) ||
             normalizeUrl(cat.imageUrl) ||
-            normalizeUrl(cat.thumbnailUrl) ||
-            normalizeUrl(cat.mainImage?.url) ||
-            normalizeUrl(cat.image?.url);
-        }
-
-        // Log for debugging if image URL is missing but API says there are images
-        if (!imgUrl && (cat.images?.length > 0 || cat.mainImageUrl || cat.imageUrl)) {
-          console.warn(
-            `⚠️ Category ${cat.id} (${cat.name}) has image metadata but no resolved URL:`,
-            { images: cat.images, mainImageUrl: cat.mainImageUrl, imageUrl: cat.imageUrl }
-          );
+            normalizeUrl(cat.thumbnailUrl);
         }
 
         return {
@@ -86,16 +74,15 @@ const ListCategory = ({
       setCategories(normalized);
       setTotalPages(Math.ceil(totalCount / pageSize));
     } catch (err) {
-      console.error("Error fetching categories:", err);
       toast.error("Failed to fetch categories");
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, search, isActive, isDeleted, page, pageSize]);
 
   useEffect(() => {
     fetchCategories();
-  }, [token, search, isActive, isDeleted, page, fetchCategories]);
+  }, [fetchCategories]);
 
   const removeCategory = async (id) => {
     try {

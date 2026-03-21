@@ -17,7 +17,6 @@ const CollectionManager = ({ token }) => {
 
   const [activeTab, setActiveTab] = useState("list");
   const [hasInitializedFromUrl, setHasInitializedFromUrl] = useState(false);
-  const [collections, setCollections] = useState([]);
 
   // edit collection states
   const [editMode, setEditMode] = useState(false);
@@ -32,32 +31,11 @@ const CollectionManager = ({ token }) => {
     searchParams.get("includeDeleted") || ""
   );
 
-  // Fetch collections
-  const fetchCollections = async () => {
-    try {
-      const res = await axios.get(`${backendUrl}/api/Collection`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const cols = res.data?.responseBody?.data || [];
-      setCollections(cols);
-
-      console.log(
-        "📌 Available collections:",
-        cols.map((c) => ({ id: c.id, name: c.name }))
-      );
-    } catch (error) {
-      console.error("Error fetching collections:", error);
-      toast.error("Error fetching collections");
-    }
-  };
-
   useEffect(() => {
     if (!token) {
       toast.error("Please login again.");
       return;
     }
-    fetchCollections();
   }, [token]);
 
   // Update search states when URL parameters change
@@ -77,17 +55,20 @@ const CollectionManager = ({ token }) => {
 
       setHasInitializedFromUrl(true);
     }
-    if (searchParams.get("isActive")) {
-      setSearchActive(searchParams.get("isActive"));
+    const isActiveParam = searchParams.get("isActive");
+    const includeDeletedParam = searchParams.get("includeDeleted");
+
+    if (isActiveParam) {
+      setSearchActive(isActiveParam);
     }
-    if (searchParams.get("includeDeleted")) {
-      setSearchDeleted(searchParams.get("includeDeleted"));
+    if (includeDeletedParam) {
+      setSearchDeleted(includeDeletedParam);
     }
   }, [
     collectionId,
-    searchParams,
-    hasInitializedFromUrl,
+    location.search,
     location.pathname,
+    hasInitializedFromUrl,
     token,
   ]);
 
@@ -221,8 +202,6 @@ const CollectionManager = ({ token }) => {
             <div className="p-2 md:p-4">
               <ListCollection
                 token={token}
-                collections={collections}
-                setCollections={setCollections}
                 setActiveTab={setActiveTab}
                 handleEditCollection={handleEditCollection}
                 handleViewCollection={handleViewCollection}

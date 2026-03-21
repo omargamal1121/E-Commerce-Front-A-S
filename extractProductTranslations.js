@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-// Adjust the path if your assets.js is elsewhere
+// Adjust the path if your assets.js is elsewhere zzzz
 const assetsPath = path.join(__dirname, 'src/assets/frontend_assets/assets.js');
 const file = fs.readFileSync(assetsPath, 'utf8');
 
