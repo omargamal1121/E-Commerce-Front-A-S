@@ -137,6 +137,7 @@ const ProductList = ({ token }) => {
   const [deletedFilter, setDeletedFilter] = useState("not_deleted");
   const [specialFilter, setSpecialFilter] = useState("all"); // all, newarrivals, bestsellers
   const [stockFilter, setStockFilter] = useState("all"); // all, instock, outofstock
+  const [genderFilter, setGenderFilter] = useState(""); // "", 0, 1, 2, 3
   const pageSize = 12;
 
   // Debounce search term
@@ -186,6 +187,9 @@ const ProductList = ({ token }) => {
         if (stockFilter === "instock") filters.inStock = true;
         else if (stockFilter === "outofstock") filters.inStock = false;
 
+        // Send gender only when a specific gender is selected
+        if (genderFilter !== "") filters.gender = genderFilter;
+
         if (deletedFilter === "all") {
           filters.includeDeleted = null;
         } else if (deletedFilter === "deleted") {
@@ -226,7 +230,7 @@ const ProductList = ({ token }) => {
     } finally {
       setLoading(false);
     }
-  }, [token, debouncedSearch, page, statusFilter, deletedFilter, subcategoryIdFromUrl, collectionIdFromUrl, specialFilter, stockFilter]);
+  }, [token, debouncedSearch, page, statusFilter, deletedFilter, subcategoryIdFromUrl, collectionIdFromUrl, specialFilter, stockFilter, genderFilter]);
 
   useEffect(() => {
     fetchProducts();
@@ -234,7 +238,7 @@ const ProductList = ({ token }) => {
 
   useEffect(() => {
     setPage(1);
-  }, [statusFilter, deletedFilter, debouncedSearch, specialFilter, stockFilter]);
+  }, [statusFilter, deletedFilter, debouncedSearch, specialFilter, stockFilter, genderFilter]);
 
   const toggleStatus = useCallback(async (product) => {
     try {
@@ -369,6 +373,22 @@ const ProductList = ({ token }) => {
                 <option value="all">All</option>
                 <option value="instock">In Stock</option>
                 <option value="outofstock">Out of Stock</option>
+              </select>
+            </div>
+            <div className="flex bg-gray-100 p-1.5 rounded-[22px] border border-gray-200 shadow-inner">
+              <div className="flex items-center px-3">
+                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Gender:</span>
+              </div>
+              <select
+                value={genderFilter}
+                onChange={(e) => setGenderFilter(e.target.value)}
+                className="bg-transparent text-[11px] font-black uppercase tracking-widest px-4 py-2 outline-none cursor-pointer hover:text-emerald-600 transition-colors"
+              >
+                <option value="">All</option>
+                <option value="0">Man</option>
+                <option value="1">Woman</option>
+                <option value="2">Kids</option>
+                <option value="3">Uni</option>
               </select>
             </div>
           </div>

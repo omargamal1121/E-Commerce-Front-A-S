@@ -203,8 +203,10 @@ const ProductAdd = ({ token }) => {
                   className="w-full bg-gray-50 border border-gray-100 rounded-[24px] px-8 py-4 outline-none focus:ring-8 focus:ring-emerald-50 focus:border-emerald-300 transition-all font-bold"
                 >
                   <option value="">Select Gender</option>
-                  <option value="1">Male</option>
-                  <option value="2">Female</option>
+                  <option value="0">Man</option>
+                  <option value="1">Woman</option>
+                  <option value="2">Kids</option>
+                  <option value="3">Uni</option>
                 </select>
               </div>
             </div>
