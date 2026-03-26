@@ -40,6 +40,11 @@ const ProductCard = React.memo(({ p, navigate, toggleStatus, handleRestore, hand
               -{discountPercent.toFixed(0)}%
             </span>
           )}
+          {p.discountStatus !== null && p.discountStatus !== undefined && (
+            <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm backdrop-blur-md ${p.discountStatus ? "bg-amber-500/80 text-white border-amber-400" : "bg-gray-400/80 text-white border-gray-300"}`}>
+              {p.discountStatus ? "Discount Active" : "Discount Inactive"}
+            </span>
+          )}
         </div>
 
         {/* Actions */}
@@ -59,6 +64,9 @@ const ProductCard = React.memo(({ p, navigate, toggleStatus, handleRestore, hand
           <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">ID: {p.id}</p>
           <p className={`text-[10px] font-black uppercase tracking-widest ${p.availableQuantity > 0 ? "text-emerald-500" : "text-rose-500"}`}>
             {p.availableQuantity > 0 ? `Stock: ${p.availableQuantity}` : "Out of stock"}
+          </p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-[#BBA14F]">
+            Sold: {p.totalSold ?? p.totalsold ?? 0}
           </p>
         </div>
         <h4 className="text-xl font-black text-gray-900 leading-tight uppercase tracking-tighter mb-4 truncate">
@@ -138,7 +146,22 @@ const ProductList = ({ token }) => {
   const [specialFilter, setSpecialFilter] = useState("all"); // all, newarrivals, bestsellers
   const [stockFilter, setStockFilter] = useState("all"); // all, instock, outofstock
   const [genderFilter, setGenderFilter] = useState(""); // "", 0, 1, 2, 3
+  const [subcategoryFilter, setSubcategoryFilter] = useState(subcategoryIdFromUrl || "");
+  const [subcategories, setSubcategories] = useState([]);
   const pageSize = 12;
+
+  // Fetch subcategories for filter
+  useEffect(() => {
+    const fetchSubs = async () => {
+      try {
+        const subs = await API.subcategories.getAll(token);
+        setSubcategories(subs);
+      } catch (err) {
+        console.error("Failed to load subcategories for filter");
+      }
+    };
+    if (token) fetchSubs();
+  }, [token]);
 
   // Debounce search term
   useEffect(() => {
@@ -158,8 +181,8 @@ const ProductList = ({ token }) => {
         res = (await axios.get(`${backendUrl}/api/Collection/${collectionIdFromUrl}/products`, {
           headers: { Authorization: `Bearer ${token}` }
         })).data;
-      } else if (subcategoryIdFromUrl) {
-        res = (await axios.get(`${backendUrl}/api/Products/subcategory/${subcategoryIdFromUrl}`, {
+      } else if (subcategoryFilter && subcategoryFilter !== "") {
+        res = (await axios.get(`${backendUrl}/api/Products/subcategory/${subcategoryFilter}`, {
           headers: { Authorization: `Bearer ${token}` },
           params: { page, pageSize }
         })).data;
@@ -230,7 +253,7 @@ const ProductList = ({ token }) => {
     } finally {
       setLoading(false);
     }
-  }, [token, debouncedSearch, page, statusFilter, deletedFilter, subcategoryIdFromUrl, collectionIdFromUrl, specialFilter, stockFilter, genderFilter]);
+  }, [token, debouncedSearch, page, statusFilter, deletedFilter, subcategoryFilter, collectionIdFromUrl, specialFilter, stockFilter, genderFilter]);
 
   useEffect(() => {
     fetchProducts();
@@ -238,7 +261,7 @@ const ProductList = ({ token }) => {
 
   useEffect(() => {
     setPage(1);
-  }, [statusFilter, deletedFilter, debouncedSearch, specialFilter, stockFilter, genderFilter]);
+  }, [statusFilter, deletedFilter, debouncedSearch, specialFilter, stockFilter, genderFilter, subcategoryFilter]);
 
   const toggleStatus = useCallback(async (product) => {
     try {
@@ -275,23 +298,29 @@ const ProductList = ({ token }) => {
     } catch (e) { toast.error("Restore failed"); }
   }, [token, fetchProducts]);
 
+  // Sync filter when URL params change (from external navigation)
+  useEffect(() => {
+    if (subcategoryIdFromUrl) setSubcategoryFilter(subcategoryIdFromUrl);
+  }, [subcategoryIdFromUrl]);
+
   return (
     <div className="flex flex-col gap-10 animate-in slide-in-from-bottom-6 duration-700">
       
       {/* Contextual Filter Indicator */}
-      {(subcategoryIdFromUrl || collectionIdFromUrl) && (
+      {(subcategoryFilter || collectionIdFromUrl) && (
         <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-[32px] flex items-center justify-between animate-in slide-in-from-top-4 duration-500">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white font-black text-xs shadow-lg">🎯</div>
             <div className="flex flex-col">
               <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Active Content Matrix</span>
               <span className="text-sm font-bold text-emerald-900 leading-none">
-                {subcategoryIdFromUrl ? `Filtering Products by Subcategory #${subcategoryIdFromUrl}` : `Filtering Products by Collection #${collectionIdFromUrl}`}
+                {subcategoryFilter ? `Filtering Products by Subcategory #${subcategoryFilter}` : `Filtering Products by Collection #${collectionIdFromUrl}`}
               </span>
             </div>
           </div>
           <button 
             onClick={() => {
+              setSubcategoryFilter("");
               navigate("/products");
             }}
             className="px-6 py-2.5 bg-white border border-emerald-200 text-emerald-600 text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-emerald-600 hover:text-white transition-all shadow-sm"
@@ -300,102 +329,83 @@ const ProductList = ({ token }) => {
           </button>
         </div>
       )}
-      <div className="bg-white/80 backdrop-blur-md p-8 rounded-[40px] border border-gray-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="relative w-full max-w-xl group flex flex-col gap-4">
-          <div className="relative">
+      <div className="flex flex-col gap-8">
+        {/* Top Control Bar: Search & Master Action */}
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-6 bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm">
+          <div className="flex-1 relative group">
             <input
               type="text"
-              placeholder="Search products by ID or name..."
-              className="w-full pl-14 pr-6 py-4 bg-gray-50 border border-gray-100 rounded-[28px] outline-none focus:ring-8 focus:ring-emerald-50 focus:border-emerald-300 transition-all font-bold text-sm"
+              placeholder="Search products by identity, code, or keyword..."
+              className="w-full pl-14 pr-6 py-5 bg-gray-50 border border-transparent rounded-[28px] outline-none focus:ring-8 focus:ring-emerald-50 focus:bg-white focus:border-emerald-300 transition-all font-bold text-sm shadow-inner"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <svg className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-hover:text-emerald-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            <svg className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
           </div>
-
-          {/* Metric Flow Selectors */}
-          <div className="flex bg-gray-50 p-1.5 rounded-[22px] border border-gray-100 self-start shadow-inner">
-            {[
-              { id: 'all', label: 'All', icon: '🌍' },
-              { id: 'newarrivals', label: 'Recent', icon: '✨' },
-              { id: 'bestsellers', label: 'Selling', icon: '📈' }
-            ].map((f) => (
-              <button
-                key={f.id}
-                onClick={() => setSpecialFilter(f.id)}
-                className={`flex items-center gap-2 px-6 py-2.5 rounded-[18px] text-[10px] font-black uppercase tracking-widest transition-all ${specialFilter === f.id ? "bg-white text-emerald-600 shadow-xl" : "text-gray-400 hover:text-gray-600"}`}
-              >
-                <span>{f.icon}</span> {f.label}
-              </button>
-            ))}
-          </div>
+          
+          <button onClick={() => navigate('/add')} className="px-12 py-5 bg-gray-900 text-white rounded-[28px] text-xs font-black uppercase tracking-[0.2em] hover:bg-emerald-600 transition-all shadow-xl hover:scale-[1.02] active:scale-95 shrink-0">
+            Publish New Asset
+          </button>
         </div>
 
-        <div className="flex flex-wrap items-center gap-4">
-          <div className="flex flex-col gap-2">
-            <div className="flex bg-gray-100 p-1.5 rounded-[22px] border border-gray-100 shadow-inner">
-              <div className="flex items-center px-3">
-                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Status:</span>
-              </div>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-transparent text-[11px] font-black uppercase tracking-widest px-4 py-2 outline-none cursor-pointer hover:text-emerald-600 transition-colors"
-              >
-                <option value="all">All</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </select>
-            </div>
+        {/* Bottom Control Bar: Refined Filtering Matrix */}
+        <div className="bg-white/80 backdrop-blur-md p-6 rounded-[40px] border border-gray-100 shadow-sm overflow-x-auto custom-scrollbar">
+          <div className="flex items-center gap-6 min-w-max">
+            {/* Strategy Selectors */}
             <div className="flex bg-gray-100 p-1.5 rounded-[22px] border border-gray-200 shadow-inner">
-              <div className="flex items-center px-3">
-                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Archive:</span>
-              </div>
-              <select
-                value={deletedFilter}
-                onChange={(e) => setDeletedFilter(e.target.value)}
-                className="bg-transparent text-[11px] font-black uppercase tracking-widest px-4 py-2 outline-none cursor-pointer hover:text-emerald-600 transition-colors"
-              >
-                <option value="all">All</option>
-                <option value="deleted">Deleted</option>
-                <option value="not_deleted">Active</option>
-              </select>
+              {[
+                { id: 'all', label: 'All', icon: '🌍' },
+                { id: 'newarrivals', label: 'Recent', icon: '✨' },
+                { id: 'bestsellers', label: 'Best Sellers', icon: '📈' }
+              ].map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => setSpecialFilter(f.id)}
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-[18px] text-[9px] font-black uppercase tracking-widest transition-all ${specialFilter === f.id ? "bg-white text-emerald-600 shadow-xl" : "text-gray-400 hover:text-gray-600"}`}
+                >
+                  <span>{f.icon}</span> {f.label}
+                </button>
+              ))}
             </div>
-            <div className="flex bg-gray-100 p-1.5 rounded-[22px] border border-gray-200 shadow-inner">
-              <div className="flex items-center px-3">
-                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Stock:</span>
+
+            <div className="w-px h-8 bg-gray-100" />
+
+            {/* Matrix Filters */}
+            <div className="flex items-center gap-4">
+              {[
+                { label: 'Status', value: statusFilter, setter: setStatusFilter, options: [{v:'all', l:'All'}, {v:'active', l:'Live'}, {v:'inactive', l:'Inactive'}] },
+                { label: 'Archive', value: deletedFilter, setter: setDeletedFilter, options: [{v:'all', l:'Combined'}, {v:'deleted', l:'Trashed'}, {v:'not_deleted', l:'Active Only'}] },
+                { label: 'Stock', value: stockFilter, setter: setStockFilter, options: [{v:'all', l:'Quantity: All'}, {v:'instock', l:'In Stock'}, {v:'outofstock', l:'Exhausted'}] },
+                { label: 'Gender', value: genderFilter, setter: setGenderFilter, options: [{v:'', l:'Gender: All'}, {v:'0', l:'Man'}, {v:'1', l:'Woman'}, {v:'2', l:'Kids'}, {v:'3', l:'Unisex'}] }
+              ].map((filter, i) => (
+                <div key={i} className="flex bg-gray-50 px-4 py-2 rounded-2xl border border-gray-100 hover:border-emerald-200 transition-colors">
+                  <select
+                    value={filter.value}
+                    onChange={(e) => filter.setter(e.target.value)}
+                    className="bg-transparent text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer text-gray-600 hover:text-emerald-600 transition-colors appearance-none"
+                  >
+                    {filter.options.map(opt => <option key={opt.v} value={opt.v}>{opt.l}</option>)}
+                  </select>
+                </div>
+              ))}
+
+              {/* Specialized Subcategory Filter */}
+              <div className="flex bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-100 hover:border-emerald-300 transition-colors">
+                <select
+                  value={subcategoryFilter}
+                  onChange={(e) => setSubcategoryFilter(e.target.value)}
+                  className="bg-transparent text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer text-emerald-700 hover:text-emerald-900 transition-colors appearance-none max-w-[120px]"
+                >
+                  <option value="">Type: All</option>
+                  {subcategories.map(sub => (
+                    <option key={sub.id} value={sub.id}>{sub.name}</option>
+                  ))}
+                </select>
               </div>
-              <select
-                value={stockFilter}
-                onChange={(e) => setStockFilter(e.target.value)}
-                className="bg-transparent text-[11px] font-black uppercase tracking-widest px-4 py-2 outline-none cursor-pointer hover:text-emerald-600 transition-colors"
-              >
-                <option value="all">All</option>
-                <option value="instock">In Stock</option>
-                <option value="outofstock">Out of Stock</option>
-              </select>
-            </div>
-            <div className="flex bg-gray-100 p-1.5 rounded-[22px] border border-gray-200 shadow-inner">
-              <div className="flex items-center px-3">
-                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Gender:</span>
-              </div>
-              <select
-                value={genderFilter}
-                onChange={(e) => setGenderFilter(e.target.value)}
-                className="bg-transparent text-[11px] font-black uppercase tracking-widest px-4 py-2 outline-none cursor-pointer hover:text-emerald-600 transition-colors"
-              >
-                <option value="">All</option>
-                <option value="0">Man</option>
-                <option value="1">Woman</option>
-                <option value="2">Kids</option>
-                <option value="3">Uni</option>
-              </select>
             </div>
           </div>
-
-          <button onClick={() => navigate('/add')} className="px-10 py-4 bg-gray-900 text-white rounded-[24px] text-xs font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-xl hover:scale-[1.05] active:scale-95">
-            Add New Product
-          </button>
         </div>
       </div>
 

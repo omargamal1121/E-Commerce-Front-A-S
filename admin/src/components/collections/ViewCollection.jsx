@@ -126,6 +126,25 @@ const ViewCollection = ({ token, collectionId, isActive = null, includeDeleted =
     }
   };
 
+  const removeProductFromCollection = async (productId) => {
+    if (!collection || !productId) return;
+    if (!window.confirm("Remove this product from the collection?")) return;
+
+    setActionLoading(true);
+    try {
+      await axios.delete(`${backendUrl}/api/Collection/${collection.id}/products`, {
+        headers: { Authorization: `Bearer ${token}` },
+        data: { productIds: [productId] }
+      });
+      toast.success("Product detached from collection 🔗");
+      await fetchProductsByCollection();
+    } catch (err) {
+      toast.error("Failed to detach product");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   if (!collectionId) return (
     <div className="flex flex-col items-center justify-center min-h-[400px] text-gray-400">
       <div className="w-20 h-20 bg-gray-50 rounded-[32px] flex items-center justify-center mb-6">
@@ -174,12 +193,6 @@ const ViewCollection = ({ token, collectionId, isActive = null, includeDeleted =
         </div>
 
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => onUpdateCollection(collection)}
-            className="px-8 py-4 bg-white/5 text-white border border-white/10 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-white hover:text-gray-900 transition-all shadow-xl"
-          >
-            Edit Metadata
-          </button>
           {collection.isActive ? (
             <button onClick={() => handleAction('deactivate', 'Deployment paused')} className="px-8 py-4 bg-amber-500 text-gray-900 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-amber-400 transition-all font-bold shadow-lg">Deactivate</button>
           ) : (
@@ -272,20 +285,33 @@ const ViewCollection = ({ token, collectionId, isActive = null, includeDeleted =
 
             <div className="flex flex-col gap-4">
               {products.slice(0, 8).map(product => (
-                <button
-                  key={product.id}
-                  onClick={() => navigate(`/products/${product.id}`)}
-                  className="flex items-center gap-6 bg-white p-4 rounded-3xl border border-gray-100 hover:shadow-xl transition-all text-left group"
-                >
-                  <div className="w-16 h-16 bg-gray-50 rounded-2xl overflow-hidden shadow-sm shrink-0 border border-gray-50">
-                    <img src={product.mainImage?.url || product.productImages?.[0]?.url || product.images?.[0]?.url || ""} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-black text-gray-900 truncate text-base group-hover:text-rose-600 transition-colors">{product.name}</p>
-                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mt-1">EGP {product.price}</p>
-                  </div>
-                  <div className={`w-3 h-3 rounded-full ${product.isActive ? "bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]" : "bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.4)]"}`} />
-                </button>
+                <div key={product.id} className="relative group">
+                  <button
+                    onClick={() => navigate(`/products/${product.id}`)}
+                    className="w-full flex items-center gap-6 bg-white p-4 rounded-3xl border border-gray-100 hover:shadow-xl transition-all text-left group-hover:border-rose-100"
+                  >
+                    <div className="w-16 h-16 bg-gray-50 rounded-2xl overflow-hidden shadow-sm shrink-0 border border-gray-50">
+                      <img src={product.mainImage?.url || product.productImages?.[0]?.url || product.images?.[0]?.url || ""} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-black text-gray-900 truncate text-base group-hover:text-rose-600 transition-colors uppercase tracking-tight">{product.name}</p>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">EGP {product.price}</p>
+                    </div>
+                    <div className={`w-3 h-3 rounded-full shrink-0 ${product.isActive ? "bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]" : "bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.4)]"}`} />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeProductFromCollection(product.id);
+                    }}
+                    className="absolute -top-2 -right-2 w-8 h-8 bg-rose-600 text-white rounded-xl opacity-0 group-hover:opacity-100 transition-all shadow-xl hover:bg-rose-700 flex items-center justify-center z-10"
+                    title="Remove from Collection"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
               ))}
               {products.length > 8 && <p className="text-center text-[10px] font-black uppercase tracking-widest text-gray-400 py-2">+{products.length - 8} deeper layers</p>}
               {products.length === 0 && <p className="text-center text-xs font-bold text-gray-400 py-10 uppercase tracking-widest">No associated assets</p>}

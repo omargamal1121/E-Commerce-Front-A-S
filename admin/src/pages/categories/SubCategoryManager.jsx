@@ -55,10 +55,18 @@ const SubCategoryManager = ({ token }) => {
     if (subCat) {
       setEditSubCategoryMode(true);
       setEditSubCategoryId(subCat.id);
+      setSubCategoryName(subCat.name || "");
+      setSubCategoryDescription(subCat.description || "");
+      setParentCategoryId(subCat.parentCategoryId || subCat.categoryId || "");
+      setSubCategoryMainImage(subCat.mainImageUrl || null);
+      setSubCategoryImages(subCat.images?.map(img => ({ url: img.url, id: img.id, isNew: false })) || []);
       setActiveTab("add-sub");
     } else {
       setEditSubCategoryMode(false);
       setEditSubCategoryId(null);
+      setSubCategoryName("");
+      setSubCategoryDescription("");
+      setParentCategoryId("");
       setActiveTab("add-sub");
     }
   };
@@ -91,11 +99,14 @@ const SubCategoryManager = ({ token }) => {
               <button
                 key={tab.id}
                 onClick={() => {
-                  setActiveTab(tab.id);
                   if (tab.id === "add-sub" && !editSubCategoryMode) {
                     setEditSubCategoryMode(false);
+                    setEditSubCategoryId(null);
                     setSubCategoryName("");
+                    setSubCategoryDescription("");
+                    setParentCategoryId("");
                   }
+                  setActiveTab(tab.id);
                 }}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${activeTab === tab.id
                   ? "bg-white text-blue-600 shadow-sm"

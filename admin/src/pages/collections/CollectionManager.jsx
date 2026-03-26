@@ -118,7 +118,7 @@ const CollectionManager = ({ token }) => {
             {[
               { id: "list", label: "Collection List", icon: "📋" },
               { id: "collection-view", label: "View Collection", icon: "🔍" },
-              { id: "add", label: editMode ? "Edit" : "Add Collection", icon: editMode ? "✏️" : "➕" }
+              { id: "add", label: "Add Collection", icon: "➕" }
             ].map((tab) => (
               <button
                 key={tab.id}

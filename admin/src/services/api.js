@@ -321,6 +321,30 @@ const API = {
       }
     },
 
+    // Get sales data for a product
+    getSales: async (productId, token) => {
+      try {
+        const response = await axios.get(
+          `${backendUrl}/api/Products/${productId}/sales`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        return response.data;
+      } catch (error) {
+        throw error;
+      }
+    },
+    // Get all collections for a product
+    getCollections: async (productId, token) => {
+      try {
+        const response = await axios.get(
+          `${backendUrl}/api/Products/${productId}/collections`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        return response.data;
+      } catch (error) {
+        throw error;
+      }
+    },
     // Update a product
     update: async (productId, productData, token) => {
       try {
@@ -451,6 +475,17 @@ const API = {
         return res.data?.responseBody?.data || [];
       } catch (err) {
         throw err;
+      }
+    },
+    deleteImage: async (subCatId, imageId, token) => {
+      try {
+        const response = await axios.delete(
+          `${backendUrl}/api/subcategories/${subCatId}/images/${imageId}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        return response.data;
+      } catch (error) {
+        throw error;
       }
     },
   },

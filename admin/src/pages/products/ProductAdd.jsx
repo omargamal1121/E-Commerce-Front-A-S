@@ -35,11 +35,22 @@ const ProductAdd = ({ token }) => {
         const res = await API.products.getById(editId, token);
         const p = res?.responseBody?.data;
         if (p) {
+          const genderMap = { "Man": "0", "Woman": "1", "Kids": "2", "Uni": "3", "Both": "3" };
+          const fitMap = { "Slim": "1", "Regular": "2", "Oversized": "3", "Skinny": "4", "Loose": "5" };
+
           setFormData({
-            name: p.name || "", description: p.description || "", subcategoryid: p.subCategoryId || "",
-            fitType: p.fitType?.toString() || "", gender: p.gender?.toString() || "", price: p.price?.toString() || "",
-            isActive: p.isActive ?? true, inStock: p.inStock ?? true, onSale: p.onSale ?? false,
-            material: p.material || "", careInstructions: p.careInstructions || "", shippingInfo: p.shippingInfo || ""
+            name: p.name || "", 
+            description: p.description || "", 
+            subcategoryid: p.subCategoryId?.toString() || "",
+            fitType: fitMap[p.fitType] || p.fitType?.toString() || "", 
+            gender: genderMap[p.gender] || p.gender?.toString() || "", 
+            price: p.price?.toString() || "",
+            isActive: p.isActive ?? true, 
+            inStock: p.inStock ?? true, 
+            onSale: p.onSale ?? false,
+            material: p.material || "", 
+            careInstructions: p.careInstructions || "", 
+            shippingInfo: p.shippingInfo || ""
           });
 
           // Set existing images for preview with backend URL resolution
@@ -193,6 +204,8 @@ const ProductAdd = ({ token }) => {
                   <option value="1">Slim</option>
                   <option value="2">Regular</option>
                   <option value="3">Oversized</option>
+                  <option value="4">Skinny</option>
+                  <option value="5">Loose</option>
                 </select>
               </div>
 
@@ -261,24 +274,7 @@ const ProductAdd = ({ token }) => {
             </div>
           </div>
 
-          {/* Status Protocols */}
-          <div className="bg-gray-50 p-8 rounded-[48px] border border-gray-100 flex flex-col gap-8">
-            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 px-2">Availability & Visibility</h4>
-            <div className="flex flex-col gap-4">
-              {[
-                { label: "Is Product Active", name: "isActive" },
-                { label: "In Stock", name: "inStock" },
-                { label: "On Sale", name: "onSale" },
-              ].map(p => (
-                <label key={p.name} className="flex items-center justify-between p-4 bg-white rounded-[24px] border border-gray-100 transition-all cursor-pointer group hover:shadow-lg hover:shadow-gray-900/5">
-                  <span className="text-[11px] font-black uppercase text-gray-600 tracking-tight">{p.label}</span>
-                  <div className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" name={p.name} checked={formData[p.name]} onChange={handleInputChange} className="sr-only peer" />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-                  </div>
-                </label>
-              ))}
-            </div>
+          <div className="flex flex-col gap-6">
 
             <button
               type="submit"

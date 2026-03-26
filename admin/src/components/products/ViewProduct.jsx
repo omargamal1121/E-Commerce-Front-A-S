@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 const ViewProduct = ({ token, productId }) => {
   const [product, setProduct] = useState(null);
   const [variants, setVariants] = useState([]);
+  const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [actionLoading, setActionLoading] = useState(false);
@@ -34,12 +35,40 @@ const ViewProduct = ({ token, productId }) => {
     }
   }, [productId, token]);
 
+  const [salesData, setSalesData] = useState(null);
+  const [loadingSales, setLoadingSales] = useState(false);
+
+  const fetchSales = useCallback(async () => {
+    if (!productId) return;
+    setLoadingSales(true);
+    try {
+      const res = await API.products.getSales(productId, token);
+      setSalesData(res?.responseBody?.data || null);
+    } catch {
+      toast.error("Failed to load sales data");
+    } finally {
+      setLoadingSales(false);
+    }
+  }, [productId, token]);
+
+  const fetchCollections = useCallback(async () => {
+    if (!productId) return;
+    try {
+      const res = await API.products.getCollections(productId, token);
+      setCollections(res?.responseBody?.data || []);
+    } catch {
+      console.error("Failed to load product collections");
+    }
+  }, [productId, token]);
+
   useEffect(() => {
     if (productId) {
       fetchProduct();
       fetchVariants();
+      fetchSales();
+      fetchCollections();
     }
-  }, [productId, fetchProduct, fetchVariants]);
+  }, [productId, fetchProduct, fetchVariants, fetchSales, fetchCollections]);
 
   const handleDelete = async () => {
     if (!product) return;
@@ -99,6 +128,27 @@ const ViewProduct = ({ token, productId }) => {
       fetchProduct();
     } catch {
       toast.error("Failed to remove discount");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const removeFromCollection = async (collectionId) => {
+    if (!product || !collectionId) return;
+    if (!window.confirm("Remove this product from the specified collection?")) return;
+
+    setActionLoading(true);
+    try {
+      const axios = (await import("axios")).default;
+      const { backendUrl } = await import("../../App");
+      await axios.delete(`${backendUrl}/api/Collection/${collectionId}/products`, {
+        headers: { Authorization: `Bearer ${token}` },
+        data: { productIds: [product.id] }
+      });
+      toast.success("Detached from collection 🔗");
+      fetchCollections();
+    } catch {
+      toast.error("Detach failed");
     } finally {
       setActionLoading(false);
     }
@@ -197,6 +247,11 @@ const ViewProduct = ({ token, productId }) => {
                   -{discountPercent}% Discount
                 </span>
               )}
+              {product.discountStatus !== null && product.discountStatus !== undefined && (
+                <span className={`px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest backdrop-blur-xl border ${product.discountStatus ? "bg-amber-600 text-white border-amber-500" : "bg-gray-600 text-white border-gray-500"}`}>
+                  Discount: {product.discountStatus ? "Active" : "Inactive"}
+                </span>
+              )}
             </div>
           </div>
 
@@ -245,6 +300,33 @@ const ViewProduct = ({ token, productId }) => {
                 )}
               </div>
             </div>
+
+            {/* Detailed Discount Info */}
+            {product.discount && (
+              <div className="mb-8 p-6 bg-white/5 border border-white/10 rounded-[32px] flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase text-amber-400 tracking-widest">Active Strategy</span>
+                  <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${product.discount.isActive ? "bg-emerald-500 text-white" : "bg-rose-500 text-white"}`}>
+                    {product.discount.isActive ? "Active" : "Inactive"}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-black uppercase tracking-tight">{product.discount.name}</span>
+                  <p className="text-[10px] text-gray-400 mt-1 line-clamp-2">{product.discount.description}</p>
+                </div>
+                <div className="flex items-center gap-4 mt-2">
+                  <div className="px-4 py-2 bg-amber-400 rounded-2xl text-gray-900 text-xs font-black">
+                    -{Number(product.discount.discountPercent).toFixed(0)}%
+                  </div>
+                  {product.discount.endDate && (
+                    <div className="flex flex-col">
+                      <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest">Ends At</span>
+                      <span className="text-[10px] font-black uppercase">{new Date(product.discount.endDate).toLocaleDateString()}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4 pb-8 border-b border-white/10">
               <div className="flex flex-col gap-1">
@@ -315,9 +397,10 @@ const ViewProduct = ({ token, productId }) => {
           <div className="grid grid-cols-2 gap-4">
             {[
               { icon: "🛍️", label: "Status", value: product.isActive ? "Active Asset" : "Inactive" },
-              { icon: "📦", label: "Availability", value: product.availableQuantity > 0 ? "In Stock" : "Unavailable" },
+              { icon: "📦", label: "Stock", value: product.availableQuantity > 0 ? "In Stock" : "Unavailable" },
+              { icon: "🏷️", label: "Discount", value: product.discountStatus === true ? "Active" : (product.discountStatus === false ? "Inactive" : (product.discount?.isActive ? "Active" : "None")) },
+              { icon: "📈", label: "Total Sold", value: `${salesData?.totalSold ?? product.totalSold ?? product.totalsold ?? 0} Units` },
               { icon: "📅", label: "Deployment", value: new Date(product.createdAt).toLocaleDateString() },
-              { icon: "🕰️", label: "Updates", value: new Date(product.modifiedAt || product.createdAt).toLocaleDateString() },
             ].map((spec, i) => (
               <div key={i} className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm flex flex-col gap-2">
                 <div className="flex items-center gap-2">
@@ -329,6 +412,61 @@ const ViewProduct = ({ token, productId }) => {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Commercial Performance Matrix */}
+      <div className="bg-gray-900 p-12 rounded-[56px] shadow-2xl shadow-blue-900/10 text-white flex flex-col gap-10">
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-6">
+              <div className="w-12 h-12 bg-blue-500/20 rounded-[20px] flex items-center justify-center text-2xl">📊</div>
+              <h3 className="text-3xl font-black uppercase tracking-tighter">Commercial Performance</h3>
+            </div>
+            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest pl-20">Sales Velocity & Inventory Drain</p>
+          </div>
+          <button 
+            onClick={fetchSales}
+            disabled={loadingSales}
+            className="px-10 py-4 bg-blue-600 hover:bg-blue-500 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-xl shadow-blue-900/20 disabled:opacity-50"
+          >
+            {loadingSales ? "Generating..." : "View Detailed Sales Report"}
+          </button>
+        </div>
+
+        {salesData && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in fade-in slide-in-from-top-4 duration-700">
+            {salesData.variantSales?.map((vs) => (
+              <div key={vs.variantId} className="p-8 bg-white/5 border border-white/10 rounded-[40px] flex flex-col gap-6 hover:bg-white/10 transition-all group">
+                <div className="flex justify-between items-start">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Variant</span>
+                    <span className="text-2xl font-black uppercase tracking-tighter">{vs.color} / {vs.size}</span>
+                  </div>
+                  <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-xl">✨</div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-6 pt-6 border-t border-white/10">
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Sold Units</span>
+                    <span className="text-xl font-black text-blue-400">{vs.totalSold}</span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Remaining</span>
+                    <span className="text-xl font-black">{vs.remainingQuantity}</span>
+                  </div>
+                </div>
+
+                {vs.waist && vs.length && (
+                  <div className="flex items-center gap-3 text-[10px] font-bold text-gray-400 uppercase">
+                    <span>W: {vs.waist}</span>
+                    <div className="w-1 h-1 rounded-full bg-gray-700" />
+                    <span>L: {vs.length}</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Variant Information Matrix */}
@@ -366,6 +504,65 @@ const ViewProduct = ({ token, productId }) => {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+      {/* Store Collections Connectivity */}
+      <div className="bg-gray-50/50 p-12 rounded-[56px] border border-gray-100 flex flex-col gap-10 shadow-inner">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-6">
+            <div className="w-12 h-12 bg-rose-50 rounded-[20px] flex items-center justify-center text-2xl">📁</div>
+            <h3 className="text-3xl font-black text-gray-900 uppercase tracking-tighter">Store Collections</h3>
+          </div>
+          <span className="text-[10px] font-black uppercase tracking-widest text-rose-600 bg-rose-50 px-6 py-2 rounded-full border border-rose-100">
+            Attached to {collections.length} Collections
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {collections.map((col) => {
+            const mainImg = col.images?.find(img => img.isMain)?.url || col.images?.[0]?.url;
+            return (
+              <div key={col.id} className="relative group bg-white p-6 rounded-[40px] border border-gray-100 hover:shadow-2xl transition-all duration-500 overflow-hidden">
+                <div className="flex items-center gap-6">
+                  <div className="w-20 h-20 bg-gray-50 rounded-3xl overflow-hidden shrink-0 border border-gray-100">
+                    {mainImg ? (
+                      <img src={mainImg} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-300 text-xl font-black uppercase">?</div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-black text-gray-900 truncate text-lg tracking-tight uppercase group-hover:text-rose-600 transition-colors">{col.name}</p>
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest flex items-center gap-2">
+                       CID: #{col.id}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Hover Action Overlay */}
+                <button
+                  onClick={() => removeFromCollection(col.id)}
+                  disabled={actionLoading}
+                  className="absolute top-4 right-4 w-10 h-10 bg-rose-600 text-white rounded-2xl opacity-0 group-hover:opacity-100 transition-all shadow-xl hover:bg-rose-700 flex items-center justify-center disabled:opacity-50"
+                  title="Remove from Collection"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+                
+                {col.isActive && (
+                  <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] group-hover:opacity-0 transition-opacity" />
+                )}
+              </div>
+            );
+          })}
+          {collections.length === 0 && (
+            <div className="col-span-full py-12 flex flex-col items-center justify-center text-gray-300 gap-4 opacity-50">
+              <div className="text-4xl">🌫️</div>
+              <p className="text-xs font-black uppercase tracking-widest">Isolated Asset - No Associated Collections</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

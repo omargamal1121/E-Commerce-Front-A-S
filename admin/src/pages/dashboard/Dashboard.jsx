@@ -81,9 +81,10 @@ const Dashboard = ({ token }) => {
       setPopularProducts((bestSellersResp.data?.responseBody?.data || []).map(p => ({
         id: p.id,
         name: p.name,
-        soldCount: p.totalSold ?? 0,
+        soldCount: p.totalSold ?? p.totalsold ?? 0,
         price: p.finalPrice ?? p.price,
-        image: (p.images?.find(img => img.isMain) || p.images?.[0])?.url || null
+        image: (p.images?.find(img => img.isMain) || p.images?.[0])?.url || null,
+        discountStatus: p.discountStatus
       })))
 
     } catch (err) {
@@ -206,8 +207,15 @@ const Dashboard = ({ token }) => {
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-black uppercase tracking-tight truncate">{product.name}</p>
                         <div className="flex justify-between items-center mt-1">
-                          <span className="text-sm font-black text-blue-400 tracking-tighter">{currency}{Number(product.price || 0).toFixed(2)}</span>
-                          <span className="text-[10px] font-bold text-gray-500 uppercase">{product.soldCount} Solved</span>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-black text-blue-400 tracking-tighter">{currency}{Number(product.price || 0).toFixed(2)}</span>
+                            {product.discountStatus !== null && product.discountStatus !== undefined && (
+                              <span className={`text-[8px] font-black uppercase tracking-widest leading-none mt-1 ${product.discountStatus ? "text-amber-400" : "text-gray-500"}`}>
+                                {product.discountStatus ? "ON DISCOUNT" : "DISCOUNT INACTIVE"}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] font-bold text-gray-500 uppercase">{product.soldCount} Sold</span>
                         </div>
                       </div>
                     </button>
