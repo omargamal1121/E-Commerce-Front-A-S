@@ -43,75 +43,91 @@ export const currency = "EGP";
 
 export const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
+/** Decode JWT roles without a library */
+const decodeJwtRoles = (jwt) => {
+  try {
+    const parts = String(jwt).split(".");
+    if (parts.length < 2) return [];
+    const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+    const json = JSON.parse(atob(base64));
+    const rolesClaim =
+      json?.role ||
+      json?.roles ||
+      json?.["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
+      [];
+    const roles = Array.isArray(rolesClaim) ? rolesClaim : [rolesClaim];
+    return roles.filter(Boolean).map((r) => String(r).toLowerCase());
+  } catch {
+    return [];
+  }
+};
+
 function App() {
-  const [token, setToken] = useState(
-    localStorage.getItem("token") ? localStorage.getItem("token") : ""
-  );
+  // Migrate any leftover token from localStorage → sessionStorage (one-time)
+  useEffect(() => {
+    const legacyToken = localStorage.getItem("token");
+    if (legacyToken) {
+      sessionStorage.setItem("token", legacyToken);
+      localStorage.removeItem("token");
+    }
+  }, []);
+
+  const [token, setToken] = useState(sessionStorage.getItem("token") || "");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isDeliveryOnly, setIsDeliveryOnly] = useState(false);
+  // Prevents the login page from flashing while we validate / refresh the token
+  const [authLoading, setAuthLoading] = useState(true);
 
-  const decodeJwtRoles = (jwt) => {
-    try {
-      const parts = String(jwt).split(".");
-      if (parts.length < 2) return [];
-      const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-      const json = JSON.parse(atob(base64));
-      const rolesClaim =
-        json?.role ||
-        json?.roles ||
-        json?.["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
-        [];
-      const roles = Array.isArray(rolesClaim) ? rolesClaim : [rolesClaim];
-      return roles.filter(Boolean).map(r => String(r).toLowerCase());
-    } catch (e) {
-      return [];
-    }
-  };
-
+  // Persist token in sessionStorage whenever it changes
   useEffect(() => {
     if (token) {
-      localStorage.setItem("token", token);
+      sessionStorage.setItem("token", token);
+    } else {
+      sessionStorage.removeItem("token");
     }
   }, [token]);
 
-  // Determine role-based access for admin app
+  // Determine role-based access
   useEffect(() => {
-    const current = localStorage.getItem("token");
+    const current = sessionStorage.getItem("token");
     const roles = decodeJwtRoles(current);
-    const delivery = roles.includes('deliverycompany') || roles.includes('delivery');
+    const delivery =
+      roles.includes("deliverycompany") || roles.includes("delivery");
     setIsDeliveryOnly(Boolean(delivery));
   }, [token]);
 
-  // Token validation on app load
+  // Validate token on app load — refresh if expired, redirect if unrecoverable
   useEffect(() => {
     const validateTokenOnLoad = async () => {
-      const currentToken = localStorage.getItem("token");
-      if (currentToken) {
-        const isValid = authService.hasValidToken(); // simple client-side check
-        if (!isValid) {
-          const newToken = await authService.manualRefresh();
-          if (newToken) {
-            setToken(newToken);
-          }
+      const currentToken = sessionStorage.getItem("token");
+      if (!currentToken) {
+        setAuthLoading(false);
+        return;
+      }
+
+      const isValid = authService.hasValidToken(); // checks JWT exp claim
+      if (!isValid) {
+        const newToken = await authService.manualRefresh();
+        if (newToken) {
+          setToken(newToken);
+        } else {
+          // refresh failed → force login (manualRefresh already clears storage)
+          setToken("");
         }
       }
+      setAuthLoading(false);
     };
 
     validateTokenOnLoad();
   }, []);
 
-  // Make toast available globally for auth service
+  // Expose toast globally for the auth service interceptor
   useEffect(() => {
     window.showToast = (message, type = "error") => {
-      if (type === "error") {
-        toast.error(message);
-      } else if (type === "success") {
-        toast.success(message);
-      } else if (type === "info") {
-        toast.info(message);
-      } else {
-        toast(message);
-      }
+      if (type === "error") toast.error(message);
+      else if (type === "success") toast.success(message);
+      else if (type === "info") toast.info(message);
+      else toast(message);
     };
 
     window.toast = {
@@ -121,6 +137,18 @@ function App() {
     };
   }, []);
 
+  // Show a minimal full-screen loader while checking auth state
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4 text-gray-400">
+          <div className="w-10 h-10 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
+          <p className="text-sm font-medium">Checking session…</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 overflow-x-hidden">
       <ToastContainer />
@@ -128,9 +156,16 @@ function App() {
         <Login setToken={setToken} />
       ) : (
         <>
-          <Navbar setToken={setToken} toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+          <Navbar
+            setToken={setToken}
+            toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          />
           <div className="flex w-full items-start">
-            <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} deliveryOnly={isDeliveryOnly} />
+            <Sidebar
+              isOpen={sidebarOpen}
+              onClose={() => setSidebarOpen(false)}
+              deliveryOnly={isDeliveryOnly}
+            />
             <main className="flex-1 w-full mx-auto px-3 sm:px-6 md:px-8 text-gray-700 text-base max-w-screen-lg lg:max-w-[1800px] overflow-x-hidden">
               <Routes>
                 {isDeliveryOnly ? (

@@ -30,8 +30,12 @@ const ViewProduct = ({ token, productId }) => {
     try {
       const res = await API.variants.getByProductId(productId, token);
       setVariants(res?.responseBody?.data || []);
-    } catch {
-      console.error("Failed to load variants");
+    } catch (e) {
+      if (e.response?.status === 404) {
+        setVariants([]);
+      } else {
+        console.error("Failed to load variants", e);
+      }
     }
   }, [productId, token]);
 
@@ -44,8 +48,12 @@ const ViewProduct = ({ token, productId }) => {
     try {
       const res = await API.products.getSales(productId, token);
       setSalesData(res?.responseBody?.data || null);
-    } catch {
-      toast.error("Failed to load sales data");
+    } catch (e) {
+      if (e.response?.status === 404) {
+        setSalesData(null);
+      } else {
+        toast.error("Failed to load sales data");
+      }
     } finally {
       setLoadingSales(false);
     }
@@ -56,8 +64,12 @@ const ViewProduct = ({ token, productId }) => {
     try {
       const res = await API.products.getCollections(productId, token);
       setCollections(res?.responseBody?.data || []);
-    } catch {
-      console.error("Failed to load product collections");
+    } catch (e) {
+      if (e.response?.status === 404) {
+        setCollections([]);
+      } else {
+        console.error("Failed to load product collections", e);
+      }
     }
   }, [productId, token]);
 

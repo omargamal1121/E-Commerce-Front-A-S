@@ -42,18 +42,22 @@ const PlaceOrder = () => {
 
   // Fetch addresses from API
   const fetchAddresses = async () => {
-    const response = await axios.get(`${backendUrl}/api/CustomerAddress`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    const fetchedAddresses = response.data.responseBody.data || [];
-    setAddresses(fetchedAddresses);
+    try {
+      const response = await axios.get(`${backendUrl}/api/CustomerAddress`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const fetchedAddresses = response.data.responseBody?.data || [];
+      setAddresses(fetchedAddresses);
 
-    // لو فيه عنوان Default يختاره
-    const defaultAddress = fetchedAddresses.find(addr => addr.isDefault);
-    if (defaultAddress) {
-      setSelectedAddressId(defaultAddress.id);
-    } else if (fetchedAddresses.length > 0) {
-      setSelectedAddressId(fetchedAddresses[0].id);
+      const defaultAddress = fetchedAddresses.find(addr => addr.isDefault);
+      if (defaultAddress) {
+        setSelectedAddressId(defaultAddress.id);
+      } else if (fetchedAddresses.length > 0) {
+        setSelectedAddressId(fetchedAddresses[0].id);
+      }
+    } catch (error) {
+      console.error("Error fetching addresses:", error);
+      toast.error("Failed to load your saved addresses. Please try again.");
     }
   };
 
@@ -75,36 +79,47 @@ const PlaceOrder = () => {
   };
 
   const addAddress = async (addressData) => {
-    const response = await axios.post(`${backendUrl}/api/CustomerAddress`, addressData, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-
-    if (response.data.statuscode === 201) {
-      toast.success("Address added successfully");
-      setShowAddAddressForm(false);
-      fetchAddresses();
+    try {
+      const response = await axios.post(`${backendUrl}/api/CustomerAddress`, addressData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.data.statuscode === 201) {
+        toast.success("Address added successfully");
+        setShowAddAddressForm(false);
+        fetchAddresses();
+      } else {
+        toast.error(response.data.responseBody?.message || "Failed to add address");
+      }
+    } catch (error) {
+      console.error("Error adding address:", error);
+      toast.error("Failed to add address. Please try again.");
     }
   };
 
   const updateAddress = async (addressId, addressData) => {
-    const response = await axios.put(`${backendUrl}/api/CustomerAddress/${addressId}`, addressData, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    if (response.data.statuscode === 200) {
-      toast.success("Address updated successfully");
-      fetchAddresses();
+    try {
+      const response = await axios.put(`${backendUrl}/api/CustomerAddress/${addressId}`, addressData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.data.statuscode === 200) {
+        toast.success("Address updated successfully");
+        fetchAddresses();
+      } else {
+        toast.error(response.data.responseBody?.message || "Failed to update address");
+      }
+    } catch (error) {
+      console.error("Error updating address:", error);
+      toast.error("Failed to update address. Please try again.");
     }
   };
 
   useEffect(() => {
-    fetchAddresses();
+    if (token) {
+      fetchAddresses();
+    }
     fetchPaymentMethods();
-
-    // Debug cart state on component mount
-    console.log("PlaceOrder mounted - Cart items:", cartItems);
-    console.log("PlaceOrder mounted - Cart count:", getCartCount());
-    console.log("PlaceOrder mounted - localStorage cart:", localStorage.getItem("cartItems"))
-  }, [cartItems, getCartCount]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const onChangeHandler = (e) => {
     const { name, type, checked, value } = e.target;
@@ -194,26 +209,24 @@ const PlaceOrder = () => {
       return;
     }
 
+    // Resolve method value from already-loaded list – no second network call needed
+    const methodValue = Number(selectedPaymentMethod);
+    if (!Number.isFinite(methodValue)) {
+      toast.error("Invalid payment method selected. Please try again.");
+      return;
+    }
+
     setIsLoading(true);
     try {
       // Step 1: Create Order
-      console.log("Selected address ID (raw):", selectedAddressId);
-      console.log("Selected address ID type:", typeof selectedAddressId);
-
-      const orderData = {
-        addressId: parseInt(selectedAddressId), // Ensure it's an integer
+      const orderPayload = {
+        addressId: parseInt(selectedAddressId),
         notes: paymentNotes || "Order placed via website"
       };
 
-      console.log("Submitting order data:", JSON.stringify(orderData, null, 2));
-      console.log("Request headers:", {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      });
-
       const orderResponse = await axios.post(
         `${backendUrl}/api/Order`,
-        orderData,
+        orderPayload,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -222,95 +235,30 @@ const PlaceOrder = () => {
         }
       );
 
-      console.log("Order response:", orderResponse.data);
-
       if (orderResponse.data.statuscode === 201 || orderResponse.data.statuscode === 200) {
-        const orderData = orderResponse.data.responseBody?.data;
-        const orderNumber = orderData?.orderNumber;
-
-        console.log("Order created successfully. Order data:", orderData);
-        console.log("Order number:", orderNumber);
+        const createdOrder = orderResponse.data.responseBody?.data;
+        const orderNumber = createdOrder?.orderNumber;
 
         if (!orderNumber) {
-          console.error("Order number missing from response:", orderData);
           throw new Error("Order number not received from server");
         }
 
         toast.success("Order created successfully! Processing payment...");
 
-        // Find the selected payment method details for debugging
-        const selectedMethod = paymentMethods.find(m => m.id === selectedPaymentMethod);
-        console.log("Selected payment method:", selectedMethod);
-        console.log("Selected payment method ID:", selectedPaymentMethod);
-
-        // Validate payment method against Enums API to get correct enum value
-        let methodValue = NaN;
-        try {
-          const enumResp = await axios.get(
-            `${backendUrl}/api/Enums/PaymentMethods`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-          const enumList = enumResp?.data?.responseBody?.data || [];
-          console.log("Payment method enums:", enumList);
-
-          // Try to match by payment method name
-          const selectedName = (selectedMethod?.paymentMethod || "").toString().toLowerCase();
-          const enumMatch = enumList.find(
-            (e) => (e.name || e.Name || "").toString().toLowerCase() === selectedName
-          );
-
-          if (enumMatch) {
-            methodValue = Number(enumMatch.id);
-          } else {
-            // If not matched by name, try to use the ID directly if it exists in enum ids
-            const selNum = Number(selectedPaymentMethod);
-            const allowed = new Set(
-              enumList
-                .map((e) => Number(e.id))
-                .filter((n) => Number.isFinite(n) && n > 0)
-            );
-            if (Number.isFinite(selNum) && allowed.has(selNum)) {
-              methodValue = selNum;
-            }
-          }
-
-          if (!Number.isFinite(methodValue) || methodValue <= 0) {
-            console.error("Could not resolve valid payment method.", {
-              selectedPaymentMethod,
-              selectedMethod,
-              enumList
-            });
-            toast.error("Invalid payment method selected. Please try again.");
-            return;
-          }
-
-          console.log("Resolved payment method value:", methodValue, {
-            selectedPaymentMethod,
-            selectedMethod,
-          });
-
-        } catch (error) {
-          console.error("Error fetching payment method enums:", error);
-          toast.error("Failed to validate payment method. Please try again.");
-          return;
-        }
-
         // Step 2: Process Payment
-        const paymentData = {
+        const paymentPayload = {
           orderNumber: orderNumber,
           paymentDetails: {
             walletPhoneNumber: walletPhoneNumber || "",
-            paymentMethod: methodValue, // Use validated enum value
+            paymentMethod: methodValue,
             currency: "EGP",
             notes: paymentNotes || ""
           }
         };
 
-        console.log("Processing payment with data:", JSON.stringify(paymentData, null, 2));
-
         const paymentResponse = await axios.post(
           `${backendUrl}/api/Payment`,
-          paymentData,
+          paymentPayload,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -319,36 +267,27 @@ const PlaceOrder = () => {
           }
         );
 
-        console.log("Payment response:", paymentResponse.data);
-
         if (paymentResponse.data.statuscode === 200) {
-          const paymentData = paymentResponse.data.responseBody?.data;
+          const pData = paymentResponse.data.responseBody?.data;
 
-          console.log("Payment successful. Payment data:", paymentData);
-
-          if (paymentData?.isRedirectRequired && paymentData?.redirectUrl) {
-            console.log("Redirecting to payment URL:", paymentData.redirectUrl);
+          if (pData?.isRedirectRequired && pData?.redirectUrl) {
             toast.success("Redirecting to payment gateway...");
 
-            // Store order info in localStorage for return handling
             localStorage.setItem('pendingOrderNumber', orderNumber);
             localStorage.setItem('paymentRedirectTime', Date.now().toString());
 
-            // Add return URL parameter if the payment gateway supports it
             const returnUrl = `${window.location.origin}/orders`;
-            const separator = paymentData.redirectUrl.includes('?') ? '&' : '?';
-            const redirectUrlWithReturn = `${paymentData.redirectUrl}${separator}return_url=${encodeURIComponent(returnUrl)}`;
+            const separator = pData.redirectUrl.includes('?') ? '&' : '?';
+            const redirectUrlWithReturn = `${pData.redirectUrl}${separator}return_url=${encodeURIComponent(returnUrl)}`;
 
             window.location.href = redirectUrlWithReturn;
           } else {
-            console.log("Payment completed without redirect");
             // Clear cart after successful payment
             try {
               await axios.delete(`${backendUrl}/api/Cart/items/clear`, {
                 headers: { Authorization: `Bearer ${token}` },
               });
-              setCartItems({}); // Clear global state
-              // Local storage clearing if needed
+              setCartItems({});
               localStorage.removeItem('cartItems');
             } catch (clearError) {
               console.error("Failed to clear cart after order:", clearError);
@@ -358,11 +297,9 @@ const PlaceOrder = () => {
             navigate("/orders");
           }
         } else {
-          console.error("Payment failed with status:", paymentResponse.data.statuscode);
           toast.error(paymentResponse.data.responseBody?.message || "Payment failed");
         }
       } else {
-        console.error("Order creation failed with status:", orderResponse.data.statuscode);
         toast.error(orderResponse.data.responseBody?.message || "Failed to create order");
       }
     } catch (error) {

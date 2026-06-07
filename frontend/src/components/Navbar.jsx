@@ -7,21 +7,20 @@ import { useTranslation } from "react-i18next";
 import SmallNavbar from "./SmallNavbar";
 
 const Navbar = () => {
-  const { backendUrl } = useContext(ShopContext);
+  const {
+    backendUrl,
+    user,
+    setUser,
+    setToken,
+    setShowSearch,
+    getCartCount,
+    getWishlistCount
+  } = useContext(ShopContext);
   const [visible, setvisible] = useState(false);
   const navigate = useNavigate();
-  const context = useContext(ShopContext);
-  const setShowSearch = context?.setShowSearch;
-  const getCartCount = context?.getCartCount;
-  const getWishlistCount = context?.getWishlistCount;
   const [scrolled, setScrolled] = useState(false);
   const { t } = useTranslation();
   const [hovered, setHovered] = useState(false);
-
-  const [user, setUser] = useState(() => {
-    const stored = localStorage.getItem("user");
-    return stored ? JSON.parse(stored) : null;
-  });
 
   // 🔹 لإدارة القائمة
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
@@ -53,6 +52,7 @@ const Navbar = () => {
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("userId");
     setUser(null);
+    setToken("");
     navigate("/login");
   };
 

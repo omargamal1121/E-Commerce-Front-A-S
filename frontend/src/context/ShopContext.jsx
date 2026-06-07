@@ -19,6 +19,7 @@ const ShopContextProvider = (props) => {
     return storedCart ? JSON.parse(storedCart) : {};
   });
   const [products, setProducts] = useState([]);
+  const [productsLoaded, setProductsLoaded] = useState(false);
   const [token, setToken] = useState(() => {
     const storedToken = localStorage.getItem("token");
     console.log("Token from localStorage:", storedToken);
@@ -324,9 +325,9 @@ const ShopContextProvider = (props) => {
       }));
 
       setProducts(transformed);
+      setProductsLoaded(true);
     } catch (error) {
       console.error("Primary API failed:", error);
-      toast.error("Failed to load products from main API, trying backup...");
       try {
         // 🟡 Optimized Fallback: use advancedSearch to get everything in one call
         const searchResult = await discountService.advancedSearch(
@@ -374,13 +375,11 @@ const ShopContextProvider = (props) => {
         });
 
         setProducts(transformed);
+        setProductsLoaded(true);
       } catch (err) {
         console.error("Fallback API also failed:", err);
-        toast.error("Failed to load products from fallback API.");
-        // Navigate to error page when all sources fail
-        try {
-          navigate('/error', { replace: true });
-        } catch { }
+        setProducts([]);
+        setProductsLoaded(true);
       }
     }
   };
@@ -454,10 +453,40 @@ const ShopContextProvider = (props) => {
     }
   };
 
+  // Subscribe to authService token/user updates
+  useEffect(() => {
+    const unsubscribe = authService.subscribe(({ token: newToken, user: newUser }) => {
+      console.log("🔔 ShopContext subscription received auth update:", { newToken, newUser });
+      setToken(newToken || "");
+      if (newUser !== undefined) {
+        setUser(newUser);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Sync guest cart to localStorage
+  useEffect(() => {
+    if (!token) {
+      localStorage.setItem("cartItems", JSON.stringify(cartItems));
+    }
+  }, [cartItems, token]);
+
+  // Maintenance/Closed redirection if store contains 0 products
+  useEffect(() => {
+    if (productsLoaded && products.length === 0) {
+      const allowedPaths = ['/login', '/signup', '/orders', '/closed', '/error'];
+      const currentPath = window.location.pathname;
+      if (!allowedPaths.includes(currentPath)) {
+        console.warn("Products list is empty. Redirecting storefront to /closed.");
+        navigate('/closed', { replace: true });
+      }
+    }
+  }, [products, productsLoaded, navigate]);
+
   // Initial data fetch
   useEffect(() => {
     getProducts();
-    clearLocalStorageCart();
   }, []);
 
   // Fetch user's cart and wishlist data when token changes

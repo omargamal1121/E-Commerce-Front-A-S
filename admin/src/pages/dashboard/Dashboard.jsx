@@ -53,39 +53,66 @@ const Dashboard = ({ token }) => {
   const fetchDashboardData = async () => {
     setLoading(true)
     try {
-      const [totalProducts, totalOrders, pendingOrders, revenueResp] = await Promise.all([
+      const fetchRevenue = async () => {
+        try {
+          const res = await axios.get(`${backendUrl}/api/Order/revenue`, { headers: { Authorization: `Bearer ${token}` } });
+          return res.data?.responseBody?.data ?? 0;
+        } catch (err) {
+          if (err.response?.status === 404) return 0;
+          throw err;
+        }
+      };
+
+      const [totalProducts, totalOrders, pendingOrders, totalRevenue] = await Promise.all([
         countAllFromEndpoint('/api/Products/Count', { isActive: true, isDelete: false, inStock: true }),
         countAllFromEndpoint('/api/Order/Count', {}),
         countAllFromEndpoint('/api/Order/Count', { status: 1 }), // Keeping consistent with "Pending" meaning confirmed/needs action
-        axios.get(`${backendUrl}/api/Order/revenue`, { headers: { Authorization: `Bearer ${token}` } })
+        fetchRevenue()
       ])
 
       setStats({
         totalProducts,
         totalOrders,
-        totalRevenue: revenueResp.data?.responseBody?.data ?? 0,
+        totalRevenue,
         pendingOrders
       })
 
-      const ordersListResp = await axios.get(`${backendUrl}/api/Order`, {
-        headers: { Authorization: `Bearer ${token}` },
-        params: { page: 1, pageSize: 50 }
-      })
-      const ordersList = Array.isArray(ordersListResp?.data?.responseBody?.data) ? ordersListResp.data.responseBody.data : []
-      setRecentOrders(ordersList.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5))
+      let ordersList = [];
+      try {
+        const ordersListResp = await axios.get(`${backendUrl}/api/Order`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { page: 1, pageSize: 5, sortBy: 'createdAt', sortDescending: true }
+        })
+        ordersList = Array.isArray(ordersListResp?.data?.responseBody?.data)
+          ? ordersListResp.data.responseBody.data
+          : []
+      } catch (err) {
+        if (err.response?.status !== 404) {
+          console.error("Error loading recent orders:", err);
+        }
+      }
+      setRecentOrders(ordersList)
 
-      const bestSellersResp = await axios.get(`${backendUrl}/api/Products/bestsellers`, {
-        headers: { Authorization: `Bearer ${token}` },
-        params: { page: 1, pageSize: 10 }
-      })
-      setPopularProducts((bestSellersResp.data?.responseBody?.data || []).map(p => ({
-        id: p.id,
-        name: p.name,
-        soldCount: p.totalSold ?? p.totalsold ?? 0,
-        price: p.finalPrice ?? p.price,
-        image: (p.images?.find(img => img.isMain) || p.images?.[0])?.url || null,
-        discountStatus: p.discountStatus
-      })))
+      let popular = [];
+      try {
+        const bestSellersResp = await axios.get(`${backendUrl}/api/Products/bestsellers`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: { page: 1, pageSize: 10 }
+        })
+        popular = (bestSellersResp.data?.responseBody?.data || []).map(p => ({
+          id: p.id,
+          name: p.name,
+          soldCount: p.totalSold ?? p.totalsold ?? 0,
+          price: p.finalPrice ?? p.price,
+          image: (p.images?.find(img => img.isMain) || p.images?.[0])?.url || null,
+          discountStatus: p.discountStatus
+        }));
+      } catch (err) {
+        if (err.response?.status !== 404) {
+          console.error("Error loading best sellers:", err);
+        }
+      }
+      setPopularProducts(popular)
 
     } catch (err) {
       toast.error('Failed to load dashboard data')
@@ -118,26 +145,35 @@ const Dashboard = ({ token }) => {
           {/* Stats Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { label: 'Total Products', val: stats.totalProducts, icon: '📦', color: 'blue', link: '/products' },
-              { label: 'Total Orders', val: stats.totalOrders, icon: '🛍️', color: 'emerald', link: '/orders' },
-              { label: 'Total Revenue', val: `${currency}${stats.totalRevenue.toFixed(2)}`, icon: '💰', color: 'amber' },
-              { label: 'Pending Orders', val: stats.pendingOrders, icon: '⏳', color: 'rose', link: '/orders?status=1' }
-            ].map((s, i) => (
-              <button
-                key={i}
-                onClick={() => s.link && navigate(s.link)}
-                disabled={!s.link}
-                className={`group p-8 rounded-[40px] border border-gray-100 bg-white transition-all text-left flex flex-col gap-4 ${s.link ? 'hover:shadow-2xl hover:shadow-gray-200 hover:-translate-y-2 cursor-pointer' : 'cursor-default'}`}
-              >
-                <div className={`w-14 h-14 rounded-2xl bg-${s.color}-50 flex items-center justify-center text-2xl border border-${s.color}-100 transition-colors group-hover:bg-${s.color}-600 group-hover:text-white`}>
-                  {s.icon}
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{s.label}</p>
-                  <p className="text-3xl font-black text-gray-900 tracking-tight mt-1">{s.val}</p>
-                </div>
-              </button>
-            ))}
+              { label: 'Total Products', val: stats.totalProducts, icon: '📦', colorKey: 'blue',    link: '/products' },
+              { label: 'Total Orders',   val: stats.totalOrders,   icon: '🛍️', colorKey: 'emerald', link: '/orders' },
+              { label: 'Total Revenue',  val: `${currency}${stats.totalRevenue.toFixed(2)}`, icon: '💰', colorKey: 'amber' },
+              { label: 'Pending Orders', val: stats.pendingOrders, icon: '⏳', colorKey: 'rose',    link: '/orders?status=1' }
+            ].map((s) => {
+              // Static class map — dynamic interpolation like `bg-${color}-50` gets purged in production
+              const colorClasses = {
+                blue:    { bg: 'bg-blue-50',    border: 'border-blue-100',    hover: 'group-hover:bg-blue-600' },
+                emerald: { bg: 'bg-emerald-50', border: 'border-emerald-100', hover: 'group-hover:bg-emerald-600' },
+                amber:   { bg: 'bg-amber-50',   border: 'border-amber-100',   hover: 'group-hover:bg-amber-600' },
+                rose:    { bg: 'bg-rose-50',    border: 'border-rose-100',    hover: 'group-hover:bg-rose-600' },
+              }[s.colorKey];
+              return (
+                <button
+                  key={s.label}
+                  onClick={() => s.link && navigate(s.link)}
+                  disabled={!s.link}
+                  className={`group p-8 rounded-[40px] border border-gray-100 bg-white transition-all text-left flex flex-col gap-4 ${s.link ? 'hover:shadow-2xl hover:shadow-gray-200 hover:-translate-y-2 cursor-pointer' : 'cursor-default'}`}
+                >
+                  <div className={`w-14 h-14 rounded-2xl ${colorClasses.bg} flex items-center justify-center text-2xl ${colorClasses.border} border transition-colors ${colorClasses.hover} group-hover:text-white`}>
+                    {s.icon}
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{s.label}</p>
+                    <p className="text-3xl font-black text-gray-900 tracking-tight mt-1">{s.val}</p>
+                  </div>
+                </button>
+              );
+            })}
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">

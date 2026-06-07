@@ -74,7 +74,11 @@ const ViewSubCategory = ({ token, subCategoryId, isActive = null, includeDeleted
         setProducts(normalizedProducts);
       }
     } catch (err) {
-      console.error("❌ Error fetching subcategory products:", err);
+      if (err.response?.status === 404) {
+        setProducts([]);
+      } else {
+        console.error("❌ Error fetching subcategory products:", err);
+      }
     }
   }, [subCategoryId, token]);
 

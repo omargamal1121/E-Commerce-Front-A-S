@@ -1,7 +1,7 @@
 import axios from "axios";
 import { backendUrl } from "../App";
 
-const logApiError = () => { };
+
 
 // Helper to convert UTC dates from server to Egypt local time (Africa/Cairo)
 const toEgyptTime = (date) => {
@@ -213,7 +213,6 @@ const API = {
 
           try {
             const url = `${backendUrl}/api/Products/advanced-search?${queryParams.toString()}`;
-            console.log("🔍 Advanced Search Request:", { url, body: requestBody });
             const response = await axios.post(
               url,
               requestBody,
@@ -227,8 +226,9 @@ const API = {
             );
             return response.data;
           } catch (error) {
+            // 404 means no products matched the filters — treat as empty, not an error
             if (error.response?.status === 404) {
-              return { data: [], totalCount: 0 };
+              return { responseBody: { data: [], totalCount: 0 } };
             }
             throw error;
           }
@@ -304,6 +304,10 @@ const API = {
 
         return response.data;
       } catch (error) {
+        // 404 means the search term matched nothing — return empty result, not an error
+        if (error.response?.status === 404) {
+          return { responseBody: { data: [], totalCount: 0 } };
+        }
         throw error;
       }
     },
@@ -474,6 +478,9 @@ const API = {
         });
         return res.data?.responseBody?.data || [];
       } catch (err) {
+        if (err.response?.status === 404) {
+          return [];
+        }
         throw err;
       }
     },
@@ -700,6 +707,9 @@ const API = {
         }
         return data;
       } catch (error) {
+        if (error.response?.status === 404) {
+          return { responseBody: { data: [], totalCount: 0 } };
+        }
         throw error;
       }
     },
@@ -785,6 +795,9 @@ const API = {
         });
         return response.data;
       } catch (error) {
+        if (error.response?.status === 404) {
+          return { responseBody: { data: [], totalCount: 0 } };
+        }
         throw error;
       }
     },

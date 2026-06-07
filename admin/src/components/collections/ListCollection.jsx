@@ -75,7 +75,12 @@ const ListCollection = ({
       setCollections(normalized);
       setTotalPages(Math.ceil(totalCount / pageSize));
     } catch (err) {
-      toast.error("Failed to load inventory repository");
+      if (err.response?.status === 404) {
+        setCollections([]);
+        setTotalPages(1);
+      } else {
+        toast.error("Failed to load inventory repository");
+      }
     } finally {
       setLoading(false);
     }

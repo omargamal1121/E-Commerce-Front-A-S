@@ -75,7 +75,11 @@ const ViewCollection = ({ token, collectionId, isActive = null, includeDeleted =
         setProducts(normalizedProducts);
       }
     } catch (err) {
-      console.error("❌ Error fetching collection products:", err);
+      if (err.response?.status === 404) {
+        setProducts([]);
+      } else {
+        console.error("❌ Error fetching collection products:", err);
+      }
     }
   }, [collectionId, token]);
 

@@ -139,7 +139,14 @@ const ProductAdd = ({ token }) => {
       toast.success(editId ? "Product updated successfully" : "Product created successfully");
       navigate("/products");
     } catch (err) {
-      toast.error("Failed to save product");
+      // Extract the actual server message to give the admin useful feedback
+      const serverMsg =
+        err?.response?.data?.responseBody?.message ||
+        err?.response?.data?.message ||
+        (err?.response?.data?.errors && Object.values(err.response.data.errors).flat()[0]) ||
+        err?.message ||
+        "Failed to save product";
+      toast.error(serverMsg);
     } finally { setLoading(false); }
   };
 

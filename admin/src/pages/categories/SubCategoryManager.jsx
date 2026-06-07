@@ -41,8 +41,12 @@ const SubCategoryManager = ({ token }) => {
       const cats = res.data?.responseBody?.data || [];
       setCategories(cats);
     } catch (error) {
-      console.error("Error fetching categories:", error);
-      toast.error("Error fetching categories");
+      if (error.response?.status === 404) {
+        setCategories([]);
+      } else {
+        console.error("Error fetching categories:", error);
+        toast.error("Error fetching categories");
+      }
     }
   };
 

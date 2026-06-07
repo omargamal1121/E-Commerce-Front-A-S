@@ -4,7 +4,6 @@ import { ShopContext } from '../context/ShopContext';
 import Title from '../components/Title';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { motion } from 'framer-motion';
 
 const Payment = () => {
     const { orderNumber } = useParams();
@@ -18,6 +17,13 @@ const Payment = () => {
     const [walletPhoneNumber, setWalletPhoneNumber] = useState("");
     const [paymentNotes, setPaymentNotes] = useState("");
     const [processingPayment, setProcessingPayment] = useState(false);
+
+    // Auth guard – redirect unauthenticated users to login
+    useEffect(() => {
+        if (!token) {
+            navigate('/login', { replace: true });
+        }
+    }, [token, navigate]);
 
     // Fetch order details
     const fetchOrderDetails = async () => {
@@ -64,35 +70,20 @@ const Payment = () => {
     }, [token, orderNumber]);
 
     const handlePayment = async () => {
-        if (!selectedPaymentMethod) {
+        if (selectedPaymentMethod === null || selectedPaymentMethod === undefined) {
             toast.error("Please select a payment method");
+            return;
+        }
+
+        // Use the id directly – it IS the enum value the API expects.
+        const methodValue = Number(selectedPaymentMethod);
+        if (!Number.isFinite(methodValue)) {
+            toast.error("Invalid payment method selected. Please try again.");
             return;
         }
 
         setProcessingPayment(true);
         try {
-            const selectedMethod = paymentMethods.find(m => m.id === selectedPaymentMethod);
-
-            // Validate payment method logic (similar to Orders.jsx)
-            let methodValue = NaN;
-            const selectedName = (selectedMethod?.paymentMethod || "").toString().toLowerCase();
-            const enumMatch = paymentMethods.find(
-                (e) => (e.name || e.Name || "").toString().toLowerCase() === selectedName
-            );
-
-            if (enumMatch) {
-                methodValue = Number(enumMatch.id);
-            } else {
-                const selNum = Number(selectedPaymentMethod);
-                if (Number.isFinite(selNum)) {
-                    methodValue = selNum;
-                }
-            }
-
-            if (!Number.isFinite(methodValue) || methodValue <= 0) {
-                throw new Error("Invalid payment method");
-            }
-
             const paymentData = {
                 orderId: orderData?.id,
                 orderNumber: orderNumber,
@@ -103,8 +94,6 @@ const Payment = () => {
                     notes: paymentNotes || ""
                 }
             };
-
-            console.log("Sending payment request:", paymentData);
 
             const paymentResponse = await axios.post(
                 `${backendUrl}/api/Payment`,
@@ -140,7 +129,6 @@ const Payment = () => {
             }
         } catch (error) {
             console.error("Error processing payment:", error);
-            console.error("Error response data:", error.response?.data);
 
             let errorMessage = "Failed to process payment";
             const errData = error.response?.data;
@@ -164,11 +152,20 @@ const Payment = () => {
     const handleCancelOrder = async () => {
         if (!window.confirm('Are you sure you want to cancel this order?')) return;
 
+        // Use numeric id only – orderNumber is a string and not valid as a path segment for status update
+        const orderId = orderData?.id;
+        if (!orderId) {
+            toast.error("Cannot cancel: order ID not found.");
+            return;
+        }
+
         setProcessingPayment(true);
         try {
-            const response = await axios.put(`${backendUrl}/api/Order/${orderData?.id || orderNumber}/status?status=5`, {}, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const response = await axios.put(
+                `${backendUrl}/api/Order/${orderId}/status?status=5`,
+                {},
+                { headers: { 'Authorization': `Bearer ${token}` } }
+            );
 
             if (response.data?.success || response.status === 200) {
                 toast.success(response.data?.message || 'Order cancelled successfully');
@@ -178,13 +175,14 @@ const Payment = () => {
             }
         } catch (error) {
             console.error('Error cancelling order:', error);
-            console.error('Error response data:', error.response?.data);
             const errorMessage = error.response?.data?.message || error.response?.data?.error || 'Error cancelling order';
             toast.error(`Failed: ${errorMessage}`);
         } finally {
             setProcessingPayment(false);
         }
     };
+
+    if (!token) return null; // Rendering nothing while redirect fires
 
     if (loading) {
         return (
@@ -212,7 +210,11 @@ const Payment = () => {
                             </div>
                             <div className="flex justify-between border-b pb-2">
                                 <span className="text-gray-600">Date</span>
-                                <span className="font-medium">{new Date(orderData?.createdAt).toLocaleDateString()}</span>
+                                <span className="font-medium">
+                                    {orderData?.createdAt
+                                        ? new Date(orderData.createdAt).toLocaleDateString()
+                                        : '—'}
+                                </span>
                             </div>
                             <div className="flex justify-between border-b pb-2">
                                 <span className="text-gray-600">Items</span>
@@ -296,8 +298,8 @@ const Payment = () => {
                                 </button>
                                 <button
                                     onClick={handlePayment}
-                                    disabled={!selectedPaymentMethod || processingPayment}
-                                    className={`flex-1 px-4 py-3 rounded text-white font-medium transition-colors ${!selectedPaymentMethod || processingPayment
+                                    disabled={selectedPaymentMethod === null || selectedPaymentMethod === undefined || processingPayment}
+                                    className={`flex-1 px-4 py-3 rounded text-white font-medium transition-colors ${selectedPaymentMethod === null || selectedPaymentMethod === undefined || processingPayment
                                         ? 'bg-gray-400 cursor-not-allowed'
                                         : 'bg-black hover:bg-gray-800'
                                         }`}
@@ -306,7 +308,7 @@ const Payment = () => {
                                 </button>
                             </div>
 
-                            {/* Cancel Order Button - Only if status is pending/consistent with what allows cancellation */}
+                            {/* Cancel Order Button */}
                             {(orderData?.status === 0 || orderData?.status === 'Pending Payment' || orderData?.canBeCancelled) && (
                                 <button
                                     onClick={handleCancelOrder}

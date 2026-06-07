@@ -64,7 +64,13 @@ const ProductVariant = ({ token }) => {
     try {
       const res = await API.variants.getByProductId(productId, token);
       setVariants(res.responseBody.data || []);
-    } catch (e) { console.error("Failed to load variants"); }
+    } catch (e) {
+      if (e.response?.status === 404) {
+        setVariants([]);
+      } else {
+        console.error("Failed to load variants", e);
+      }
+    }
     finally { setVariantsLoading(false); }
   };
 

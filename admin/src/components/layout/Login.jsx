@@ -37,8 +37,8 @@ const Login = ({ setToken }) => {
 
       if (statuscode === 200 && token) {
         setToken(token);
-        localStorage.setItem("token", token);
-        localStorage.setItem("roles", JSON.stringify(roles));
+        sessionStorage.setItem("token", token);
+        sessionStorage.setItem("roles", JSON.stringify(roles));
         toast.success(responseBody?.message || "Login successful");
       } else {
         // Handle backend-provided error messages

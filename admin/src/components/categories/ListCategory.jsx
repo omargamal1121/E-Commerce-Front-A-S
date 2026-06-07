@@ -74,7 +74,12 @@ const ListCategory = ({
       setCategories(normalized);
       setTotalPages(Math.ceil(totalCount / pageSize));
     } catch (err) {
-      toast.error("Failed to fetch categories");
+      if (err.response?.status === 404) {
+        setCategories([]);
+        setTotalPages(1);
+      } else {
+        toast.error("Failed to fetch categories");
+      }
     } finally {
       setLoading(false);
     }

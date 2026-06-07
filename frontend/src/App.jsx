@@ -36,7 +36,7 @@ import Wishlist from "./pages/Wishlist";
 import Erroe404 from "./pages/Erroe404";
 import GoogleCallback from "./pages/GoogleCallback";
 import { ShopContext } from "./context/ShopContext";
-import ShopContextProvider from "./context/ShopContext";
+import WebsiteClosed from "./pages/WebsiteClosed";
 
 // Component to scroll to top on route change
 const ScrollToTop = () => {
@@ -47,6 +47,15 @@ const ScrollToTop = () => {
   }, [pathname]);
 
   return null;
+};
+
+// Guard: redirects to /login when not authenticated
+const PrivateRoute = ({ children }) => {
+  const { token } = useContext(ShopContext);
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
 };
 
 const App = () => {
@@ -80,54 +89,54 @@ const App = () => {
   }
 
   return (
-    <ShopContextProvider>
-      <div>
-        <ScrollToTop />
-        {location.pathname === "/" ? <Navbar /> : <NavbarPage />}
-        <ToastContainer />
-        <SearchBar />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/error" element={<Erroe404 />} />
-          <Route path="/collection" element={<Collection />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/google-callback" element={<GoogleCallback />} />
-          <Route path="/google-callback/auth-success" element={<GoogleCallback />} />
-          <Route path="/orders" element={<Orders />} />
-          <Route path="/payment/:orderNumber" element={<Payment />} />
-          <Route path="/place-order" element={<PlaceOrder />} />
-          <Route path="/product/:productId" element={<Product />} />
-          <Route path="/verify-email" element={<VerifyEmail />} />
-          <Route path="/request-password" element={<RequestPasswordReset />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route path="/denim-collection" element={<DenimCollection />} />
-          <Route path="/policy" element={<Policy />} />
-          <Route path="/api-test" element={<ApiTest />} />
-          <Route path="/change-email" element={<ChangeEmail />} />
-          <Route path="/change-password" element={<ChangePassword />} />
-          <Route path="/upload-photo" element={<UploadPhoto />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/category/:categoryId" element={<CategoryPage />} />
-          <Route
-            path="/subcategory/:subcategoryId"
-            element={<SubcategoryPage />}
-          />
-          <Route
-            path="/collection-products/:collectionId"
-            element={<CollectionProducts />}
-          />
-          <Route path="/wishlist" element={<Wishlist />} />
-          <Route path="*" element={<Erroe404 />} />
-        </Routes>
-        <Footer />
-        <ScrollToTopButton />
-      </div>
-    </ShopContextProvider>
+    <div>
+      <ScrollToTop />
+      {location.pathname === "/" ? <Navbar /> : <NavbarPage />}
+      <ToastContainer />
+      <SearchBar />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/error" element={<Erroe404 />} />
+        <Route path="/closed" element={<WebsiteClosed />} />
+        <Route path="/maintenance" element={<WebsiteClosed />} />
+        <Route path="/collection" element={<Collection />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/cart" element={<Cart />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="/google-callback" element={<GoogleCallback />} />
+        <Route path="/google-callback/auth-success" element={<GoogleCallback />} />
+        <Route path="/orders" element={<PrivateRoute><Orders /></PrivateRoute>} />
+        <Route path="/payment/:orderNumber" element={<PrivateRoute><Payment /></PrivateRoute>} />
+        <Route path="/place-order" element={<PrivateRoute><PlaceOrder /></PrivateRoute>} />
+        <Route path="/product/:productId" element={<Product />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/request-password" element={<RequestPasswordReset />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/denim-collection" element={<DenimCollection />} />
+        <Route path="/policy" element={<Policy />} />
+        <Route path="/api-test" element={<ApiTest />} />
+        <Route path="/change-email" element={<PrivateRoute><ChangeEmail /></PrivateRoute>} />
+        <Route path="/change-password" element={<PrivateRoute><ChangePassword /></PrivateRoute>} />
+        <Route path="/upload-photo" element={<PrivateRoute><UploadPhoto /></PrivateRoute>} />
+        <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+        <Route path="/category/:categoryId" element={<CategoryPage />} />
+        <Route
+          path="/subcategory/:subcategoryId"
+          element={<SubcategoryPage />}
+        />
+        <Route
+          path="/collection-products/:collectionId"
+          element={<CollectionProducts />}
+        />
+        <Route path="/wishlist" element={<PrivateRoute><Wishlist /></PrivateRoute>} />
+        <Route path="*" element={<Erroe404 />} />
+      </Routes>
+      <Footer />
+      <ScrollToTopButton />
+    </div>
   );
 };
 

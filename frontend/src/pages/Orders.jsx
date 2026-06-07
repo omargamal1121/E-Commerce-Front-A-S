@@ -2,12 +2,13 @@ import React, { useEffect, useState, useContext } from 'react'
 import { ShopContext } from '../context/ShopContext'
 import Title from '../components/Title'
 import axios from 'axios'
+import { fetchWithTokenRefresh, safeParseJson } from '../utils/apiUtils'
 import { toast } from 'react-toastify'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const Orders = () => {
-  const { backendUrl, token, currency } = useContext(ShopContext);
+  const { backendUrl, token, currency, refreshToken } = useContext(ShopContext);
   const navigate = useNavigate();
 
   const [orderData, setOrderData] = useState([]);
@@ -177,16 +178,23 @@ const Orders = () => {
       let queryParams = 'page=1&pageSize=40';
       if (status !== 'All') queryParams += `&status=${status}`;
 
-      const res = await fetch(`${backendUrl}/api/Order?${queryParams}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const res = await fetchWithTokenRefresh(
+        `${backendUrl}/api/Order?${queryParams}`,
+        {
+          headers: { 'Authorization': `Bearer ${token}` }
+        },
+        refreshToken
+      );
 
-      if (res.status === 401) {
-        navigate('/login');
-        return;
+      if (!res.ok) {
+        if (res.status === 401) {
+          navigate('/login');
+          return;
+        }
+        throw new Error(`Request failed with status ${res.status}`);
       }
 
-      const data = await res.json();
+      const data = await safeParseJson(res);
       const ordersInResponse = data?.responseBody?.data || [];
 
       // 🚀 NO MORE N+1! We use the summary data directly from the list response.
@@ -420,7 +428,7 @@ const Orders = () => {
                   <div className="p-8 border-b flex justify-between items-center bg-gray-50/50">
                     <div>
                       <h2 className="text-3xl font-black tracking-tighter">ORDER #{selectedOrderDetails.orderNumber}</h2>
-                      <p className="text-gray-400 text-xs font-bold uppercase tracking-[0.2em] mt-1">Placed on {new Date(selectedOrderDetails.createdAt).toLocaleLongDateString || new Date(selectedOrderDetails.createdAt).toDateString()}</p>
+                      <p className="text-gray-400 text-xs font-bold uppercase tracking-[0.2em] mt-1">Placed on {new Date(selectedOrderDetails.createdAt).toLocaleDateString()}</p>
                     </div>
                     <button onClick={() => setShowModal(false)} className="h-10 w-10 rounded-full bg-white shadow-md flex items-center justify-center hover:scale-110 transition-transform">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>

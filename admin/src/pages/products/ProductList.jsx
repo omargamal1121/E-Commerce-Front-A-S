@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import API from "../../services/api";
 import { currency, backendUrl } from "../../App";
+import ConfirmModal from "../../components/modals/ConfirmModal";
 
 const ProductCard = React.memo(({ p, navigate, toggleStatus, handleRestore, handleDelete, handleRemoveDiscount, currency }) => {
   const discountPercent = Number(p.discountPrecentage ?? p.discountPercentage ?? p.discount?.discountPercent ?? 0);
@@ -49,10 +50,18 @@ const ProductCard = React.memo(({ p, navigate, toggleStatus, handleRestore, hand
 
         {/* Actions */}
         <div className="absolute inset-0 bg-gray-900/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3 backdrop-blur-[2px]">
-          <button onClick={() => navigate(`/add?edit=${p.id}`)} className="p-4 bg-white/10 hover:bg-white text-white hover:text-gray-900 rounded-full transition-all border border-white/20">
+          <button
+            onClick={() => navigate(`/add?edit=${p.id}`)}
+            aria-label={`Edit ${p.name}`}
+            className="p-4 bg-white/10 hover:bg-white text-white hover:text-gray-900 rounded-full transition-all border border-white/20"
+          >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
           </button>
-          <button onClick={() => navigate(`/products/${p.id}`)} className="p-4 bg-white/10 hover:bg-emerald-500 text-white rounded-full transition-all border border-white/20">
+          <button
+            onClick={() => navigate(`/products/${p.id}`)}
+            aria-label={`View ${p.name}`}
+            className="p-4 bg-white/10 hover:bg-emerald-500 text-white rounded-full transition-all border border-white/20"
+          >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
           </button>
         </div>
@@ -89,7 +98,8 @@ const ProductCard = React.memo(({ p, navigate, toggleStatus, handleRestore, hand
           <div className="flex items-center gap-2">
             {hasDiscount && !(p.deletedAt !== null && p.deletedAt !== undefined) && (
               <button
-                onClick={() => handleRemoveDiscount && handleRemoveDiscount(p.id)}
+                onClick={() => handleRemoveDiscount && handleRemoveDiscount(p.id, p.name)}
+                aria-label={`Remove discount from ${p.name}`}
                 className="p-3 bg-rose-50 text-rose-500 border border-rose-100 rounded-2xl hover:bg-rose-500 hover:text-white transition-all shadow-sm"
                 title="Remove Discount"
               >
@@ -99,6 +109,7 @@ const ProductCard = React.memo(({ p, navigate, toggleStatus, handleRestore, hand
             {!(p.deletedAt !== null && p.deletedAt !== undefined) && (
               <button
                 onClick={() => toggleStatus(p)}
+                aria-label={p.isActive ? `Deactivate ${p.name}` : `Activate ${p.name}`}
                 className={`p-3 rounded-2xl transition-all border ${p.isActive ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-gray-50 text-gray-400 border-gray-100"}`}
                 title="Toggle Status"
               >
@@ -108,6 +119,7 @@ const ProductCard = React.memo(({ p, navigate, toggleStatus, handleRestore, hand
             {(p.deletedAt !== null && p.deletedAt !== undefined) ? (
               <button
                 onClick={() => handleRestore(p.id)}
+                aria-label={`Restore ${p.name}`}
                 className="p-3 bg-blue-50 text-blue-600 border border-blue-100 rounded-2xl hover:bg-blue-600 hover:text-white transition-all"
                 title="Restore Product"
               >
@@ -115,7 +127,8 @@ const ProductCard = React.memo(({ p, navigate, toggleStatus, handleRestore, hand
               </button>
             ) : (
               <button
-                onClick={() => handleDelete(p.id)}
+                onClick={() => handleDelete(p.id, p.name)}
+                aria-label={`Delete ${p.name}`}
                 className="p-3 bg-rose-50 text-rose-600 border border-rose-100 rounded-2xl hover:bg-rose-600 hover:text-white transition-all"
                 title="Delete Product"
               >
@@ -141,13 +154,15 @@ const ProductList = ({ token }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState("all"); 
+  const [statusFilter, setStatusFilter] = useState("all");
   const [deletedFilter, setDeletedFilter] = useState("not_deleted");
-  const [specialFilter, setSpecialFilter] = useState("all"); // all, newarrivals, bestsellers
-  const [stockFilter, setStockFilter] = useState("all"); // all, instock, outofstock
-  const [genderFilter, setGenderFilter] = useState(""); // "", 0, 1, 2, 3
+  const [specialFilter, setSpecialFilter] = useState("all");
+  const [stockFilter, setStockFilter] = useState("all");
+  const [genderFilter, setGenderFilter] = useState("");
   const [subcategoryFilter, setSubcategoryFilter] = useState(subcategoryIdFromUrl || "");
   const [subcategories, setSubcategories] = useState([]);
+  // Confirmation modal state
+  const [confirmState, setConfirmState] = useState({ open: false, title: '', message: '', onConfirm: null, variant: 'danger', loading: false });
   const pageSize = 12;
 
   // Fetch subcategories for filter
@@ -249,7 +264,13 @@ const ProductList = ({ token }) => {
       setProducts(normalizedData);
       setTotalCount(deletedFilter === "all" ? total : normalizedData.length);
     } catch (error) {
-      toast.error("Failed to load products");
+      // 404 means no products found for the given filters — treat as empty, not an error
+      if (error.response?.status === 404) {
+        setProducts([]);
+        setTotalCount(0);
+      } else {
+        toast.error("Failed to load products");
+      }
     } finally {
       setLoading(false);
     }
@@ -272,23 +293,50 @@ const ProductList = ({ token }) => {
     } catch (e) { toast.error("Update failed"); }
   }, [token, fetchProducts]);
 
-  const handleDelete = useCallback(async (id) => {
-    if (!window.confirm("Are you sure you want to delete this product?")) return;
-    try {
-      await API.products.delete(id, token);
-      toast.success("Product deleted");
-      fetchProducts();
-    } catch (e) { toast.error("Delete failed"); }
+  const handleDelete = useCallback((id, name) => {
+    setConfirmState({
+      open: true,
+      title: 'Delete Product',
+      message: `"${name || 'This product'}" will be permanently deleted. This action cannot be undone.`,
+      variant: 'danger',
+      loading: false,
+      onConfirm: async () => {
+        setConfirmState(s => ({ ...s, loading: true }));
+        try {
+          await API.products.delete(id, token);
+          toast.success("Product deleted");
+          fetchProducts();
+        } catch (e) {
+          toast.error("Delete failed");
+        } finally {
+          setConfirmState(s => ({ ...s, open: false, loading: false }));
+        }
+      }
+    });
   }, [token, fetchProducts]);
 
-  const handleRemoveDiscount = useCallback(async (id) => {
-    if (!window.confirm("Remove discount from this product?")) return;
-    try {
-      await API.products.removeDiscount(id, token);
-      toast.success("Discount removed");
-      fetchProducts();
-    } catch (e) { toast.error("Failed to remove discount"); }
+  const handleRemoveDiscount = useCallback((id, name) => {
+    setConfirmState({
+      open: true,
+      title: 'Remove Discount',
+      message: `Remove the discount from "${name || 'this product'}"?`,
+      variant: 'warning',
+      loading: false,
+      onConfirm: async () => {
+        setConfirmState(s => ({ ...s, loading: true }));
+        try {
+          await API.products.removeDiscount(id, token);
+          toast.success("Discount removed");
+          fetchProducts();
+        } catch (e) {
+          toast.error("Failed to remove discount");
+        } finally {
+          setConfirmState(s => ({ ...s, open: false, loading: false }));
+        }
+      }
+    });
   }, [token, fetchProducts]);
+
 
   const handleRestore = useCallback(async (id) => {
     try {
@@ -304,7 +352,18 @@ const ProductList = ({ token }) => {
   }, [subcategoryIdFromUrl]);
 
   return (
-    <div className="flex flex-col gap-10 animate-in slide-in-from-bottom-6 duration-700">
+    <div className="flex flex-col gap-10">
+      {/* Confirmation Modal */}
+      <ConfirmModal
+        isOpen={confirmState.open}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmVariant={confirmState.variant}
+        confirmLabel={confirmState.variant === 'warning' ? 'Remove' : 'Delete'}
+        loading={confirmState.loading}
+        onConfirm={confirmState.onConfirm}
+        onCancel={() => setConfirmState(s => ({ ...s, open: false }))}
+      />
       
       {/* Contextual Filter Indicator */}
       {(subcategoryFilter || collectionIdFromUrl) && (
@@ -379,8 +438,8 @@ const ProductList = ({ token }) => {
                 { label: 'Archive', value: deletedFilter, setter: setDeletedFilter, options: [{v:'all', l:'Combined'}, {v:'deleted', l:'Trashed'}, {v:'not_deleted', l:'Active Only'}] },
                 { label: 'Stock', value: stockFilter, setter: setStockFilter, options: [{v:'all', l:'Quantity: All'}, {v:'instock', l:'In Stock'}, {v:'outofstock', l:'Exhausted'}] },
                 { label: 'Gender', value: genderFilter, setter: setGenderFilter, options: [{v:'', l:'Gender: All'}, {v:'0', l:'Man'}, {v:'1', l:'Woman'}, {v:'2', l:'Kids'}, {v:'3', l:'Unisex'}] }
-              ].map((filter, i) => (
-                <div key={i} className="flex bg-gray-50 px-4 py-2 rounded-2xl border border-gray-100 hover:border-emerald-200 transition-colors">
+              ].map((filter) => (
+                <div key={filter.label} className="flex bg-gray-50 px-4 py-2 rounded-2xl border border-gray-100 hover:border-emerald-200 transition-colors">
                   <select
                     value={filter.value}
                     onChange={(e) => filter.setter(e.target.value)}

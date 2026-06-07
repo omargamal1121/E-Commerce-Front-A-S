@@ -15,8 +15,16 @@ export const fetchWithTokenRefresh = async (url, options = {}, refreshTokenFn) =
   // Ensure headers exist
   const headers = options.headers || {};
 
+  // Map withCredentials (Axios-style) to credentials (native fetch)
+  const fetchOptions = { ...options };
+  if (fetchOptions.withCredentials) {
+    fetchOptions.credentials = 'include';
+    // Keep it in case headers/etc are needed, but delete custom field to avoid fetch warning
+    delete fetchOptions.withCredentials;
+  }
+
   // First attempt with current token
-  let response = await fetch(url, options);
+  let response = await fetch(url, fetchOptions);
 
   // If unauthorized, try to refresh token and retry
   if (response.status === 401) {

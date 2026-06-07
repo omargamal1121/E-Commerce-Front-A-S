@@ -38,7 +38,11 @@ const SubCategoryDetails = ({ token }) => {
       const cats = res.data?.responseBody?.data || [];
       setCategories(cats);
     } catch (error) {
-      toast.error("Error fetching categories");
+      if (error.response?.status === 404) {
+        setCategories([]);
+      } else {
+        toast.error("Error fetching categories");
+      }
     }
   };
 

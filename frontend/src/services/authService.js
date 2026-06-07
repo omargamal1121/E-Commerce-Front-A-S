@@ -4,7 +4,19 @@ class AuthService {
   constructor() {
     this.isRefreshing = false;
     this.failedQueue = [];
+    this.listeners = [];
     this.setupInterceptors();
+  }
+
+  subscribe(listener) {
+    this.listeners.push(listener);
+    return () => {
+      this.listeners = this.listeners.filter((l) => l !== listener);
+    };
+  }
+
+  notify(token, user = undefined) {
+    this.listeners.forEach((listener) => listener({ token, user }));
   }
 
   // Works with backend middleware that validates access tokens and stores refresh token in cookies
@@ -76,6 +88,7 @@ class AuthService {
             const newToken = await this.refreshToken();
             if (newToken) {
               localStorage.setItem("token", newToken);
+              this.notify(newToken);
 
               // Update default headers for subsequent requests
               axios.defaults.headers.common["Authorization"] = `Bearer ${newToken}`;
@@ -149,6 +162,7 @@ class AuthService {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     delete axios.defaults.headers.common["Authorization"];
+    this.notify("", null);
 
     // Redirect only if not already on login page
     if (window.location.pathname !== "/login") {

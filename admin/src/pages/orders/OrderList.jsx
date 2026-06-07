@@ -104,7 +104,12 @@ const OrderList = ({ token }) => {
       setOrders(data);
       setTotalCount(total);
     } catch (error) {
-      toast.error("Failed to load orders");
+      if (error.response?.status === 404) {
+        setOrders([]);
+        setTotalCount(0);
+      } else {
+        toast.error("Failed to load orders");
+      }
     } finally {
       setLoading(false);
     }

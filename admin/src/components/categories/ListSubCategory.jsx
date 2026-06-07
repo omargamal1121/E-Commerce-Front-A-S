@@ -83,7 +83,12 @@ const ListSubCategory = ({
         setTotalPages(Math.ceil(totalCount / pageSize));
       }
     } catch (error) {
-      toast.error("Failed to load subcategories");
+      if (error.response?.status === 404) {
+        setSubCategories([]);
+        setTotalPages(1);
+      } else {
+        toast.error("Failed to load subcategories");
+      }
     } finally {
       setLoading(false);
     }
