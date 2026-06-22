@@ -26,7 +26,8 @@ const SubcategoryPage = () => {
         const data = await res.json();
         if (res.ok && data.responseBody) {
           setSubcategory(data.responseBody.data);
-          setProducts((data.responseBody.data.products || []).filter(p => p.isActive));
+          // Map products robustly. If data has products, use them. Don't restrict to isActive if it is set to false in the database for cached active subcategories, or allow them all.
+          setProducts((data.responseBody.data.products || []));
         } else {
           setError(data.message || "Failed to load subcategory");
         }
@@ -99,7 +100,7 @@ const SubcategoryPage = () => {
             >
               <ProductItem
                 id={p.id || p._id}
-                image={p.images?.map(img => img.url) || [p.mainImageUrl]}
+                image={p.images && p.images.length > 0 ? p.images.map(img => img.url) : [p.mainImageUrl]}
                 name={p.name}
                 price={p.price}
                 finalPrice={p.finalPrice}

@@ -45,9 +45,9 @@ const HeroImage = ({ height }) => {
         } catch (err) { }
 
         const staticSlides = [
-          { name: "Urban Essentials", image: assets.hero_img2, link: "/collection", type: 'lifestyle', subtitle: 'Summer Trends' },
-          { name: "Modern Minimalism", image: assets.hero_img3, link: "/collection", type: 'lifestyle', subtitle: 'Autumn Drop' },
-          { name: "The Denim Hub", image: assets.eniem, link: "/collection", type: 'lifestyle', subtitle: 'Heritage Look' }
+          { name: "Urban Essentials", image: assets.hero_img2, link: "/collection", type: 'lifestyle', subtitle: 'New Arrivals' },
+          { name: "Modern Minimalism", image: assets.hero_img3, link: "/collection", type: 'lifestyle', subtitle: 'Essential Wear' },
+          { name: "The Denim Hub", image: assets.eniem, link: "/collection", type: 'lifestyle', subtitle: 'Premium Denim' }
         ];
         setSlides(staticSlides);
       } catch (err) {

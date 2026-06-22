@@ -49,7 +49,7 @@ const LatestCollection = () => {
     return (
       <div className="my-20 px-4 sm:px-[5vw]">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 border-b border-gray-100 pb-8">
-          <Title text1={t('LATEST')} text2={t('COLLECTION')} />
+          <Title text1={t('LATEST')} text2={t('PRODUCTS')} />
           <p className="max-w-md text-gray-500 text-sm md:text-base mt-4 md:mt-0 font-light">
             Stay ahead with our freshest drops. Curated items for the modern lifestyle.
           </p>
@@ -79,11 +79,11 @@ const LatestCollection = () => {
         className="flex flex-col md:flex-row md:items-end justify-between mb-12 border-b border-gray-100 pb-10"
       >
         <div className="relative">
-          <Title text1={t('LATEST')} text2={t('COLLECTION')} />
+          <Title text1={t('LATEST')} text2={t('PRODUCTS')} />
           <div className="absolute -top-6 -left-6 text-9xl font-black text-gray-50/50 -z-10 select-none">NEW</div>
         </div>
         <p className="max-w-md text-gray-500 text-sm md:text-base mt-4 md:mt-0 font-light italic">
-          "Elegance is the only beauty that never fades." — Discover our neuesten designs.
+          "Elegance is the only beauty that never fades." — Discover our newest designs.
         </p>
       </motion.div>
 

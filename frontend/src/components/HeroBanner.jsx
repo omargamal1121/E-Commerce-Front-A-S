@@ -66,9 +66,9 @@ const HeroBanner = () => {
   }
 
   const slidesData = viewMode === 'collections' ? collections : [
-    { name: "Winter Collection", subtitle: "Luxury Outerwear", image: assets.Winter_collection_img, link: "/collection" },
-    { name: "Streetwear Culture", subtitle: "Modern Essentials", image: assets.hero_banner_img, link: "/collection" },
-    { name: "Baggie Trends", subtitle: "Relaxed Fit", image: assets.baggey3, link: "/collection" }
+    { name: "Urban", subtitle: "Luxury Outerwear", image: assets.Winter_collection_img, link: "/collection" },
+    { name: "Streetwear", subtitle: "Modern Essentials", image: assets.hero_banner_img, link: "/collection" },
+    { name: "Signature", subtitle: "Relaxed Fit", image: assets.baggey3, link: "/collection" }
   ];
 
   return (

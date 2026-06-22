@@ -275,23 +275,20 @@ const ShopContextProvider = (props) => {
 
   const getCartAmount = () => {
     // 🆕 Prioritize backend-calculated total for 100% accuracy
-    if (token && serverCart && typeof serverCart.totalPrice === 'number') {
+    if (serverCart && typeof serverCart.totalCurrentPrice === 'number') {
+      return serverCart.totalCurrentPrice;
+    }
+    if (serverCart && typeof serverCart.totalPrice === 'number') {
       return serverCart.totalPrice;
     }
+    return 0;
+  };
 
-    // 🟡 Fallback for guests or before first server sync
-    let amount = 0;
-    for (const itemId in cartItems) {
-      for (const size in cartItems[itemId]) {
-        if (cartItems[itemId][size] > 0) {
-          const product = products.find((p) => p._id === itemId);
-          if (product && product.finalPrice) {
-            amount += product.finalPrice * cartItems[itemId][size];
-          }
-        }
-      }
+  const getCartOriginalAmount = () => {
+    if (serverCart && typeof serverCart.totalPriceAtAddTime === 'number') {
+      return serverCart.totalPriceAtAddTime;
     }
-    return amount;
+    return getCartAmount();
   };
 
   const getProducts = async () => {
@@ -704,6 +701,7 @@ const ShopContextProvider = (props) => {
     getCartCount,
     updataQuantity,
     getCartAmount,
+    getCartOriginalAmount,
     clearCart,
     checkout, //
     navigate,

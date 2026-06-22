@@ -91,7 +91,7 @@ const App = () => {
   return (
     <div>
       <ScrollToTop />
-      {location.pathname === "/" ? <Navbar /> : <NavbarPage />}
+      <Navbar />
       <ToastContainer />
       <SearchBar />
       <Routes>

@@ -18,11 +18,18 @@ const Cart = () => {
     checkout,
     setCartItems,
     serverCart, // 🆕 Get server cart data
+    fetchUserCart,
   } = useContext(ShopContext);
   const [cartData, setCartData] = useState([]);
   const [errorMessage, setErrorMessage] = useState(""); // 🛠️ Error state
   const [loading, setLoading] = useState(false); // 🛠️ Loading state
   const token = localStorage.getItem("token");
+
+  useEffect(() => {
+    if (token) {
+      fetchUserCart();
+    }
+  }, [token]);
 
   useEffect(() => {
     // 🆕 Extract items correctly whether serverCart is an array or object
@@ -33,16 +40,21 @@ const Cart = () => {
     if (cartItemsList.length > 0) {
       // 🆕 Use server cart data directly if available
       console.log("Using server cart data:", cartItemsList);
-      const tempData = cartItemsList.map(item => ({
-        _id: item.productId || (item.product ? item.product.id : null),
-        quantity: item.quantity,
-        size: item.productVariant?.size || item.product?.productVariantForCartDto?.size || item.size || 'Unknown',
-        color: item.productVariant?.color || item.product?.productVariantForCartDto?.color || item.color || 'Unknown',
-        variantId: item.productVariantId || item.productVariant?.id || item.product?.productVariantForCartDto?.id, // Store variant ID for actions
-        productData: item.product, // Store full product data
-        price: item.product?.finalPrice || item.product?.price,
-        image: item.productVariant?.images?.[0]?.url || item.product?.mainImageUrl || item.product?.image?.[0]
-      })).filter(item => item._id); // Filter out invalid items
+      const tempData = cartItemsList.map(item => {
+        const product = item.product || {};
+        return {
+          _id: item.productId || product.id || null,
+          quantity: item.quantity,
+          size: item.productVariant?.size || product.productVariantForCartDto?.size || item.size || 'Unknown',
+          color: item.productVariant?.color || product.productVariantForCartDto?.color || item.color || 'Unknown',
+          variantId: item.productVariantId || item.productVariant?.id || product.productVariantForCartDto?.id, // Store variant ID for actions
+          productData: product, // Store full product data
+          price: item.currentPrice || product.finalPrice || product.price,
+          priceAtAddTime: item.priceAtAddTime || product.price || product.finalPrice,
+          isPriceChanged: item.isPriceChanged || false,
+          image: product.mainImageUrl || item.productVariant?.images?.[0]?.url || product.image?.[0]
+        };
+      }).filter(item => item._id); // Filter out invalid items
 
       setCartData(tempData);
     } else {
@@ -56,18 +68,25 @@ const Cart = () => {
             const size = parts[0];
             const color = parts[1] || 'Unknown'; // Default to 'Unknown' if no color
 
+            // Look up productData from loaded products state if possible
+            const productData = products.find(p => String(p._id) === String(items)) || {};
+
             tempData.push({
               _id: items,
               quantity: cartItems[items][item],
               size: size,
               color: color,
+              productData: productData,
+              price: productData.finalPrice || productData.price || 0,
+              priceAtAddTime: productData.price || productData.finalPrice || 0,
+              image: productData.image?.[0] || ""
             });
           }
         }
       }
       setCartData(tempData);
     }
-  }, [cartItems, serverCart]);
+  }, [cartItems, serverCart, products]);
 
   // 🗑️ Delete single item
   const handleDeleteItem = async (productId, productVariantId) => {
@@ -233,8 +252,7 @@ const Cart = () => {
           // 🆕 Use product data linked in item if available, otherwise look it up
           const productData = item.productData || products.find(
             (product) => String(product._id) === String(item._id)
-          );
-          if (!productData) return null;
+          ) || {};
 
           return (
             <motion.div
@@ -245,18 +263,30 @@ const Cart = () => {
               <div className="flex items-start gap-3 sm:gap-6">
                 <img
                   src={item.image || (productData.image && productData.image[0]) || ""}
-                  alt={productData.name}
+                  alt={productData.name || "Product"}
                   className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded"
                 />
                 <div className="flex-1">
                   <p className="text-sm sm:text-base md:text-lg font-medium line-clamp-2">
-                    {productData.name}
+                    {productData.name || "Product"}
                   </p>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2">
-                    <p className="font-semibold text-sm sm:text-base">
-                      {currency}
-                      {item.price || productData.finalPrice || productData.price}
-                    </p>
+                    <div className="flex flex-col">
+                      {item.priceAtAddTime && item.price !== item.priceAtAddTime ? (
+                        <>
+                          <p className="text-xs text-gray-400 line-through">
+                            Added: {currency}{item.priceAtAddTime}
+                          </p>
+                          <p className="font-semibold text-sm sm:text-base text-red-600">
+                            Now: {currency}{item.price}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="font-semibold text-sm sm:text-base">
+                          {currency}{item.price || item.priceAtAddTime}
+                        </p>
+                      )}
+                    </div>
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="px-2 py-1 text-xs sm:text-sm border border-gray-300 bg-slate-50 rounded">
                         Size: {item.size}
