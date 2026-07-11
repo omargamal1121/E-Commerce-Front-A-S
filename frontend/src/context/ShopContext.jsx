@@ -281,14 +281,50 @@ const ShopContextProvider = (props) => {
     if (serverCart && typeof serverCart.totalPrice === 'number') {
       return serverCart.totalPrice;
     }
-    return 0;
+    
+    // Fallback for guests (local cart computation)
+    let totalAmount = 0;
+    for (const itemId in cartItems) {
+      const itemInfo = products.find((product) => String(product._id) === String(itemId));
+      if (itemInfo) {
+        const price = itemInfo.finalPrice || itemInfo.price || 0;
+        for (const itemKey in cartItems[itemId]) {
+          try {
+            if (cartItems[itemId][itemKey] > 0) {
+              totalAmount += price * cartItems[itemId][itemKey];
+            }
+          } catch (error) {
+            console.log(error);
+          }
+        }
+      }
+    }
+    return totalAmount;
   };
 
   const getCartOriginalAmount = () => {
     if (serverCart && typeof serverCart.totalPriceAtAddTime === 'number') {
       return serverCart.totalPriceAtAddTime;
     }
-    return getCartAmount();
+    
+    // Fallback for guests (local cart computation)
+    let totalAmount = 0;
+    for (const itemId in cartItems) {
+      const itemInfo = products.find((product) => String(product._id) === String(itemId));
+      if (itemInfo) {
+        const price = itemInfo.price || itemInfo.finalPrice || 0;
+        for (const itemKey in cartItems[itemId]) {
+          try {
+            if (cartItems[itemId][itemKey] > 0) {
+              totalAmount += price * cartItems[itemId][itemKey];
+            }
+          } catch (error) {
+            console.log(error);
+          }
+        }
+      }
+    }
+    return totalAmount || getCartAmount();
   };
 
   const getProducts = async () => {

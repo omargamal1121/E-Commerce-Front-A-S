@@ -66,7 +66,7 @@ const GuestOrderSuccess = () => {
         <motion.p variants={itemFade} className="text-gray-500 text-sm sm:text-base mb-8">
           {paymentFailed
             ? "Your order was placed but payment could not be initiated automatically. Please contact support with your order number."
-            : "Thank you for your purchase. We'll start preparing your order right away."}
+            : "Thank you for your purchase. We'll start preparing your order right away. Our team will contact you shortly regarding your order."}
         </motion.p>
 
         {/* ── order number card ── */}
@@ -82,7 +82,7 @@ const GuestOrderSuccess = () => {
               {orderNumber}
             </p>
             <p className="text-xs text-gray-400 mt-2">
-              Save this number to track your order status.
+              Save this number for your records.
             </p>
           </motion.div>
         )}

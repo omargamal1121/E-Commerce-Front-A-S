@@ -39,7 +39,7 @@ import { ShopContext } from "./context/ShopContext";
 import WebsiteClosed from "./pages/WebsiteClosed";
 import GuestCheckout from "./pages/GuestCheckout";
 import GuestOrderSuccess from "./pages/GuestOrderSuccess";
-import GuestOrderTracking from "./pages/GuestOrderTracking";
+
 
 // Component to scroll to top on route change
 const ScrollToTop = () => {
@@ -123,7 +123,6 @@ const App = () => {
         <Route path="/api-test" element={<ApiTest />} />
         <Route path="/guest-checkout" element={<GuestCheckout />} />
         <Route path="/checkout/success" element={<GuestOrderSuccess />} />
-        <Route path="/track-order" element={<GuestOrderTracking />} />
         <Route path="/change-email" element={<PrivateRoute><ChangeEmail /></PrivateRoute>} />
         <Route path="/change-password" element={<PrivateRoute><ChangePassword /></PrivateRoute>} />
         <Route path="/upload-photo" element={<PrivateRoute><UploadPhoto /></PrivateRoute>} />

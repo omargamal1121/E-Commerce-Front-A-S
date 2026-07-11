@@ -39,11 +39,17 @@ export async function placeGuestOrder(payload) {
       return { success: true, orderNumber: body.orderNumber, orderId: body.orderId, message: data.message };
     }
 
+    let errorMessage = data?.message || data?.responseBody?.message || "Failed to place guest order.";
+    const detailedErrors = data?.responseBody?.errors?.messages;
+    if (Array.isArray(detailedErrors) && detailedErrors.length > 0) {
+      errorMessage = `${errorMessage} - Details: ${detailedErrors.join(", ")}`;
+    }
+
     return {
       success: false,
       orderNumber: null,
       orderId: null,
-      message: data?.message || data?.responseBody?.message || "Failed to place guest order.",
+      message: errorMessage,
     };
   } catch (error) {
     console.error("[guestCheckoutService] placeGuestOrder error:", error);
