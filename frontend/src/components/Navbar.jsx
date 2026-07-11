@@ -10,6 +10,7 @@ const Navbar = () => {
   const {
     backendUrl,
     user,
+    token,
     setUser,
     setToken,
     setShowSearch,
@@ -222,16 +223,27 @@ const Navbar = () => {
             <span className="w-2/4 h-[2px] transition-all duration-300 bg-gray-700 group-hover:w-full group-hover:bg-gray-300 group-hover:opacity-100 opacity-0"></span>
           </NavLink>
 
-          {user && (
+          {user ? (
+            /* Authenticated: go to full order history */
             <NavLink
               to="/orders"
               className={({ isActive }) =>
-                `flex flex-col items-center gap-1 group ${isActive ? "font-bold" : ""
-                }`
+                `flex flex-col items-center gap-1 group ${isActive ? "font-bold" : ""}`
               }
             >
               <p>{t("ORDERS")}</p>
-              <span className="w-2/4 h-[2px] transition-all duration-300 bg-gray-700 group-hover:w-full group-hover:bg-gray-300 group-hover:opacity-100 opacity-0"></span>
+              <span className="w-2/4 h-[2px] transition-all duration-300 bg-gray-700 group-hover:w-full group-hover:bg-gray-300 group-hover:opacity-100 opacity-0" />
+            </NavLink>
+          ) : (
+            /* Guest: track by order number */
+            <NavLink
+              to="/track-order"
+              className={({ isActive }) =>
+                `flex flex-col items-center gap-1 group ${isActive ? "font-bold" : ""}`
+              }
+            >
+              <p>TRACK ORDER</p>
+              <span className="w-2/4 h-[2px] transition-all duration-300 bg-gray-700 group-hover:w-full group-hover:bg-gray-300 group-hover:opacity-100 opacity-0" />
             </NavLink>
           )}
         </ul>
@@ -410,13 +422,21 @@ const Navbar = () => {
             >
               {t("POLICY")}
             </NavLink>
-            {user && (
+            {user ? (
               <NavLink
                 onClick={() => setvisible(false)}
                 to="/orders"
                 className="py-2 pl-6 border-b-2"
               >
                 {t("ORDERS")}
+              </NavLink>
+            ) : (
+              <NavLink
+                onClick={() => setvisible(false)}
+                to="/track-order"
+                className="py-2 pl-6 border-b-2"
+              >
+                Track Order
               </NavLink>
             )}
             <NavLink

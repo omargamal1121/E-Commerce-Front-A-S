@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect } from "react";
+import { createContext, useState, useEffect, useRef } from "react";
 // import { products } from "../assets/frontend_assets/assets";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
@@ -486,16 +486,31 @@ const ShopContextProvider = (props) => {
     getProducts();
   }, []);
 
+  // Track whether this is the very first mount so we can distinguish
+  // "no token on cold start" (guest visiting site) from "just logged out".
+  // On cold start with no token the cart is already correctly hydrated from
+  // localStorage by the useState initialiser – clearing it here is the bug.
+  const isMounted = useRef(false);
+
   // Fetch user's cart and wishlist data when token changes
   useEffect(() => {
     if (token) {
+      isMounted.current = true;
       console.log("Token available, fetching user cart & wishlist...");
       fetchUserCart();
       fetchWishlist();
     } else {
-      console.log("No token, clearing cart & wishlist");
-      setCartItems({});
-      setWishlistItems([]);
+      if (isMounted.current) {
+        // Genuine logout: token just disappeared — clear the server-cart state.
+        console.log("Token removed (logout), clearing server cart & wishlist");
+        setCartItems({});
+        setWishlistItems([]);
+      } else {
+        // Cold start with no token: guest user.
+        // cartItems already loaded from localStorage — do NOT overwrite.
+        console.log("Guest cold start: preserving localStorage cart");
+      }
+      isMounted.current = true;
     }
   }, [token]);
 
@@ -525,6 +540,13 @@ const ShopContextProvider = (props) => {
   };
 
   const clearLocalStorageCart = () => {
+    localStorage.removeItem("cartItems");
+  };
+
+  // Clears the guest (anonymous) cart from both state and localStorage
+  const clearGuestCart = () => {
+    setCartItems({});
+    setServerCart(null);
     localStorage.removeItem("cartItems");
   };
 
@@ -713,6 +735,8 @@ const ShopContextProvider = (props) => {
     user,
     setUser,
     clearLocalStorageCart,
+    clearGuestCart,        // wipes guest cart from state + localStorage
+    resolveVariantId,      // exposed so GuestCheckout can resolve variant IDs
     fetchUserCart,
     // Wishlist functions
     wishlistItems,

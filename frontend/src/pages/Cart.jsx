@@ -362,18 +362,18 @@ const Cart = () => {
           <div className="w-full text-center sm:text-end">
             <button
               onClick={async () => {
-                // 🆕 Check if user is logged in first
-                if (!token) {
-                  toast.info("Please log in to proceed with checkout.");
-                  navigate("/login");
-                  return;
-                }
-
                 if (cartData.length === 0) {
                   toast.error("Your cart is empty. Please add items before checkout.");
                   return;
                 }
 
+                // 🆕 Guest users go directly to the guest checkout form
+                if (!token) {
+                  navigate("/guest-checkout");
+                  return;
+                }
+
+                // Authenticated users: validate cart on the server first
                 setLoading(true);
                 try {
                   const response = await axios.post(
