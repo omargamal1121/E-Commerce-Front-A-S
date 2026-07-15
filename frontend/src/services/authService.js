@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getGuestToken, removeGuestToken } from "../utils/guestSession";
 
 class AuthService {
   constructor() {
@@ -175,6 +176,33 @@ class AuthService {
   hasValidToken() {
     const token = localStorage.getItem("token");
     return token && token.length > 20;
+  }
+
+  async claimGuestOrders(token) {
+    try {
+      const guestToken = getGuestToken();
+      if (!guestToken) return true;
+      
+      const backendUrl = import.meta.env.VITE_BACKEND_URL;
+      const response = await axios.post(
+        `${backendUrl}/api/Order/claim-guest`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "X-Guest-Token": guestToken
+          }
+        }
+      );
+      if (response.status === 200 || response.status === 201) {
+        removeGuestToken();
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("❌ Failed to claim guest orders:", error);
+      return false;
+    }
   }
 
   initiateGoogleLogin() {

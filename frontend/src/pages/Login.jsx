@@ -62,6 +62,9 @@ const Login = () => {
           setToken(tokenData.token);
           setUser(userData);
 
+          // ✅ Claim guest orders if any
+          await authService.claimGuestOrders(tokenData.token);
+
           // 🔀 Role-based redirect
           const rawRoles = userData.roles || userData.role || userData.userRoles || [];
           const roles = Array.isArray(rawRoles) ? rawRoles : [rawRoles];

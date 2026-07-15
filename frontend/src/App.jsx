@@ -39,6 +39,7 @@ import { ShopContext } from "./context/ShopContext";
 import WebsiteClosed from "./pages/WebsiteClosed";
 import GuestCheckout from "./pages/GuestCheckout";
 import GuestOrderSuccess from "./pages/GuestOrderSuccess";
+import { getGuestToken } from "./utils/guestSession";
 
 
 // Component to scroll to top on route change
@@ -61,8 +62,29 @@ const PrivateRoute = ({ children }) => {
   return children;
 };
 
+const OrdersRoute = () => {
+  const { token } = useContext(ShopContext);
+  const guestToken = getGuestToken();
+
+  if (!token && !guestToken) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <Orders />;
+};
+
+const PaymentRoute = () => {
+  const { token } = useContext(ShopContext);
+  const guestToken = getGuestToken();
+
+  if (!token && !guestToken) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <Payment />;
+};
+
 const App = () => {
-  const location = useLocation();
   const { user } = useContext(ShopContext);
   useEffect(() => {
     // Ensure interceptors are initialized (constructor already does this)
@@ -110,8 +132,8 @@ const App = () => {
         <Route path="/signup" element={<SignUp />} />
         <Route path="/google-callback" element={<GoogleCallback />} />
         <Route path="/google-callback/auth-success" element={<GoogleCallback />} />
-        <Route path="/orders" element={<PrivateRoute><Orders /></PrivateRoute>} />
-        <Route path="/payment/:orderNumber" element={<PrivateRoute><Payment /></PrivateRoute>} />
+        <Route path="/orders" element={<OrdersRoute />} />
+        <Route path="/payment/:orderNumber" element={<PaymentRoute />} />
         <Route path="/place-order" element={<PrivateRoute><PlaceOrder /></PrivateRoute>} />
         <Route path="/product/:productId" element={<Product />} />
         <Route path="/verify-email" element={<VerifyEmail />} />

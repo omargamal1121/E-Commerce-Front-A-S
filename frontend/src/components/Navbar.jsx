@@ -5,6 +5,7 @@ import { ShopContext } from "../context/ShopContext";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import SmallNavbar from "./SmallNavbar";
+import { getGuestToken } from "../utils/guestSession";
 
 const Navbar = () => {
   const {
@@ -17,6 +18,7 @@ const Navbar = () => {
     getCartCount,
     getWishlistCount
   } = useContext(ShopContext);
+  const guestToken = getGuestToken();
   const [visible, setvisible] = useState(false);
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
@@ -223,7 +225,7 @@ const Navbar = () => {
             <span className="w-2/4 h-[2px] transition-all duration-300 bg-gray-700 group-hover:w-full group-hover:bg-gray-300 group-hover:opacity-100 opacity-0"></span>
           </NavLink>
 
-          {user && (
+          {(user || guestToken) && (
             /* Authenticated: go to full order history */
             <NavLink
               to="/orders"
@@ -411,7 +413,7 @@ const Navbar = () => {
             >
               {t("POLICY")}
             </NavLink>
-            {user && (
+            {(user || guestToken) && (
               <NavLink
                 onClick={() => setvisible(false)}
                 to="/orders"

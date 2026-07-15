@@ -4,6 +4,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { ShopContext } from "../context/ShopContext";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
+import { getGuestToken } from "../utils/guestSession";
 
 const NavbarPage = () => {
   const {
@@ -14,6 +15,7 @@ const NavbarPage = () => {
     setShowSearch,
     getCartCount
   } = useContext(ShopContext);
+  const guestToken = getGuestToken();
   const [visible, setvisible] = useState(false);
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
@@ -278,7 +280,7 @@ const NavbarPage = () => {
               )}
             </>
           ) : (
-            <Link to="/login">
+            <Link to={guestToken ? "/orders" : "/login"}>
               <img
                 src={assets.profile_icon}
                 className="w-5 cursor-pointer"

@@ -2,10 +2,11 @@ import React, { useEffect, useState, useContext } from 'react'
 import { ShopContext } from '../context/ShopContext'
 import Title from '../components/Title'
 import axios from 'axios'
-import { fetchWithTokenRefresh, safeParseJson } from '../utils/apiUtils'
+import { fetchWithTokenRefresh, safeParseJson, getAuthHeaders } from '../utils/apiUtils'
 import { toast } from 'react-toastify'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { getGuestToken } from '../utils/guestSession'
 
 const Orders = () => {
   const { backendUrl, token, currency, refreshToken } = useContext(ShopContext);
@@ -173,21 +174,33 @@ const Orders = () => {
   const loadOrderData = async (status = statusFilter) => {
     try {
       setLoading(true);
-      if (!token) return null;
+      const guestToken = getGuestToken();
+      
+      if (!token && !guestToken) {
+        setOrderData([]);
+        return null;
+      }
 
-      let queryParams = 'page=1&pageSize=40';
+      let queryParams = 'page=1&pageSize=10';
       if (status !== 'All') queryParams += `&status=${status}`;
 
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      } else if (guestToken) {
+        headers['X-Guest-Token'] = guestToken;
+      }
+
       const res = await fetchWithTokenRefresh(
-        `${backendUrl}/api/Order?${queryParams}`,
+        `${backendUrl}/api/Order/my?${queryParams}`,
         {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers
         },
         refreshToken
       );
 
       if (!res.ok) {
-        if (res.status === 401) {
+        if (res.status === 401 && token) {
           navigate('/login');
           return;
         }
@@ -195,7 +208,10 @@ const Orders = () => {
       }
 
       const data = await safeParseJson(res);
-      const ordersInResponse = data?.responseBody?.data || [];
+      const bodyData = data?.data ?? data?.responseBody?.data ?? [];
+      const ordersInResponse = Array.isArray(bodyData)
+        ? bodyData
+        : (bodyData?.items ?? bodyData?.orders ?? []);
 
       // 🚀 NO MORE N+1! We use the summary data directly from the list response.
       const mappedOrders = ordersInResponse.map(order => {
@@ -203,15 +219,15 @@ const Orders = () => {
         const rawStatus = order.status;
         
         return {
-          id: order.id,
-          orderNumber: order.orderNumber,
+          id: order.id ?? order.orderId,
+          orderNumber: order.orderNumber ?? order.number,
           status: rawStatus,
           statusDisplay: order.status || getStatusDisplay(rawStatus),
-          total: order.total,
-          date: order.createdAt,
+          total: order.total ?? order.totalAmount ?? order.amount,
+          date: order.createdAt ?? order.createdOn ?? order.date,
           image: (order.imageurl || order.imageUrl || order.imageURL) ? [order.imageurl || order.imageUrl || order.imageURL] : ['/api/placeholder/80/80'],
-          name: `Order #${order.orderNumber}`,
-          price: order.total,
+          name: `Order #${order.orderNumber ?? order.number ?? ''}`,
+          price: order.total ?? order.totalAmount ?? order.amount,
           quantity: order.itemCount || 1, // Summary count
           paymentMethod: order.paymentMethod || 'N/A',
           paymentStatus: order.paymentStatus || 'N/A',
@@ -232,12 +248,13 @@ const Orders = () => {
     try {
       setModalLoading(true);
       setShowModal(true);
-      const response = await axios.get(`${backendUrl}/api/Order/number/${orderNumber}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+      const endpoint = token ? `/api/Order/number/${orderNumber}` : `/api/Order/guest/number/${orderNumber}`;
+      const response = await axios.get(`${backendUrl}${endpoint}`, {
+        headers: getAuthHeaders()
       });
-      setSelectedOrderDetails(response.data?.responseBody?.data);
+      setSelectedOrderDetails(response.data?.responseBody?.data || response.data?.data);
     } catch (error) {
-      if (error.response?.status === 401) {
+      if (error.response?.status === 401 && token) {
         navigate('/login');
         return;
       }
@@ -256,12 +273,12 @@ const Orders = () => {
     try {
       setLoading(true);
       await axios.put(`${backendUrl}/api/Order/${orderId}/status?status=5`, { reason }, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: getAuthHeaders()
       });
       toast.success('Order cancelled');
       await loadOrderData();
     } catch (error) {
-      if (error.response?.status === 401) {
+      if (error.response?.status === 401 && token) {
         navigate('/login');
         return;
       }

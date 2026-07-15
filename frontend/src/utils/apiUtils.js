@@ -1,11 +1,12 @@
 import authService from "../services/authService";
+import { getGuestToken } from "./guestSession";
 
 /**
- * Utility functions for API requests with token refresh
+ * Utility functions for API requests with token refresh and guest token support
  */
 
 /**
- * Makes an authenticated API request with automatic token refresh
+ * Makes an API request with automatic token refresh and guest token support
  * @param {string} url - The API endpoint URL
  * @param {Object} options - Fetch options including method, headers, body
  * @param {Function} [refreshTokenFn] - Optional function to refresh the token
@@ -14,20 +15,32 @@ import authService from "../services/authService";
 export const fetchWithTokenRefresh = async (url, options = {}, refreshTokenFn) => {
   // Ensure headers exist
   const headers = options.headers || {};
+  const token = localStorage.getItem('token');
+  const guestToken = getGuestToken();
+
+  // Attach appropriate headers
+  const requestHeaders = {
+    ...headers,
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    ...(!token && guestToken ? { 'X-Guest-Token': guestToken } : {}),
+  };
 
   // Map withCredentials (Axios-style) to credentials (native fetch)
-  const fetchOptions = { ...options };
+  const fetchOptions = { 
+    ...options, 
+    headers: requestHeaders 
+  };
   if (fetchOptions.withCredentials) {
     fetchOptions.credentials = 'include';
     // Keep it in case headers/etc are needed, but delete custom field to avoid fetch warning
     delete fetchOptions.withCredentials;
   }
 
-  // First attempt with current token
+  // First attempt with current token/guest token
   let response = await fetch(url, fetchOptions);
 
-  // If unauthorized, try to refresh token and retry
-  if (response.status === 401) {
+  // If unauthorized, try to refresh token and retry (only for authenticated users)
+  if (response.status === 401 && token) {
     console.warn(`⚠️ 401 Unauthorized for ${url}. Attempting token refresh...`);
     try {
       let newToken = null;
@@ -47,7 +60,7 @@ export const fetchWithTokenRefresh = async (url, options = {}, refreshTokenFn) =
         console.log(`🚀 Refresh successful. Retrying: ${url}`);
         // Update Authorization header with new token
         const newHeaders = {
-          ...headers,
+          ...requestHeaders,
           'Authorization': `Bearer ${newToken}`
         };
 
@@ -86,16 +99,18 @@ export const safeParseJson = async (response) => {
 };
 
 /**
- * Prepares headers with authentication token
+ * Prepares headers with authentication token and guest token
  * @param {Object} additionalHeaders - Additional headers to include
- * @returns {Object} - Headers object with authentication
+ * @returns {Object} - Headers object with authentication and guest token
  */
 export const getAuthHeaders = (additionalHeaders = {}) => {
   const token = localStorage.getItem('token');
+  const guestToken = getGuestToken();
 
   return {
     'Content-Type': 'application/json',
     ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    ...(!token && guestToken ? { 'X-Guest-Token': guestToken } : {}),
     ...additionalHeaders
   };
 };

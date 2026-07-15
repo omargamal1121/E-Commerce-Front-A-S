@@ -4,11 +4,14 @@ import { ShopContext } from '../context/ShopContext';
 import Title from '../components/Title';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { getGuestToken } from '../utils/guestSession';
+import { getAuthHeaders } from '../utils/apiUtils';
 
 const Payment = () => {
     const { orderNumber } = useParams();
     const { backendUrl, token, currency } = useContext(ShopContext);
     const navigate = useNavigate();
+    const guestToken = getGuestToken();
 
     const [orderData, setOrderData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -18,19 +21,19 @@ const Payment = () => {
     const [paymentNotes, setPaymentNotes] = useState("");
     const [processingPayment, setProcessingPayment] = useState(false);
 
-    // Auth guard – redirect unauthenticated users to login
     useEffect(() => {
-        if (!token) {
+        if (!token && !guestToken) {
             navigate('/login', { replace: true });
         }
-    }, [token, navigate]);
+    }, [token, guestToken, navigate]);
 
     // Fetch order details
     const fetchOrderDetails = async () => {
         try {
             setLoading(true);
-            const response = await axios.get(`${backendUrl}/api/Order/number/${orderNumber}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+            const endpoint = token ? `/api/Order/number/${orderNumber}` : `/api/Order/guest/number/${orderNumber}`;
+            const response = await axios.get(`${backendUrl}${endpoint}`, {
+                headers: getAuthHeaders()
             });
             if (response.data.statuscode === 200) {
                 setOrderData(response.data.responseBody.data);
@@ -63,11 +66,11 @@ const Payment = () => {
     };
 
     useEffect(() => {
-        if (token && orderNumber) {
+        if ((token || guestToken) && orderNumber) {
             fetchOrderDetails();
             fetchPaymentMethods();
         }
-    }, [token, orderNumber]);
+    }, [token, guestToken, orderNumber]);
 
     const handlePayment = async () => {
         if (selectedPaymentMethod === null || selectedPaymentMethod === undefined) {
@@ -100,7 +103,7 @@ const Payment = () => {
                 paymentData,
                 {
                     headers: {
-                        Authorization: `Bearer ${token}`,
+                        ...getAuthHeaders(),
                         "Content-Type": "application/json",
                     },
                 }
@@ -164,7 +167,7 @@ const Payment = () => {
             const response = await axios.put(
                 `${backendUrl}/api/Order/${orderId}/status?status=5`,
                 {},
-                { headers: { 'Authorization': `Bearer ${token}` } }
+                { headers: getAuthHeaders() }
             );
 
             if (response.data?.success || response.status === 200) {
@@ -182,7 +185,7 @@ const Payment = () => {
         }
     };
 
-    if (!token) return null; // Rendering nothing while redirect fires
+    if (!token && !guestToken) return null;
 
     if (loading) {
         return (
