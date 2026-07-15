@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
+import { getGuestOrderByNumber } from "../services/guestCheckoutService";
 
 /* ─── animation variants ────────────────────────────────────────────────── */
 const fadeUp = { hidden: { opacity: 0, y: 40 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } } };
@@ -31,16 +32,37 @@ const CheckCircle = () => (
    GuestOrderSuccess
    ════════════════════════════════════════════════════════════════════════════ */
 const GuestOrderSuccess = () => {
-  const [searchParams] = useSearchParams();
+  const { orderNumber } = useParams();
   const navigate = useNavigate();
+  const [orderData, setOrderData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const orderNumber = searchParams.get("orderNumber") || localStorage.getItem("pendingGuestOrderNumber");
-  const paymentFailed = searchParams.get("paymentFailed") === "1";
-
-  /* clear the stashed order number once shown */
   useEffect(() => {
-    if (orderNumber) localStorage.removeItem("pendingGuestOrderNumber");
+    const fetchOrderDetails = async () => {
+      if (!orderNumber) return;
+
+      try {
+        const result = await getGuestOrderByNumber(orderNumber);
+        if (result.success) {
+          setOrderData(result.data);
+        }
+      } catch (error) {
+        console.error('Error fetching guest order:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrderDetails();
   }, [orderNumber]);
+
+  if (loading) {
+    return (
+      <div className="mt-[80px] min-h-[80vh] flex items-center justify-center px-4 py-16">
+        <div className="animate-spin h-12 w- border-b-2 border-black"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="mt-[80px] min-h-[80vh] flex items-center justify-center px-4 py-16">
@@ -60,13 +82,11 @@ const GuestOrderSuccess = () => {
           variants={itemFade}
           className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2"
         >
-          {paymentFailed ? "Order Placed!" : "Order Confirmed!"}
+          Order Confirmed!
         </motion.h1>
 
         <motion.p variants={itemFade} className="text-gray-500 text-sm sm:text-base mb-8">
-          {paymentFailed
-            ? "Your order was placed but payment could not be initiated automatically. Please contact support with your order number."
-            : "Thank you for your purchase. We'll start preparing your order right away. Our team will contact you shortly regarding your order."}
+          Thank you for your purchase. We'll start preparing your order right away. Our team will contact you shortly regarding your order.
         </motion.p>
 
         {/* ── order number card ── */}
@@ -83,20 +103,6 @@ const GuestOrderSuccess = () => {
             </p>
             <p className="text-xs text-gray-400 mt-2">
               Save this number for your records.
-            </p>
-          </motion.div>
-        )}
-
-        {/* ── payment failed notice ── */}
-        {paymentFailed && (
-          <motion.div
-            variants={itemFade}
-            className="bg-amber-50 border border-amber-200 rounded-xl px-5 py-4 mb-8 text-left"
-          >
-            <p className="text-sm font-semibold text-amber-800 mb-1">⚠ Payment not processed</p>
-            <p className="text-xs text-amber-700 leading-relaxed">
-              Your order was created successfully, but the payment link could not be generated.
-              Please contact our support team and quote your order number above.
             </p>
           </motion.div>
         )}

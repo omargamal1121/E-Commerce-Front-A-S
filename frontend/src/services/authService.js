@@ -162,6 +162,7 @@ class AuthService {
   logout() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    removeGuestToken();
     delete axios.defaults.headers.common["Authorization"];
     this.notify("", null);
 

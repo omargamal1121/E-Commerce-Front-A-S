@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useContext } from "react";
 import Title from "../components/Title";
 import CartTotal from "../components/CartTotal";
+import CheckoutModeSelector from "../components/CheckoutModeSelector";
+import GuestCheckoutForm from "../components/GuestCheckoutForm";
 import { ShopContext } from "../context/ShopContext";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
@@ -16,7 +18,9 @@ const PlaceOrder = () => {
     getCartAmount,
     delivery_fee,
     products,
-    getCartCount
+    getCartCount,
+    isGuestCheckout,
+    setGuestCheckoutMode
   } = useContext(ShopContext);
 
   const [addresses, setAddresses] = useState([]);
@@ -324,6 +328,40 @@ const PlaceOrder = () => {
   const paymentVariants = { hidden: { opacity: 0, x: 50 }, visible: { opacity: 1, x: 0, transition: { duration: 0.6, ease: "easeOut" } } };
   const containerVariants = { hidden: {}, visible: { transition: { staggerChildren: 0.1 } } };
   const itemVariants = { hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.4 } } };
+
+  // Show checkout mode selector if user is not logged in and hasn't selected guest checkout
+  if (!token && !isGuestCheckout) {
+    return <CheckoutModeSelector />;
+  }
+
+  // Show guest checkout form if guest checkout mode is selected
+  if (!token && isGuestCheckout) {
+    return (
+      <div className="min-h-screen pt-24 pb-20 px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw] bg-gray-50/30">
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-8">
+            <Title text1={'GUEST'} text2={'CHECKOUT'} />
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <GuestCheckoutForm />
+            </div>
+            <div className="lg:col-span-1">
+              <div className="sticky top-24">
+                <CartTotal />
+                <button
+                  onClick={() => setGuestCheckoutMode(false)}
+                  className="w-full mt-4 px-4 py-3 border border-gray-300 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-all"
+                >
+                  ← Back to Checkout Options
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mt-[80px] mb-5 px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw]">

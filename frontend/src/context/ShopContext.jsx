@@ -6,6 +6,7 @@ import { fetchWithTokenRefresh, getAuthHeaders, safeParseJson } from "../utils/a
 import wishlistService from "../services/wishlistService";
 import discountService from "../services/discountService";
 import authService from "../services/authService";
+import { getGuestToken, saveGuestToken, removeGuestToken } from "../utils/guestSession";
 export const ShopContext = createContext();
 
 const ShopContextProvider = (props) => {
@@ -35,6 +36,11 @@ const ShopContextProvider = (props) => {
   // Wishlist state
   const [wishlistItems, setWishlistItems] = useState([]);
   const [wishlistLoading, setWishlistLoading] = useState(false);
+
+  // Guest checkout state
+  const [guestToken, setGuestToken] = useState(() => getGuestToken());
+  const [isGuestCheckout, setIsGuestCheckout] = useState(false);
+  const [guestOrderInfo, setGuestOrderInfo] = useState(null);
 
   const refreshToken = async () => {
     try {
@@ -705,6 +711,28 @@ const ShopContextProvider = (props) => {
     return wishlistItems.length;
   };
 
+  // Guest checkout management functions
+  const setGuestCheckoutMode = (mode) => {
+    setIsGuestCheckout(mode);
+  };
+
+  const updateGuestToken = (token) => {
+    if (token) {
+      saveGuestToken(token);
+      setGuestToken(token);
+    } else {
+      removeGuestToken();
+      setGuestToken(null);
+    }
+  };
+
+  const clearGuestSession = () => {
+    removeGuestToken();
+    setGuestToken(null);
+    setGuestOrderInfo(null);
+    setIsGuestCheckout(false);
+  };
+
   const checkout = async () => {
     if (token) {
       try {
@@ -784,6 +812,14 @@ const ShopContextProvider = (props) => {
     clearWishlist,
     getWishlistCount,
     serverCart, // Expose server cart data
+    // Guest checkout functions
+    guestToken,
+    isGuestCheckout,
+    guestOrderInfo,
+    setGuestOrderInfo,
+    setGuestCheckoutMode,
+    updateGuestToken,
+    clearGuestSession,
   };
 
   return (
