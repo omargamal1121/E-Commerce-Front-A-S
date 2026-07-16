@@ -33,24 +33,14 @@ export async function placeGuestOrder(payload) {
     });
 
     const data = await response.json();
-    console.log("[guestCheckoutService] placeGuestOrder raw response:", {
-      httpStatus: response.status,
-      data,
-    });
 
     // Support both envelope shapes: data.data (new) and data.responseBody.data (legacy)
     const body = data?.data ?? data?.responseBody?.data ?? null;
     const success = data?.success ?? (response.status === 201);
 
-    console.log("[guestCheckoutService] Extracted body:", body);
-    console.log("[guestCheckoutService] Guest token in response:", body?.guestToken);
-
     // If we get a guest token in the response, save it
     if (body?.guestToken) {
       saveGuestToken(body.guestToken);
-      console.log("[guestCheckoutService] Guest token saved to localStorage");
-    } else {
-      console.warn("[guestCheckoutService] No guest token found in response!");
     }
 
     if (success && body?.orderNumber) {
@@ -161,22 +151,12 @@ export async function getGuestOrderByNumber(orderNumber) {
       headers["X-Guest-Token"] = guestToken;
     }
 
-    console.log("[guestCheckoutService] getGuestOrderByNumber REQUEST →", {
-      url: `${backendUrl}/api/Order/guest/number/${orderNumber}`,
-      guestToken: guestToken ? "Present" : "Missing",
-      headers: headers
-    });
-
     const response = await fetch(`${backendUrl}/api/Order/guest/number/${orderNumber}`, {
       method: "GET",
       headers,
     });
 
     const data = await response.json();
-    console.log("[guestCheckoutService] getGuestOrderByNumber RESPONSE ←", {
-      httpStatus: response.status,
-      data,
-    });
 
     // Support both envelope shapes: data.data (new) and data.responseBody.data (legacy)
     const body = data?.data ?? data?.responseBody?.data ?? null;

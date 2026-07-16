@@ -107,26 +107,99 @@ const OrderCreate = ({ token }) => {
     if (!selectedAddressId || !selectedPaymentMethod || cartItems.length === 0) return toast.error("Please complete all required fields");
     setLoading(true);
     try {
-      await axios.post(`${backendUrl}/api/Cart/checkout`, {}, { headers: { Authorization: `Bearer ${token}` } });
-      const selectedMethod = paymentMethods.find(m => (m.paymentMethod ?? m.name ?? m.id).toString().toLowerCase() === selectedPaymentMethod.toString().toLowerCase());
-      const payload = { addressId: parseInt(selectedAddressId), notes, paymentMethodId: Number(selectedMethod?.id) };
-      const res = await axios.post(`${backendUrl}/api/Order`, payload, { headers: { "Content-Type": "application/json-patch+json", Authorization: `Bearer ${token}` } });
-      const orderId = res.data?.responseBody?.data?.order?.id || res.data?.responseBody?.data?.id;
-      const orderNumber = res.data?.responseBody?.data?.order?.orderNumber || orderId;
+      // Step 1: Create Order (matching frontend flow)
+      const orderPayload = {
+        addressId: parseInt(selectedAddressId),
+        notes: paymentNotes || notes || "Order placed by admin"
+      };
 
-      if (orderId) {
-        // Process Payment
-        const pPayload = { orderNumber: String(orderNumber), paymentDetails: { walletPhoneNumber, paymentMethod: Number(selectedMethod?.id), currency: paymentCurrency, notes: paymentNotes || notes } };
-        const pRes = await axios.post(`${backendUrl}/api/Payment`, pPayload, { headers: { Authorization: `Bearer ${token}` } });
-        if (pRes.data?.responseBody?.data?.redirectUrl) {
-          window.location.assign(pRes.data.responseBody.data.redirectUrl);
-        } else {
-          toast.success("Order created successfully");
-          navigate("/orders");
+      const orderResponse = await axios.post(
+        `${backendUrl}/api/Order`,
+        orderPayload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
+      );
+
+      if (orderResponse.data.statuscode === 201 || orderResponse.data.statuscode === 200) {
+        const createdOrder = orderResponse.data.responseBody?.data;
+        const orderNumber = createdOrder?.orderNumber;
+
+        if (!orderNumber) {
+          throw new Error("Order number not received from server");
+        }
+
+        toast.success("Order created successfully! Processing payment...");
+
+        // Step 2: Process Payment (matching frontend flow)
+        const selectedMethod = paymentMethods.find(m => (m.paymentMethod ?? m.name ?? m.id).toString().toLowerCase() === selectedPaymentMethod.toString().toLowerCase());
+        const paymentPayload = {
+          orderNumber: orderNumber,
+          paymentDetails: {
+            walletPhoneNumber: walletPhoneNumber || "",
+            paymentMethod: Number(selectedMethod?.id),
+            currency: paymentCurrency,
+            notes: paymentNotes || notes || "Payment initiated by admin"
+          }
+        };
+
+        const paymentResponse = await axios.post(
+          `${backendUrl}/api/Payment`,
+          paymentPayload,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (paymentResponse.data.statuscode === 200) {
+          const pData = paymentResponse.data.responseBody?.data;
+
+          if (pData?.isRedirectRequired && pData?.redirectUrl) {
+            toast.success("Redirecting to payment gateway...");
+            
+            const returnUrl = `${window.location.origin}/orders`;
+            const separator = pData.redirectUrl.includes('?') ? '&' : '?';
+            const redirectUrlWithReturn = `${pData.redirectUrl}${separator}return_url=${encodeURIComponent(returnUrl)}`;
+            
+            window.location.href = redirectUrlWithReturn;
+          } else {
+            // Clear cart after successful payment
+            try {
+              await axios.delete(`${backendUrl}/api/Cart/items/clear`, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              setCartItems([]);
+            } catch (clearError) {
+              console.error("Failed to clear cart after order:", clearError);
+            }
+
+            toast.success("Payment processed successfully!");
+            navigate("/orders");
+          }
+        } else {
+          toast.error(paymentResponse.data.responseBody?.message || "Payment failed");
+        }
+      } else {
+        toast.error(orderResponse.data.responseBody?.message || "Failed to create order");
       }
-    } catch (e) { toast.error("Failed to create order"); }
-    finally { setLoading(false); }
+    } catch (error) {
+      console.error("Error placing order:", error.response?.data || error.message);
+      if (error.response?.status === 403) {
+        toast.error("Authentication failed. Please login again.");
+      } else if (error.response?.status === 400) {
+        toast.error("Invalid order data. Please check your information.");
+      } else {
+        toast.error(error?.data?.responseBody?.message || "Failed to process order. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const calculateTotal = () => cartItems.reduce((acc, curr) => acc + curr.totalPrice, 0);
