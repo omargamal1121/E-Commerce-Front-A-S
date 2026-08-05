@@ -3,6 +3,7 @@ import { toast } from "react-toastify";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { backendUrl } from "../../App";
+import { useTranslation } from "react-i18next";
 
 const ListSubCategory = ({
   token,
@@ -11,6 +12,7 @@ const ListSubCategory = ({
   handleEditSubCategory,
   handleViewSubCategory,
 }) => {
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [isActive, setIsActive] = useState("");
   const [isDeleted, setIsDeleted] = useState("");

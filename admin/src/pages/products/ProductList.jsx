@@ -5,6 +5,7 @@ import axios from "axios";
 import API from "../../services/api";
 import { currency, backendUrl } from "../../App";
 import ConfirmModal from "../../components/modals/ConfirmModal";
+import { useTranslation } from "react-i18next";
 
 const ProductCard = React.memo(({ p, navigate, toggleStatus, handleRestore, handleDelete, handleRemoveDiscount, currency }) => {
   const discountPercent = Number(p.discountPrecentage ?? p.discountPercentage ?? p.discount?.discountPercent ?? 0);
@@ -29,11 +30,11 @@ const ProductCard = React.memo(({ p, navigate, toggleStatus, handleRestore, hand
         <div className="absolute top-4 left-4 flex flex-col gap-2">
           {(p.deletedAt !== null && p.deletedAt !== undefined) ? (
             <span className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-600 text-white border border-rose-500 backdrop-blur-md shadow-sm">
-              Deleted
+              {p.isActive ? 'Active' : 'Inactive'}
             </span>
           ) : (
             <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest backdrop-blur-md border shadow-sm ${p.isActive ? "bg-emerald-500/80 text-white border-emerald-400" : "bg-gray-500/80 text-white border-gray-400"}`}>
-              {p.isActive ? "Active" : "Inactive"}
+              {p.isActive ? 'Active' : 'Inactive'}
             </span>
           )}
           {hasDiscount && (
@@ -43,7 +44,7 @@ const ProductCard = React.memo(({ p, navigate, toggleStatus, handleRestore, hand
           )}
           {p.discountStatus !== null && p.discountStatus !== undefined && (
             <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm backdrop-blur-md ${p.discountStatus ? "bg-amber-500/80 text-white border-amber-400" : "bg-gray-400/80 text-white border-gray-300"}`}>
-              {p.discountStatus ? "Discount Active" : "Discount Inactive"}
+              {p.discountStatus ? 'Discount Active' : 'Discount Inactive'}
             </span>
           )}
         </div>
@@ -72,7 +73,7 @@ const ProductCard = React.memo(({ p, navigate, toggleStatus, handleRestore, hand
         <div className="flex justify-between items-start mb-2">
           <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">ID: {p.id}</p>
           <p className={`text-[10px] font-black uppercase tracking-widest ${p.availableQuantity > 0 ? "text-emerald-500" : "text-rose-500"}`}>
-            {p.availableQuantity > 0 ? `Stock: ${p.availableQuantity}` : "Out of stock"}
+            {p.availableQuantity > 0 ? `Stock: ${p.availableQuantity}` : 'Out of stock'}
           </p>
           <p className="text-[10px] font-black uppercase tracking-widest text-[#BBA14F]">
             Sold: {p.totalSold ?? p.totalsold ?? 0}
@@ -84,7 +85,7 @@ const ProductCard = React.memo(({ p, navigate, toggleStatus, handleRestore, hand
 
         <div className="flex items-center justify-between border-t border-gray-100 pt-6">
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Price</span>
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{currency === 'EGP' ? 'Price' : 'Price'}</span>
             {hasDiscount && finalPrice !== p.price ? (
               <div className="flex items-baseline gap-2 flex-wrap">
                 <span className="text-2xl font-black text-emerald-600 tracking-tighter">{currency} {Number(finalPrice).toFixed(2)}</span>
@@ -145,6 +146,7 @@ const ProductCard = React.memo(({ p, navigate, toggleStatus, handleRestore, hand
 const ProductList = ({ token }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { t } = useTranslation();
   const subcategoryIdFromUrl = searchParams.get("subcategory") || searchParams.get("subcategoryId");
   const collectionIdFromUrl = searchParams.get("collection") || searchParams.get("collectionId");
 
@@ -288,15 +290,15 @@ const ProductList = ({ token }) => {
     try {
       if (product.isActive) await API.products.deactivate(product.id, token);
       else await API.products.activate(product.id, token);
-      toast.success("Status updated");
+      toast.success(t('updateFailed').replace('failed', 'updated'));
       fetchProducts();
-    } catch (e) { toast.error("Update failed"); }
+    } catch (e) { toast.error(t('updateFailed')); }
   }, [token, fetchProducts]);
 
   const handleDelete = useCallback((id, name) => {
     setConfirmState({
       open: true,
-      title: 'Delete Product',
+      title: t('deleteProduct'),
       message: `"${name || 'This product'}" will be permanently deleted. This action cannot be undone.`,
       variant: 'danger',
       loading: false,
@@ -304,10 +306,10 @@ const ProductList = ({ token }) => {
         setConfirmState(s => ({ ...s, loading: true }));
         try {
           await API.products.delete(id, token);
-          toast.success("Product deleted");
+          toast.success(t('productRestored').replace('restored', 'deleted'));
           fetchProducts();
         } catch (e) {
-          toast.error("Delete failed");
+          toast.error(t('deleteFailed'));
         } finally {
           setConfirmState(s => ({ ...s, open: false, loading: false }));
         }
@@ -318,7 +320,7 @@ const ProductList = ({ token }) => {
   const handleRemoveDiscount = useCallback((id, name) => {
     setConfirmState({
       open: true,
-      title: 'Remove Discount',
+      title: t('removeDiscount'),
       message: `Remove the discount from "${name || 'this product'}"?`,
       variant: 'warning',
       loading: false,
@@ -326,10 +328,10 @@ const ProductList = ({ token }) => {
         setConfirmState(s => ({ ...s, loading: true }));
         try {
           await API.products.removeDiscount(id, token);
-          toast.success("Discount removed");
+          toast.success(t('discountRemoved'));
           fetchProducts();
         } catch (e) {
-          toast.error("Failed to remove discount");
+          toast.error(t('failedToRemoveDiscount'));
         } finally {
           setConfirmState(s => ({ ...s, open: false, loading: false }));
         }
@@ -341,9 +343,9 @@ const ProductList = ({ token }) => {
   const handleRestore = useCallback(async (id) => {
     try {
       await API.products.restore(id, token);
-      toast.success("Product restored");
+      toast.success(t('productRestored'));
       fetchProducts();
-    } catch (e) { toast.error("Restore failed"); }
+    } catch (e) { toast.error(t('restoreFailed')); }
   }, [token, fetchProducts]);
 
   // Sync filter when URL params change (from external navigation)
@@ -371,9 +373,9 @@ const ProductList = ({ token }) => {
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-white font-black text-xs shadow-lg">🎯</div>
             <div className="flex flex-col">
-              <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Active Content Matrix</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600">{t('activeContentMatrix')}</span>
               <span className="text-sm font-bold text-emerald-900 leading-none">
-                {subcategoryFilter ? `Filtering Products by Subcategory #${subcategoryFilter}` : `Filtering Products by Collection #${collectionIdFromUrl}`}
+                {subcategoryFilter ? `${t('filteringBySubcategory')} #${subcategoryFilter}` : `${t('filteringByCollection')} #${collectionIdFromUrl}`}
               </span>
             </div>
           </div>
@@ -384,7 +386,7 @@ const ProductList = ({ token }) => {
             }}
             className="px-6 py-2.5 bg-white border border-emerald-200 text-emerald-600 text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-emerald-600 hover:text-white transition-all shadow-sm"
           >
-            Clear Filter Matrix
+            {t('clearFilterMatrix')}
           </button>
         </div>
       )}
@@ -394,7 +396,7 @@ const ProductList = ({ token }) => {
           <div className="flex-1 relative group">
             <input
               type="text"
-              placeholder="Search products by identity, code, or keyword..."
+              placeholder={t('searchProductsPlaceholder')}
               className="w-full pl-14 pr-6 py-5 bg-gray-50 border border-transparent rounded-[28px] outline-none focus:ring-8 focus:ring-emerald-50 focus:bg-white focus:border-emerald-300 transition-all font-bold text-sm shadow-inner"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -405,7 +407,7 @@ const ProductList = ({ token }) => {
           </div>
           
           <button onClick={() => navigate('/add')} className="px-12 py-5 bg-gray-900 text-white rounded-[28px] text-xs font-black uppercase tracking-[0.2em] hover:bg-emerald-600 transition-all shadow-xl hover:scale-[1.02] active:scale-95 shrink-0">
-            Publish New Asset
+            {t('publishNewAsset')}
           </button>
         </div>
 
@@ -415,9 +417,9 @@ const ProductList = ({ token }) => {
             {/* Strategy Selectors */}
             <div className="flex bg-gray-100 p-1.5 rounded-[22px] border border-gray-200 shadow-inner">
               {[
-                { id: 'all', label: 'All', icon: '🌍' },
-                { id: 'newarrivals', label: 'Recent', icon: '✨' },
-                { id: 'bestsellers', label: 'Best Sellers', icon: '📈' }
+                { id: 'all', label: t('all'), icon: '🌍' },
+                { id: 'newarrivals', label: t('recent'), icon: '✨' },
+                { id: 'bestsellers', label: t('bestSellers'), icon: '📈' }
               ].map((f) => (
                 <button
                   key={f.id}
@@ -434,9 +436,9 @@ const ProductList = ({ token }) => {
             {/* Matrix Filters */}
             <div className="flex items-center gap-4">
               {[
-                { label: 'Status', value: statusFilter, setter: setStatusFilter, options: [{v:'all', l:'All'}, {v:'active', l:'Live'}, {v:'inactive', l:'Inactive'}] },
-                { label: 'Archive', value: deletedFilter, setter: setDeletedFilter, options: [{v:'all', l:'Combined'}, {v:'deleted', l:'Trashed'}, {v:'not_deleted', l:'Active Only'}] },
-                { label: 'Stock', value: stockFilter, setter: setStockFilter, options: [{v:'all', l:'Quantity: All'}, {v:'instock', l:'In Stock'}, {v:'outofstock', l:'Exhausted'}] },
+                { label: t('status'), value: statusFilter, setter: setStatusFilter, options: [{v:'all', l:t('all')}, {v:'active', l:t('live')}, {v:'inactive', l:t('inactive')}] },
+                { label: t('archive'), value: deletedFilter, setter: setDeletedFilter, options: [{v:'all', l:t('combined')}, {v:'deleted', l:t('trashed')}, {v:'not_deleted', l:t('activeOnly')}] },
+                { label: t('stock'), value: stockFilter, setter: setStockFilter, options: [{v:'all', l:t('quantityAll')}, {v:'instock', l:t('inStock')}, {v:'outofstock', l:t('exhausted')}] },
                 { label: 'Gender', value: genderFilter, setter: setGenderFilter, options: [{v:'', l:'Gender: All'}, {v:'0', l:'Man'}, {v:'1', l:'Woman'}, {v:'2', l:'Kids'}, {v:'3', l:'Unisex'}] }
               ].map((filter) => (
                 <div key={filter.label} className="flex bg-gray-50 px-4 py-2 rounded-2xl border border-gray-100 hover:border-emerald-200 transition-colors">
@@ -457,7 +459,7 @@ const ProductList = ({ token }) => {
                   onChange={(e) => setSubcategoryFilter(e.target.value)}
                   className="bg-transparent text-[10px] font-black uppercase tracking-widest outline-none cursor-pointer text-emerald-700 hover:text-emerald-900 transition-colors appearance-none max-w-[120px]"
                 >
-                  <option value="">Type: All</option>
+                  <option value="">{t('typeAll')}</option>
                   {subcategories.map(sub => (
                     <option key={sub.id} value={sub.id}>{sub.name}</option>
                   ))}
@@ -476,7 +478,7 @@ const ProductList = ({ token }) => {
         ) : products.length === 0 ? (
           <div className="col-span-full py-40 flex flex-col items-center gap-6 text-gray-300">
             <div className="text-8xl opacity-20">🌫️</div>
-            <p className="font-black uppercase tracking-[0.3em] text-xs">No products found</p>
+            <p className="font-black uppercase tracking-[0.3em] text-xs">{t('noProductsFound')}</p>
           </div>
         ) : (
           products.map((p) => (

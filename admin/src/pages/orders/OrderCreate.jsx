@@ -4,8 +4,10 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { backendUrl, currency } from "../../App";
 import API from "../../services/api";
+import { useTranslation } from "react-i18next";
 
 const OrderCreate = ({ token }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   // State
@@ -160,6 +162,8 @@ const OrderCreate = ({ token }) => {
         if (paymentResponse.data.statuscode === 200) {
           const pData = paymentResponse.data.responseBody?.data;
 
+          console.log("Payment response data:", pData);
+
           if (pData?.isRedirectRequired && pData?.redirectUrl) {
             toast.success("Redirecting to payment gateway...");
             
@@ -167,6 +171,7 @@ const OrderCreate = ({ token }) => {
             const separator = pData.redirectUrl.includes('?') ? '&' : '?';
             const redirectUrlWithReturn = `${pData.redirectUrl}${separator}return_url=${encodeURIComponent(returnUrl)}`;
             
+            console.log("Redirecting to:", redirectUrlWithReturn);
             window.location.href = redirectUrlWithReturn;
           } else {
             // Clear cart after successful payment
@@ -177,25 +182,32 @@ const OrderCreate = ({ token }) => {
               setCartItems([]);
             } catch (clearError) {
               console.error("Failed to clear cart after order:", clearError);
+              toast.warning("Order created but cart could not be cleared");
             }
 
             toast.success("Payment processed successfully!");
-            navigate("/orders");
+            console.log("Navigating to orders...");
+            setTimeout(() => {
+              navigate("/orders");
+            }, 100);
           }
         } else {
+          console.error("Payment failed:", paymentResponse.data);
           toast.error(paymentResponse.data.responseBody?.message || "Payment failed");
         }
       } else {
         toast.error(orderResponse.data.responseBody?.message || "Failed to create order");
       }
     } catch (error) {
-      console.error("Error placing order:", error.response?.data || error.message);
+      console.error("Error placing order:", error);
+      console.error("Error response:", error.response?.data);
+      
       if (error.response?.status === 403) {
         toast.error("Authentication failed. Please login again.");
       } else if (error.response?.status === 400) {
         toast.error("Invalid order data. Please check your information.");
       } else {
-        toast.error(error?.data?.responseBody?.message || "Failed to process order. Please try again.");
+        toast.error(error?.response?.data?.responseBody?.message || error?.message || "Failed to process order. Please try again.");
       }
     } finally {
       setLoading(false);

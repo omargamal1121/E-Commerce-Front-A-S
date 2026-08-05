@@ -3,8 +3,10 @@ import axios from "axios";
 import { backendUrl, currency } from "../../App";
 import { toast } from "react-toastify";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const OrderList = ({ token }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const statusFromUrl = searchParams.get("status");
@@ -16,6 +18,8 @@ const OrderList = ({ token }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [updatingStatus, setUpdatingStatus] = useState(null);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   useEffect(() => {
     if (statusFromUrl !== null && statusFromUrl !== undefined) {
@@ -70,6 +74,23 @@ const OrderList = ({ token }) => {
     return STATUS_LABELS[status] || status;
   };
 
+  const toCamelCase = (str) => {
+    if (!str) return '';
+    let key = str.replace(/\s+/g, '');
+    if (key.includes('Cancelled(User)')) return 'cancelledByUser';
+    if (key.includes('Cancelled(Admin)')) return 'cancelledByAdmin';
+    if (key.includes('PaymentExpired')) return 'paymentExpired';
+    if (key.includes('PendingPayment')) return 'pendingPayment';
+    return key.charAt(0).toLowerCase() + key.slice(1);
+  };
+
+  const translateStatus = (label) => {
+    if (!label) return '';
+    const key = toCamelCase(label);
+    return t(key) === key ? label : t(key);
+  };
+
+
   const [totalCount, setTotalCount] = useState(0);
 
   const fetchOrders = useCallback(async () => {
@@ -89,6 +110,14 @@ const OrderList = ({ token }) => {
       // Handle search term if provided
       if (searchTerm) {
         params.searchTerm = searchTerm;
+      }
+
+      // Add date filters
+      if (startDate) {
+        params.startDate = startDate;
+      }
+      if (endDate) {
+        params.endDate = endDate;
       }
 
       const resp = await axios.get(`${backendUrl}/api/Order`, {
@@ -113,7 +142,7 @@ const OrderList = ({ token }) => {
     } finally {
       setLoading(false);
     }
-  }, [token, currentPage, statusFilter, searchTerm]);
+  }, [token, currentPage, statusFilter, searchTerm, startDate, endDate]);
 
   const handleStatusUpdate = async (orderId, newStatus) => {
     setUpdatingStatus(orderId);
@@ -143,10 +172,10 @@ const OrderList = ({ token }) => {
     }
   }, [initialFilter]);
 
-  // Reset to page 1 when status filter or search term changes
+  // Reset to page 1 when status filter, search term, or date filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [statusFilter, searchTerm]);
+  }, [statusFilter, searchTerm, startDate, endDate]);
 
   useEffect(() => {
     fetchOrders();
@@ -178,11 +207,25 @@ const OrderList = ({ token }) => {
             onChange={(e) => setStatusFilter(e.target.value)}
             className="bg-white border border-gray-200 rounded-2xl px-6 py-3.5 text-xs font-black uppercase tracking-widest text-gray-500 shadow-sm focus:ring-4 focus:ring-blue-50 outline-none cursor-pointer"
           >
-            <option value="">All Statuses</option>
+            <option value="">{t('allStatuses')}</option>
             {Object.entries(STATUS_LABELS).map(([code, label]) => (
-              <option key={code} value={code}>{label}</option>
+              <option key={code} value={code}>{translateStatus(label)}</option>
             ))}
           </select>
+
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="bg-white border border-gray-200 rounded-2xl px-4 py-3.5 text-xs font-black uppercase tracking-widest text-gray-500 shadow-sm focus:ring-4 focus:ring-blue-50 outline-none cursor-pointer"
+          />
+
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="bg-white border border-gray-200 rounded-2xl px-4 py-3.5 text-xs font-black uppercase tracking-widest text-gray-500 shadow-sm focus:ring-4 focus:ring-blue-50 outline-none cursor-pointer"
+          />
 
           <button
             onClick={() => navigate('/orders/create')}
@@ -273,7 +316,7 @@ const OrderList = ({ token }) => {
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-2">
                         <div className={`inline-flex items-center px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${getStatusBadgeClass(order.status)} shadow-sm`}>
-                          {getStatusLabel(order.status)}
+                          {translateStatus(getStatusLabel(order.status))}
                         </div>
                         <div className="relative group/status">
                           <select
@@ -287,7 +330,7 @@ const OrderList = ({ token }) => {
                             {Object.entries(STATUS_LABELS)
                               .filter(([code]) => allowedStatuses.has(Number(code)))
                               .map(([code, label]) => (
-                                <option key={code} value={code}>{label}</option>
+                                <option key={code} value={code}>{translateStatus(label)}</option>
                               ))}
                           </select>
                           <button 

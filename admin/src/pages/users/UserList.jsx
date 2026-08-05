@@ -3,6 +3,7 @@ import axios from 'axios'
 import { backendUrl } from '../../App'
 import { toast } from 'react-toastify'
 import ConfirmModal from '../../components/modals/ConfirmModal'
+import { useTranslation } from 'react-i18next'
 
 const PAGE_SIZE = 10;
 
@@ -35,6 +36,7 @@ const RoleBadge = ({ role, onRemove, removing }) => {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 const UserList = ({ token }) => {
+  const { t } = useTranslation()
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')

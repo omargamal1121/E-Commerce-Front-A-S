@@ -26,7 +26,7 @@ export async function placeGuestOrder(payload) {
       headers["X-Guest-Token"] = guestToken;
     }
 
-    const response = await fetch(`${backendUrl}/api/order/guest`, {
+    const response = await fetch(`${backendUrl}/api/Order/guest`, {
       method: "POST",
       headers,
       body: JSON.stringify(payload),

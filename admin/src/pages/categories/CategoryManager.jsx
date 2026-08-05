@@ -3,6 +3,7 @@ import { toast } from "react-toastify";
 import axios from "axios";
 import { backendUrl } from "../../App";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 // Import components
 import AddCategory from "../../components/categories/AddCategory";
@@ -14,6 +15,7 @@ const CategoryManager = ({ token }) => {
   const { categoryId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const searchParams = new URLSearchParams(location.search);
 
   const [activeTab, setActiveTab] = useState("list");
@@ -155,19 +157,19 @@ const CategoryManager = ({ token }) => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <div>
           <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
-            Category Manager
+            {t('categoryManager')}
           </h1>
           <p className="text-gray-500 mt-1 font-medium">
-            Manage your store's product hierarchy and organization
+            {t('categoryManagementSubtitle')}
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <div className="flex bg-gray-100 p-1 rounded-xl">
             {[
-              { id: "list", label: "Categories List", icon: "📋" },
-              { id: "category", label: "View Details", icon: "🔍" },
-              { id: "add", label: editMode ? "Edit Category" : "Add Category", icon: editMode ? "✏️" : "➕" }
+              { id: "list", label: t('categoryList'), icon: "📋" },
+              { id: "category", label: t('viewDetails'), icon: "🔍" },
+              { id: "add", label: editMode ? t('editCategory') : t('addCategory'), icon: editMode ? "✏️" : "➕" }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -190,7 +192,7 @@ const CategoryManager = ({ token }) => {
             onClick={() => navigate('/sub-category')}
             className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-200 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
           >
-            Sub-Category Manager →
+            {t('subCategoryManager')} →
           </button>
         </div>
       </div>
@@ -205,7 +207,7 @@ const CategoryManager = ({ token }) => {
           </div>
           <input
             type="number"
-            placeholder="Quick search by Category ID..."
+            placeholder={t('quickSearchById')}
             value={searchId}
             onChange={(e) => setSearchId(e.target.value)}
             className="flex-1 bg-transparent border-none outline-none focus:ring-0 text-sm font-medium"
@@ -221,7 +223,7 @@ const CategoryManager = ({ token }) => {
             }}
             className="px-4 py-1.5 bg-gray-900 border border-gray-900 text-white text-xs font-bold rounded-lg hover:bg-gray-800 transition-colors"
           >
-            Find
+            {t('find')}
           </button>
         </div>
 
@@ -233,7 +235,7 @@ const CategoryManager = ({ token }) => {
           </div>
           <input
             type="number"
-            placeholder="Jump to SubCategory ID..."
+            placeholder={t('jumpToSubcategory')}
             className="flex-1 bg-transparent border-none outline-none focus:ring-0 text-sm font-medium"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
@@ -252,7 +254,7 @@ const CategoryManager = ({ token }) => {
             }}
             className="px-4 py-1.5 bg-gray-900 border border-gray-900 text-white text-xs font-bold rounded-lg hover:bg-gray-800 transition-colors"
           >
-            Go
+            {t('go')}
           </button>
         </div>
       </div>
@@ -287,8 +289,8 @@ const CategoryManager = ({ token }) => {
             <div className="p-4 md:p-8">
               <div className="mb-8 flex items-center justify-between border-b border-gray-100 pb-4">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">Category Detail View</h2>
-                  <p className="text-sm text-gray-500">Exploring ID: {searchId}</p>
+                  <h2 className="text-xl font-bold text-gray-900">{t('categoryDetailView')}</h2>
+                  <p className="text-sm text-gray-500">{t('exploringId')}: {searchId}</p>
                 </div>
                 <div className="flex gap-2">
                   <select
@@ -296,17 +298,17 @@ const CategoryManager = ({ token }) => {
                     onChange={(e) => setSearchActive(e.target.value)}
                     className="p-2 text-xs font-bold bg-gray-50 border-none rounded-lg focus:ring-2 focus:ring-blue-100"
                   >
-                    <option value="">Status: All</option>
-                    <option value="true">Status: Active</option>
-                    <option value="false">Status: Inactive</option>
+                    <option value="">{t('statusAll')}</option>
+                    <option value="true">{t('statusActive')}</option>
+                    <option value="false">{t('statusInactive')}</option>
                   </select>
                   <select
                     value={searchDeleted}
                     onChange={(e) => setSearchDeleted(e.target.value)}
                     className="p-2 text-xs font-bold bg-gray-50 border-none rounded-lg focus:ring-2 focus:ring-blue-100"
                   >
-                    <option value="">Trash: Exclude</option>
-                    <option value="true">Trash: Include</option>
+                    <option value="">{t('trashExclude')}</option>
+                    <option value="true">{t('trashInclude')}</option>
                   </select>
                 </div>
               </div>

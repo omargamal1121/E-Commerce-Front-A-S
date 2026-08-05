@@ -3,6 +3,7 @@ import { toast } from "react-toastify";
 import axios from "axios";
 import { backendUrl } from "../../App";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 // Import components
 import ProductList from "./ProductList";
@@ -12,6 +13,7 @@ const ProductManager = ({ token }) => {
     const { id } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
     const [activeTab, setActiveTab] = useState("inventory");
 
@@ -34,18 +36,18 @@ const ProductManager = ({ token }) => {
                     </div>
                     <div>
                         <h1 className="text-3xl font-black text-gray-900 tracking-tighter uppercase">
-                            Product Management
+                            {t('productManagement')}
                         </h1>
                         <p className="text-gray-500 font-bold text-[10px] uppercase tracking-[0.3em] mt-1">
-                            Manage your store's inventory and assets
+                            {t('productManagementSubtitle')}
                         </p>
                     </div>
                 </div>
 
                 <div className="flex bg-gray-100 p-1.5 rounded-[24px]">
                     {[
-                        { id: "inventory", label: "Product List", icon: "📦" },
-                        { id: "forge", label: "Add Product", icon: "➕" }
+                        { id: "inventory", label: t('productList'), icon: "📦" },
+                        { id: "forge", label: t('addProduct'), icon: "➕" }
                     ].map((tab) => (
                         <button
                             key={tab.id}

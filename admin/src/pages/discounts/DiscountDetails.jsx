@@ -2,8 +2,10 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import API from "../../services/api";
+import { useTranslation } from "react-i18next";
 
 const DiscountDetails = ({ token }) => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   

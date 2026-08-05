@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Navbar from "./components/layout/Navbar";
 import Sidebar from "./components/layout/Sidebar";
 import { Routes, Route, Navigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 // Dashboard
 import Dashboard from "./pages/dashboard/Dashboard";
 
@@ -34,6 +35,7 @@ import AdminOperations from "./pages/users/AdminOperations";
 
 // Settings
 import Settings from "./pages/settings/Settings";
+
 import Login from "./components/layout/Login";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -50,19 +52,35 @@ const decodeJwtRoles = (jwt) => {
     if (parts.length < 2) return [];
     const base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
     const json = JSON.parse(atob(base64));
+    
+    console.log('JWT payload:', json);
+    
     const rolesClaim =
       json?.role ||
       json?.roles ||
       json?.["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"] ||
       [];
     const roles = Array.isArray(rolesClaim) ? rolesClaim : [rolesClaim];
-    return roles.filter(Boolean).map((r) => String(r).toLowerCase());
+    const normalizedRoles = roles.filter(Boolean).map((r) => String(r).toLowerCase());
+    
+    console.log('Decoded roles:', normalizedRoles);
+    
+    return normalizedRoles;
   } catch {
+    console.log('JWT decode error');
     return [];
   }
 };
 
 function App() {
+  const { t, i18n } = useTranslation();
+
+  // Set document direction based on language
+  useEffect(() => {
+    document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
+    document.documentElement.lang = i18n.language;
+  }, [i18n.language]);
+
   // Migrate any leftover token from localStorage → sessionStorage (one-time)
   useEffect(() => {
     const legacyToken = localStorage.getItem("token");
@@ -75,6 +93,7 @@ function App() {
   const [token, setToken] = useState(sessionStorage.getItem("token") || "");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isDeliveryOnly, setIsDeliveryOnly] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   // Prevents the login page from flashing while we validate / refresh the token
   const [authLoading, setAuthLoading] = useState(true);
 
@@ -91,9 +110,22 @@ function App() {
   useEffect(() => {
     const current = sessionStorage.getItem("token");
     const roles = decodeJwtRoles(current);
+    console.log('User roles from JWT:', roles);
+    
     const delivery =
       roles.includes("deliverycompany") || roles.includes("delivery");
+    const admin = roles.includes("admin") || 
+                 roles.includes("administrator") || 
+                 roles.includes("superadmin"); // Added SuperAdmin support
+    
+    console.log('Role detection:', {
+      roles,
+      isDelivery: delivery,
+      isAdmin: admin
+    });
+    
     setIsDeliveryOnly(Boolean(delivery));
+    setIsAdmin(Boolean(admin));
   }, [token]);
 
   // Validate token on app load — refresh if expired, redirect if unrecoverable
@@ -143,7 +175,7 @@ function App() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4 text-gray-400">
           <div className="w-10 h-10 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
-          <p className="text-sm font-medium">Checking session…</p>
+          <p className="text-sm font-medium">{t('checkingSession')}</p>
         </div>
       </div>
     );
@@ -165,6 +197,7 @@ function App() {
               isOpen={sidebarOpen}
               onClose={() => setSidebarOpen(false)}
               deliveryOnly={isDeliveryOnly}
+              isAdmin={isAdmin}
             />
             <main className="flex-1 w-full mx-auto px-3 sm:px-6 md:px-8 text-gray-700 text-base max-w-screen-lg lg:max-w-[1800px] overflow-x-hidden">
               <Routes>
@@ -190,7 +223,7 @@ function App() {
                     <Route path="/collections" element={<CategoryManager token={token} backendUrl={backendUrl} />} />
                     <Route path="/orders" element={<OrderManager token={token} />} />
                     <Route path="/orders/create" element={<OrderManager token={token} />} />
-                    <Route path="/orders/view/:orderId" element={<OrderDetails token={token} />} />
+                    <Route path="/orders/view/:orderId" element={<OrderDetails token={token} isAdmin={isAdmin} />} />
                     <Route path="/users" element={<UserList token={token} />} />
                     <Route path="/admin-operations" element={<AdminOperations token={token} />} />
                     <Route path="/settings" element={<Settings token={token} />} />

@@ -1,7 +1,10 @@
 import React from 'react';
 import { currency } from '../../App';
+import { useTranslation } from 'react-i18next';
 
 const ViewOrderModal = ({ selectedOrder, setShowViewModal }) => {
+  const { t } = useTranslation();
+
   if (!selectedOrder) return null;
 
   // Normalize core fields
@@ -44,6 +47,22 @@ const ViewOrderModal = ({ selectedOrder, setShowViewModal }) => {
     10: 'Complete',
   };
 
+  const toCamelCase = (str) => {
+    if (!str) return '';
+    let key = str.replace(/\s+/g, '');
+    if (key.includes('Cancelled(U)')) return 'cancelledByUser';
+    if (key.includes('Cancelled(A)')) return 'cancelledByAdmin';
+    if (key.includes('Expired')) return 'paymentExpired';
+    return key.charAt(0).toLowerCase() + key.slice(1);
+  };
+
+  const translateStatus = (label) => {
+    if (!label) return '';
+    const key = toCamelCase(label);
+    return t(key) === key ? label : t(key);
+  };
+
+
   const getStatusColor = (status) => {
     const s = Number(status);
     if ([4, 10].includes(s)) return 'text-green-500 bg-green-50 border-green-100';
@@ -85,7 +104,7 @@ const ViewOrderModal = ({ selectedOrder, setShowViewModal }) => {
                 <div className="flex items-center justify-between mb-8">
                   <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400">Lifecycle Evolution</h4>
                   <div className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest border ${getStatusColor(selectedOrder.status)} shadow-lg`}>
-                    {STATUS_LABELS[selectedOrder.status] || orderStatus}
+                    {translateStatus(STATUS_LABELS[selectedOrder.status] || orderStatus)}
                   </div>
                 </div>
 
@@ -96,7 +115,7 @@ const ViewOrderModal = ({ selectedOrder, setShowViewModal }) => {
                   {[0, 1, 3, 4].map((s) => (
                     <div key={s} className="relative z-10 flex flex-col items-center gap-3">
                       <div className={`w-8 h-8 rounded-full border-4 shadow-sm transition-all duration-500 ${Number(selectedOrder.status) >= s ? "bg-blue-600 border-white scale-125" : "bg-white border-gray-200"}`} />
-                      <span className={`text-[10px] font-black uppercase tracking-tighter ${Number(selectedOrder.status) >= s ? "text-gray-900" : "text-gray-300"}`}>{STATUS_LABELS[s]}</span>
+                      <span className={`text-[10px] font-black uppercase tracking-tighter ${Number(selectedOrder.status) >= s ? "text-gray-900" : "text-gray-300"}`}>{translateStatus(STATUS_LABELS[s])}</span>
                     </div>
                   ))}
                 </div>

@@ -1,6 +1,7 @@
 import React from "react";
 import FormInput from "./FormInput";
-import { toast } from "react-toastify"; // Make sure react-toastify is installed and configured
+import { toast } from "react-toastify";
+import { useTranslation } from "react-i18next";
 
 const ProductForm = ({
   formData,
@@ -15,6 +16,7 @@ const ProductForm = ({
   resetForm,
   previewProducts,
 }) => {
+  const { t } = useTranslation();
   const {
     name,
     description,

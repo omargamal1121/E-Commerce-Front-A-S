@@ -203,6 +203,8 @@ class AuthService {
 
   redirectToLogin() {
     sessionStorage.removeItem("token");
+    sessionStorage.removeItem("refreshToken");
+    sessionStorage.removeItem("roles");
 
     if (window.showToast) {
       window.showToast("Session expired. Please login again.", "error");
@@ -254,6 +256,8 @@ class AuthService {
 
   logout() {
     sessionStorage.removeItem("token");
+    sessionStorage.removeItem("refreshToken");
+    sessionStorage.removeItem("roles");
     window.location.href = "/";
   }
 }

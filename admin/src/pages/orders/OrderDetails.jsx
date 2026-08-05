@@ -3,14 +3,15 @@ import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { backendUrl, currency } from "../../App";
+import { useTranslation } from "react-i18next";
 
-const OrderDetails = ({ token }) => {
+const OrderDetails = ({ token, isAdmin = false }) => {
+  const { t } = useTranslation();
   const { orderId } = useParams();
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showMarkPaidModal, setShowMarkPaidModal] = useState(false);
-  const [transactionId, setTransactionId] = useState("");
   const [markingPaid, setMarkingPaid] = useState(false);
   const [showPaymentLinkModal, setShowPaymentLinkModal] = useState(false);
   const [paymentLink, setPaymentLink] = useState("");
@@ -51,20 +52,14 @@ const OrderDetails = ({ token }) => {
     if (orderId) fetchOrderDetails();
   }, [orderId, token]);
 
-  const handleMarkAsPaid = async () => {
-    // Validate transaction ID if provided
-    if (transactionId && (transactionId.length < 3 || transactionId.length > 100)) {
-      toast.error("Transaction ID must be between 3 and 100 characters if provided");
-      return;
-    }
-
+  const handleMarkAsPaid = async (paymentId) => {
     setMarkingPaid(true);
     try {
       const response = await axios.put(
         `${backendUrl}/api/payment/cash-on-delivery/pay`,
         {
-          paymentId: firstPayment?.id,
-          transactionId: transactionId || null
+          paymentId: paymentId,
+          transactionId: null
         },
         {
           headers: {
@@ -77,7 +72,6 @@ const OrderDetails = ({ token }) => {
       if (response.status === 200) {
         toast.success("Payment marked as paid successfully");
         setShowMarkPaidModal(false);
-        setTransactionId("");
         fetchOrderDetails(); // Refresh order details
       }
     } catch (error) {
@@ -160,9 +154,25 @@ const OrderDetails = ({ token }) => {
   const payments = Array.isArray(order?.payment) ? order.payment : [];
   const firstPayment = payments[0] || null;
   
-  const isCashOnDelivery = firstPayment?.paymentMethod === 'CashOnDelivery';
-  const canMarkAsPaid = isCashOnDelivery && firstPayment?.status !== 'Paid';
+  console.log('OrderDetails Debug:', {
+    isAdmin,
+    firstPayment,
+    paymentMethod: firstPayment?.paymentMethod,
+    paymentMethodId: firstPayment?.paymentMethodId,
+    status: firstPayment?.status
+  });
+  
+  const isCashOnDelivery = firstPayment?.paymentMethod === 'Cash On Delivery' || 
+                           firstPayment?.paymentMethodId === 2; // Based on actual API response
+  const canMarkAsPaid = isAdmin && isCashOnDelivery && firstPayment?.status !== 'Paid';
   const canCreatePayment = firstPayment?.status === 'Pending' || firstPayment?.status === 'Failed' || order.status === 'PendingPayment';
+  
+  console.log('COD Detection:', {
+    isCashOnDelivery,
+    canMarkAsPaid,
+    isAdmin,
+    paymentStatus: firstPayment?.status
+  });
 
   const STATUS_LABELS = {
     "Pending": { label: "Pending", color: "bg-gray-100 text-gray-600 border-gray-200" },
@@ -174,7 +184,20 @@ const OrderDetails = ({ token }) => {
     "PaymentExpired": { label: "Payment Expired", color: "bg-orange-50 text-orange-600 border-orange-100" },
   };
 
+  const toCamelCase = (str) => {
+    if (!str) return '';
+    const formatted = str.replace(/\s+/g, '');
+    return formatted.charAt(0).toLowerCase() + formatted.slice(1);
+  };
+
+  const translateStatus = (label) => {
+    if (!label) return '';
+    const key = toCamelCase(label);
+    return t(key) === key ? label : t(key);
+  };
+
   const currentStatus = STATUS_LABELS[order.statusDisplay] || { label: order.statusDisplay || "Unknown", color: "bg-gray-50 text-gray-400 border-gray-100" };
+
 
   return (
     <div className="flex flex-col gap-8 max-w-[1600px] mx-auto animate-in fade-in duration-700 pb-20">
@@ -189,7 +212,7 @@ const OrderDetails = ({ token }) => {
             <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
               <h1 className="text-xl md:text-3xl font-black text-gray-900 tracking-tighter uppercase">Order #{order.orderNumber}</h1>
               <span className={`px-3 py-1 md:px-4 md:py-1.5 rounded-full text-[9px] md:text-[10px] font-black uppercase tracking-widest border ${currentStatus.color}`}>
-                {currentStatus.label}
+                {translateStatus(currentStatus.label)}
               </span>
             </div>
             <p className="text-gray-400 font-bold text-[9px] md:text-[10px] uppercase tracking-[0.3em] mt-1">Placed on {new Date(order.createdAt).toLocaleDateString()} at {new Date(order.createdAt).toLocaleTimeString()}</p>
@@ -202,7 +225,7 @@ const OrderDetails = ({ token }) => {
               disabled={creatingPayment}
               className="px-6 py-2 md:px-8 md:py-3 bg-blue-600 text-white rounded-[22px] text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg active:scale-95 disabled:opacity-50"
             >
-              {creatingPayment ? 'Creating...' : 'Create Payment'}
+              {creatingPayment ? t('creating') : t('createPayment')}
             </button>
           )}
           {canMarkAsPaid && (
@@ -210,14 +233,14 @@ const OrderDetails = ({ token }) => {
               onClick={() => setShowMarkPaidModal(true)}
               className="px-6 py-2 md:px-8 md:py-3 bg-emerald-600 text-white rounded-[22px] text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg active:scale-95"
             >
-              Mark as Paid
+              {t('markAsPaid')}
             </button>
           )}
           <button onClick={() => window.print()} className="px-6 py-2 md:px-8 md:py-3 bg-gray-50 border border-gray-100 rounded-[22px] text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 transition-all">
-            Print Invoice
+            {t('printInvoice')}
           </button>
           <button onClick={() => navigate('/orders')} className="px-6 py-2 md:px-8 md:py-3 bg-gray-900 text-white rounded-[22px] text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-lg active:scale-95">
-            Back to List
+            {t('backToList')}
           </button>
         </div>
       </div>
@@ -373,7 +396,7 @@ const OrderDetails = ({ token }) => {
                     <div className="grid grid-cols-2 gap-3 md:gap-4 mb-3 md:mb-4">
                       <div>
                         <p className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Payment Method</p>
-                        <p className="text-sm md:text-base font-black text-gray-900 uppercase">{payment.paymentMethod || 'N/A'}</p>
+                        <p className="text-sm md:text-base font-black text-gray-900 uppercase">{translateStatus(payment.paymentMethod || 'N/A')}</p>
                       </div>
                       <div>
                         <p className="text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Payment Status</p>
@@ -384,7 +407,7 @@ const OrderDetails = ({ token }) => {
                             ? 'bg-rose-100 text-rose-600 border-rose-200'
                             : 'bg-amber-100 text-amber-600 border-amber-200'
                         }`}>
-                          {payment.status || 'Pending'}
+                          {translateStatus(payment.status || 'Pending')}
                         </span>
                       </div>
                     </div>
@@ -469,20 +492,20 @@ const OrderDetails = ({ token }) => {
             </div>
             
             <div className="flex flex-col gap-6">
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">
-                  Transaction ID (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={transactionId}
-                  onChange={(e) => setTransactionId(e.target.value)}
-                  placeholder="Enter reference number (3-100 chars)"
-                  className="w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-emerald-50 focus:border-emerald-400 outline-none transition-all text-sm font-medium"
-                />
-                <p className="text-[9px] font-bold text-gray-400 mt-2">
-                  Leave empty if no transaction ID available
+              <div className="bg-gray-50 rounded-2xl p-4">
+                <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2">
+                  {t('paymentDetails')}
                 </p>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-600">{t('paymentId')}</span>
+                  <span className="text-sm font-bold text-gray-900">#{firstPayment?.id}</span>
+                </div>
+                <div className="flex justify-between items-center mt-2">
+                  <span className="text-sm font-medium text-gray-600">{t('amount')}</span>
+                  <span className="text-lg font-black text-gray-900">
+                    {currency} {(firstPayment?.amount || 0).toFixed(2)}
+                  </span>
+                </div>
               </div>
               
               <div className="flex gap-4">
@@ -491,14 +514,14 @@ const OrderDetails = ({ token }) => {
                   disabled={markingPaid}
                   className="flex-1 px-6 py-4 bg-gray-100 hover:bg-gray-200 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50"
                 >
-                  Cancel
+                  {t('cancel')}
                 </button>
                 <button
-                  onClick={handleMarkAsPaid}
+                  onClick={() => handleMarkAsPaid(firstPayment?.id)}
                   disabled={markingPaid}
                   className="flex-1 px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-100 disabled:opacity-50"
                 >
-                  {markingPaid ? 'Processing...' : 'Confirm Payment'}
+                  {markingPaid ? t('processing') : t('confirmPayment')}
                 </button>
               </div>
             </div>

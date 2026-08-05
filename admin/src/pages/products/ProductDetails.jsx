@@ -1,8 +1,10 @@
 import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import ViewProduct from "../../components/products/ViewProduct";
+import { useTranslation } from "react-i18next";
 
 const ProductDetails = ({ token }) => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   return (

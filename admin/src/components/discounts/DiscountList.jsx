@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 const DiscountList = ({
   discounts,
@@ -14,6 +15,7 @@ const DiscountList = ({
   handlePreviousPage,
   handleNextPage,
 }) => {
+  const { t } = useTranslation();
 
   if (loading) return (
     <div className="flex flex-col gap-4">

@@ -3,8 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { backendUrl, currency } from "../../App";
+import { useTranslation } from "react-i18next";
 
 const ViewSubCategory = ({ token, subCategoryId, isActive = null, includeDeleted = null }) => {
+  const { t } = useTranslation();
   const [subCategory, setSubCategory] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { backendUrl } from "../../App";
+import { useTranslation } from "react-i18next";
 
 const AddCollection = ({
   token,
@@ -10,6 +11,7 @@ const AddCollection = ({
   fetchCollections,
   setActiveTab,
 }) => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -78,32 +80,32 @@ const AddCollection = ({
 
   const removeOldImage = async (imgId, isMain = false) => {
     if (!editCollectionId) return;
-    if (!window.confirm("Permanently delete this visual asset?")) return;
+    if (!window.confirm(t("permanentlyDeleteAsset"))) return;
 
     try {
       await axios.delete(
         `${backendUrl}/api/Collection/${editCollectionId}/images/${imgId}`,
         { headers: { Authorization: `Bearer ${token}`, Accept: "text/plain" } }
       );
-      toast.success("Image removed");
+      toast.success(t("imageRemoved"));
       if (isMain) {
         setOldMainImage(null);
       } else {
         setOldImages(prev => prev.filter(img => img.id !== imgId));
       }
     } catch {
-      toast.error("Failed to delete image");
+      toast.error(t("failedDeleteImage"));
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!token) return toast.error("Authentication required");
+    if (!token) return toast.error(t("authRequired"));
 
     const cleanedName = cleanText(name);
     const cleanedDescription = cleanText(description);
 
-    if (!cleanedName || cleanedName.length < 2) return toast.error("Identity name too short");
+    if (!cleanedName || cleanedName.length < 2) return toast.error(t("nameTooShort"));
 
     setLoading(true);
     try {
@@ -164,25 +166,24 @@ const AddCollection = ({
         );
       }
 
-      toast.success(editCollectionMode ? "Repository evolution complete! ✨" : "New collection published! 🚀");
+      toast.success(editCollectionMode ? t("collectionUpdated") : t("collectionCreated"));
       if (typeof fetchCollections === "function") await fetchCollections();
       resetForm();
     } catch (error) {
       console.error(error);
-      toast.error("An error occurred during publication");
+      toast.error(t("errorSaving"));
     } finally {
       setLoading(false);
     }
   };
-
   return (
     <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-top-4 duration-500 pb-20">
       <div className="flex flex-col gap-1">
         <h2 className="text-2xl font-black text-gray-900 tracking-tight">
-          {editCollectionMode ? "Refine Collection" : "Initialize New Collection"}
+          {editCollectionMode ? t("refineCollection") : t("initializeNewCollection")}
         </h2>
         <p className="text-gray-500 font-medium text-sm">
-          {editCollectionMode ? "Update the structural properties of this aggregate" : "Define a new specialized product grouping"}
+          {editCollectionMode ? t("updateCollectionProperties") : t("defineProductGrouping")}
         </p>
       </div>
 
@@ -192,7 +193,7 @@ const AddCollection = ({
           <div className="bg-white rounded-[32px] p-8 border border-gray-100 shadow-sm flex flex-col gap-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="md:col-span-2 flex flex-col gap-2">
-                <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Identity Name</label>
+                <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">{t("identityName")}</label>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -203,7 +204,7 @@ const AddCollection = ({
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Display Rank</label>
+                <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">{t("displayRank")}</label>
                 <input
                   type="number"
                   value={displayOrder}
@@ -215,7 +216,7 @@ const AddCollection = ({
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Narrative Insight</label>
+              <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">{t("narrativeInsight")}</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -232,8 +233,8 @@ const AddCollection = ({
           {/* Main Visual */}
           <div className="bg-white rounded-[32px] p-8 border border-gray-100 shadow-sm flex flex-col gap-6">
             <div className="flex flex-col">
-              <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Hero Visual</label>
-              <p className="text-[11px] text-gray-400 ml-1 mt-0.5 font-bold">The primary identifier for this collection</p>
+              <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">{t("heroVisual")}</label>
+              <p className="text-[11px] text-gray-400 ml-1 mt-0.5 font-bold">{t("primaryCollectionIdentifier")}</p>
             </div>
 
             <div className="relative group">
@@ -249,7 +250,7 @@ const AddCollection = ({
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    <span className="text-sm font-bold">Mount hero visual</span>
+                    <span className="text-sm font-bold">{t("mountHeroVisual")}</span>
                   </div>
                 )}
                 <input
@@ -261,14 +262,14 @@ const AddCollection = ({
               </label>
               {(mainImage || oldMainImage) && (
                 <div className="absolute inset-0 bg-gray-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 pointer-events-auto">
-                  <span className="bg-white/20 backdrop-blur-md text-white text-[10px] font-black uppercase px-4 py-2 rounded-2xl border border-white/30 pointer-events-none">Click to change</span>
+                  <span className="bg-white/20 backdrop-blur-md text-white text-[10px] font-black uppercase px-4 py-2 rounded-2xl border border-white/30 pointer-events-none">{t("clickToChange")}</span>
                   {oldMainImage && !mainImage && (
                     <button
                       type="button"
                       onClick={() => removeOldImage(oldMainImage.id, true)}
                       className="bg-rose-600 text-white text-[10px] font-black uppercase px-4 py-2 rounded-2xl border border-rose-500 hover:bg-rose-700 transition-all shadow-xl active:scale-90"
                     >
-                      Purge Asset
+                      {t("purgeAsset")}
                     </button>
                   )}
                 </div>
@@ -279,8 +280,8 @@ const AddCollection = ({
           {/* Supporting Matrix */}
           <div className="bg-white rounded-[32px] p-8 border border-gray-100 shadow-sm flex flex-col gap-6">
             <div className="flex flex-col">
-              <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Supporting Gallery</label>
-              <p className="text-[11px] text-gray-400 ml-1 mt-0.5 font-bold">Secondary angles or thematic shots</p>
+              <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">{t("supportingGallery")}</label>
+              <p className="text-[11px] text-gray-400 ml-1 mt-0.5 font-bold">{t("secondaryAnglesThematic")}</p>
             </div>
 
             <div className="grid grid-cols-3 gap-3">
@@ -296,7 +297,7 @@ const AddCollection = ({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
-                  <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-gray-900 text-white text-[7px] font-black uppercase rounded-full">Saved</div>
+                  <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-gray-900 text-white text-[7px] font-black uppercase rounded-full">{t("saved")}</div>
                 </div>
               ))}
               {images.map((file, idx) => (
@@ -311,7 +312,7 @@ const AddCollection = ({
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
-                  <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-emerald-500 text-white text-[7px] font-black uppercase rounded-full">New</div>
+                  <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-emerald-500 text-white text-[7px] font-black uppercase rounded-full">{t("new")}</div>
                 </div>
               ))}
               <label className="aspect-square rounded-2xl border-2 border-dashed border-gray-100 flex items-center justify-center text-gray-400 hover:bg-gray-50 cursor-pointer hover:border-rose-300 transition-all">
@@ -337,7 +338,7 @@ const AddCollection = ({
             onClick={resetForm}
             className="px-8 py-4 text-sm font-bold text-gray-400 hover:text-gray-900 transition-colors"
           >
-            Discard Changes
+            {t("discardChanges")}
           </button>
           <button
             type="submit"
@@ -347,10 +348,10 @@ const AddCollection = ({
             {loading ? (
               <>
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Deploying...
+                {t("deploying")}
               </>
             ) : (
-              editCollectionMode ? "Push Evolution" : "Validate & Publish"
+              editCollectionMode ? t("pushEvolution") : t("validatePublish")
             )}
           </button>
         </div>

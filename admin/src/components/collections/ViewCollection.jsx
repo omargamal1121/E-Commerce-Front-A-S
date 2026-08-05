@@ -3,8 +3,10 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { backendUrl } from "../../App";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const ViewCollection = ({ token, collectionId, isActive = null, includeDeleted = null, onUpdateCollection }) => {
+  const { t } = useTranslation();
   const [collection, setCollection] = useState(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);

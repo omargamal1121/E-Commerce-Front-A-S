@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import API from "../../services/api";
 import { toast } from "react-toastify";
+import { useTranslation } from "react-i18next";
 
 const AdminOperations = ({ token }) => {
+    const { t } = useTranslation();
     const [operations, setOperations] = useState([]);
     const [loading, setLoading] = useState(false);
     const [filters, setFilters] = useState({
@@ -11,6 +13,8 @@ const AdminOperations = ({ token }) => {
         userId: "",
         name: "",
         operation: "",
+        startDate: "",
+        endDate: "",
     });
     const [totalPages, setTotalPages] = useState(1);
 
@@ -23,6 +27,8 @@ const AdminOperations = ({ token }) => {
                 userid: filters.userId,
                 name: filters.name,
                 opreation: filters.operation,
+                startDate: filters.startDate,
+                endDate: filters.endDate,
             };
             // Remove empty params
             Object.keys(params).forEach(
@@ -74,7 +80,7 @@ const AdminOperations = ({ token }) => {
             <h1 className="text-2xl font-bold mb-6 text-gray-800">Admin Operations</h1>
 
             {/* Filters */}
-            <form onSubmit={handleSearch} className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+            <form onSubmit={handleSearch} className="mb-6 grid grid-cols-1 md:grid-cols-6 gap-4">
                 <input
                     type="text"
                     name="userId"
@@ -103,6 +109,22 @@ const AdminOperations = ({ token }) => {
                     <option value="2">Delete Operation</option>
                     <option value="3">Undo Delete Operation</option>
                 </select>
+                <input
+                    type="date"
+                    name="startDate"
+                    placeholder="Start Date"
+                    value={filters.startDate}
+                    onChange={handleFilterChange}
+                    className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <input
+                    type="date"
+                    name="endDate"
+                    placeholder="End Date"
+                    value={filters.endDate}
+                    onChange={handleFilterChange}
+                    className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
                 <button
                     type="submit"
                     className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"

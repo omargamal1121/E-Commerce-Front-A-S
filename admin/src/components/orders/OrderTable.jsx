@@ -1,6 +1,7 @@
 import React from 'react';
 import { assets } from '../../assets/assets';
 import { currency } from '../../App';
+import { useTranslation } from 'react-i18next';
 
 const OrderTable = ({
   currentOrders,
@@ -8,6 +9,7 @@ const OrderTable = ({
   handleViewOrder,
   statusHandler
 }) => {
+  const { t } = useTranslation();
   const STATUS_LABELS = {
     0: 'PendingPayment',
     1: 'Confirmed',
@@ -29,6 +31,19 @@ const OrderTable = ({
     if (typeof val === 'string' && val.trim()) return val;
     return 'Pending';
   };
+
+  const toCamelCase = (str) => {
+    if (!str) return '';
+    const formatted = str.replace(/\s+/g, '');
+    return formatted.charAt(0).toLowerCase() + formatted.slice(1);
+  };
+
+  const translateStatus = (label) => {
+    if (!label) return '';
+    const key = toCamelCase(label);
+    return t(key) === key ? label : t(key);
+  };
+
 
   const statusBadgeClass = (label) => {
     const l = String(label).toLowerCase();
@@ -152,13 +167,13 @@ const OrderTable = ({
                         onChange={(e) => statusHandler(orderId, e)}
                       >
                         {Object.entries(STATUS_LABELS).map(([code, label]) => (
-                          <option key={code} value={code}>{label}</option>
+                          <option key={code} value={code}>{translateStatus(label)}</option>
                         ))}
                       </select>
                       <span
                         className={`text-xs px-2 py-0.5 rounded-full ${statusBadgeClass(getStatusLabel(status))}`}
                       >
-                        {getStatusLabel(status)}
+                        {translateStatus(getStatusLabel(status))}
                       </span>
                     </div>
                   </td>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { currency } from '../../App';
 import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next';
 
 const AddOrderForm = ({
   newOrder,
@@ -14,6 +15,7 @@ const AddOrderForm = ({
   loading,
   setShowAddModal
 }) => {
+  const { t } = useTranslation();
   // Calculate total order amount
   const orderTotal = newOrder.products.reduce(
     (total, product) => total + product.price * product.quantity,
@@ -24,7 +26,7 @@ const AddOrderForm = ({
     <form onSubmit={handleAddOrder} className="space-y-6">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Delivery Address *
+          {t("deliveryAddress")} *
         </label>
         <select
           name="addressId"

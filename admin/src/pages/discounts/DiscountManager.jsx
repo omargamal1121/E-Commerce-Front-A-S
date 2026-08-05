@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import API from "../../services/api";
+import { useTranslation } from "react-i18next";
 
 // Sub-components
 import DiscountForm from "../../components/discounts/DiscountForm";
@@ -10,6 +11,7 @@ import BulkDiscountManager from "../../components/products/BulkDiscountManager";
 
 const DiscountManager = ({ token }) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("registry"); // registry | forge | bulk
   
   // Helper to convert UTC to Egypt Local (Africa/Cairo) for datetime-local input
@@ -77,7 +79,7 @@ const DiscountManager = ({ token }) => {
       setDiscounts(data);
       setTotalItems(res?.responseBody?.totalCount || 0);
     } catch (e) {
-      toast.error("Failed to load discounts");
+      toast.error(t('failedToLoadProducts'));
     } finally {
       setLoading(false);
     }
@@ -177,16 +179,16 @@ const DiscountManager = ({ token }) => {
             🏷️
           </div>
           <div>
-            <h1 className="text-3xl font-black text-gray-900 tracking-tighter uppercase">Discounts</h1>
-            <p className="text-gray-400 font-bold text-[10px] uppercase tracking-[0.3em] mt-1">Manage and monitor product discounts</p>
+            <h1 className="text-3xl font-black text-gray-900 tracking-tighter uppercase">{t('discounts')}</h1>
+            <p className="text-gray-400 font-bold text-[10px] uppercase tracking-[0.3em] mt-1">{t('manageProductDiscounts')}</p>
           </div>
         </div>
 
         <div className="flex bg-gray-50 p-2 rounded-[28px] border border-gray-100 shadow-inner">
           {[
-            { id: "registry", label: "Discount List", icon: "📋" },
-            { id: "forge", label: "Create New", icon: "✨" },
-            { id: "bulk", label: "Bulk Actions", icon: "⚡" }
+            { id: "registry", label: t('discountList'), icon: "📋" },
+            { id: "forge", label: t('createNew'), icon: "✨" },
+            { id: "bulk", label: t('bulkActions'), icon: "⚡" }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -213,30 +215,30 @@ const DiscountManager = ({ token }) => {
               <div className="flex flex-col md:flex-row gap-4 w-full">
                 <div className="flex bg-gray-100 p-1.5 rounded-[22px] border border-gray-200 shadow-inner">
                   <div className="flex items-center px-3 border-r border-gray-200">
-                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Filter Status</span>
+                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">{t('filterStatus')}</span>
                   </div>
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
                     className="bg-transparent text-[11px] font-black uppercase tracking-widest px-4 py-2 outline-none cursor-pointer hover:text-purple-600 transition-colors"
                   >
-                    <option value="all">All</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
+                    <option value="all">{t('all')}</option>
+                    <option value="active">{t('active')}</option>
+                    <option value="inactive">{t('inactive')}</option>
                   </select>
                 </div>
                 <div className="flex bg-gray-100 p-1.5 rounded-[22px] border border-gray-200 shadow-inner">
                   <div className="flex items-center px-3 border-r border-gray-200">
-                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Archive</span>
+                    <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">{t('archive')}</span>
                   </div>
                   <select
                     value={deletedFilter}
                     onChange={(e) => setDeletedFilter(e.target.value)}
                     className="bg-transparent text-[11px] font-black uppercase tracking-widest px-4 py-2 outline-none cursor-pointer hover:text-purple-600 transition-colors"
                   >
-                    <option value="not_deleted">Current</option>
-                    <option value="deleted">Archived</option>
-                    <option value="all">Show All</option>
+                    <option value="not_deleted">{t('current')}</option>
+                    <option value="deleted">{t('archived')}</option>
+                    <option value="all">{t('showAll')}</option>
                   </select>
                 </div>
               </div>
@@ -269,10 +271,10 @@ const DiscountManager = ({ token }) => {
                 try {
                   if (editId) await API.discounts.update(editId, formData, token);
                   else await API.discounts.create(formData, token);
-                  toast.success("Discount saved successfully");
+                  toast.success(t('discountSaved'));
                   setActiveTab("registry");
                   fetchDiscounts();
-                } catch (err) { toast.error("Failed to save"); }
+                } catch (err) { toast.error(t('failedToSave')); }
               }}
               resetForm={() => { setEditId(null); setFormData({ name: "", discountPercent: 0, startDate: "", endDate: "", description: "" }); }}
               editMode={!!editId}

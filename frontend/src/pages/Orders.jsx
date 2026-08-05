@@ -20,6 +20,8 @@ const Orders = () => {
   const [modalLoading, setModalLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('All');
   const [sortOrder, setSortOrder] = useState('newest');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   const statusMap = {
     0: 'Pending Payment',
@@ -183,6 +185,8 @@ const Orders = () => {
 
       let queryParams = 'page=1&pageSize=10';
       if (status !== 'All') queryParams += `&status=${status}`;
+      if (startDate) queryParams += `&startDate=${startDate}`;
+      if (endDate) queryParams += `&endDate=${endDate}`;
 
       const headers = {};
       if (token) {
@@ -313,7 +317,7 @@ const Orders = () => {
 
   useEffect(() => {
     loadOrderData();
-  }, [token]);
+  }, [token, startDate, endDate, statusFilter]);
 
   useEffect(() => {
     if (orderData.length > 0) {
@@ -339,7 +343,7 @@ const Orders = () => {
             <label className="text-xs uppercase tracking-widest text-gray-400 font-bold mb-2 block">Status filter</label>
             <select
               value={statusFilter}
-              onChange={(e) => { setStatusFilter(e.target.value); loadOrderData(e.target.value); }}
+              onChange={(e) => setStatusFilter(e.target.value)}
               className="bg-gray-50 border-none rounded-lg px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-black transition-all cursor-pointer"
             >
               <option value="All">All Vibe</option>
@@ -357,6 +361,34 @@ const Orders = () => {
               <option value="oldest">Oldest First</option>
             </select>
           </div>
+          <div>
+            <label className="text-xs uppercase tracking-widest text-gray-400 font-bold mb-2 block">Start Date</label>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="bg-gray-50 border-none rounded-lg px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-black transition-all cursor-pointer"
+            />
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-widest text-gray-400 font-bold mb-2 block">End Date</label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="bg-gray-50 border-none rounded-lg px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-black transition-all cursor-pointer"
+            />
+          </div>
+          {(startDate || endDate) && (
+            <div className="flex items-end">
+              <button
+                onClick={() => { setStartDate(''); setEndDate(''); }}
+                className="bg-red-50 text-red-600 border border-red-200 rounded-lg px-4 py-3 text-sm font-semibold hover:bg-red-100 transition-all cursor-pointer"
+              >
+                Clear Dates
+              </button>
+            </div>
+          )}
         </div>
         <div className="text-sm font-bold text-gray-900 bg-gray-100 px-4 py-2 rounded-full">
           {filteredOrders.length} {filteredOrders.length === 1 ? 'Order' : 'Orders'}

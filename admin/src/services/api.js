@@ -789,7 +789,7 @@ const API = {
   adminOperations: {
     getAll: async (params, token) => {
       try {
-        const response = await axios.get(`${backendUrl}/api/AdminOperation`, {
+        const response = await axios.get(`${backendUrl}/api/adminoperation`, {
           headers: { Authorization: `Bearer ${token}` },
           params: params,
         });

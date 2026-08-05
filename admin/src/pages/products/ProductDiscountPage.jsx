@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import API from "../../services/api";
+import { useTranslation } from "react-i18next";
 
 const ProductDiscountPage = ({ token }) => {
+  const { t } = useTranslation();
   const [products, setProducts] = useState([]);
   const [availableDiscounts, setAvailableDiscounts] = useState([]);
   const [loading, setLoading] = useState(false);

@@ -3,6 +3,7 @@ import { toast } from "react-toastify";
 import axios from "axios";
 import { backendUrl } from "../../App";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 // Import components
 import AddCollection from "../../components/collections/AddCollection";
@@ -10,6 +11,7 @@ import ViewCollection from "../../components/collections/ViewCollection";
 import ListCollection from "../../components/collections/ListCollection";
 
 const CollectionManager = ({ token }) => {
+  const { t } = useTranslation();
   const { collectionId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();

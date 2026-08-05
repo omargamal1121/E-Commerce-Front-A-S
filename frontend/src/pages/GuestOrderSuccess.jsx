@@ -32,14 +32,23 @@ const CheckCircle = () => (
    GuestOrderSuccess
    ════════════════════════════════════════════════════════════════════════════ */
 const GuestOrderSuccess = () => {
-  const { orderNumber } = useParams();
+  const { orderNumber: orderNumberParam } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [orderData, setOrderData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const orderNumber =
+    searchParams.get("orderNumber") ||
+    orderNumberParam ||
+    localStorage.getItem("pendingGuestOrderNumber");
+  const paymentFailed = searchParams.get("paymentFailed") === "1";
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
-      if (!orderNumber) return;
+      if (!orderNumber) {
+        setLoading(false);
+        return;
+      }
 
       try {
         const result = await getGuestOrderByNumber(orderNumber);
@@ -88,6 +97,12 @@ const GuestOrderSuccess = () => {
         <motion.p variants={itemFade} className="text-gray-500 text-sm sm:text-base mb-8">
           Thank you for your purchase. We'll start preparing your order right away. Our team will contact you shortly regarding your order.
         </motion.p>
+
+        {paymentFailed && (
+          <motion.p variants={itemFade} className="text-red-500 text-sm sm:text-base mb-6">
+            Payment could not be initiated. Your order is confirmed, but please contact support to complete payment if needed.
+          </motion.p>
+        )}
 
         {/* ── order number card ── */}
         {orderNumber && (

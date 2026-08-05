@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { backendUrl } from "../../App";
+import { useTranslation } from "react-i18next";
 
 const AddSubCategory = ({
   token,
@@ -23,6 +24,7 @@ const AddSubCategory = ({
   editSubCategoryId = null,
   setSubCategories,
 }) => {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
 
   const cleanText = (text) => text?.replace(/\s+/g, " ").trim();
@@ -44,15 +46,15 @@ const AddSubCategory = ({
     }
 
     if (!editSubCategoryId) return;
-    if (!window.confirm("Delete this image permanently from the cloud?")) return;
+    if (!window.confirm(t("deleteImageCloud"))) return;
 
     try {
       const API = (await import("../../services/api")).default;
       await API.subcategories.deleteImage(editSubCategoryId, imgId, token);
-      toast.success("Image neutralized 💥");
+      toast.success(t("imageRemoved"));
       setSubCategoryImages(prev => prev.filter(img => img.id !== imgId));
     } catch (err) {
-      toast.error("Failed to delete image");
+      toast.error(t("failedDeleteImage"));
     }
   };
 
@@ -64,13 +66,13 @@ const AddSubCategory = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!token) return toast.error("Authentication required");
-    if (!parentCategoryId) return toast.error("Segment must have a parent node");
+    if (!token) return toast.error(t("authRequired"));
+    if (!parentCategoryId) return toast.error(t("mustSelectParent"));
 
     const name = cleanText(subCategoryName);
     const description = cleanText(subCategoryDescription);
 
-    if (!name || name.length < 2) return toast.error("Identity name too short");
+    if (!name || name.length < 2) return toast.error(t("nameTooShort"));
 
     setLoading(true);
 
@@ -129,13 +131,13 @@ const AddSubCategory = ({
         );
       }
 
-      toast.success(editSubCategoryMode ? "Segment evolution complete! ✨" : "New segment published! 🚀");
+      toast.success(editSubCategoryMode ? t("subcategoryUpdated") : t("subcategoryCreated"));
 
       if (typeof fetchSubCategories === "function") await fetchSubCategories();
       resetForm();
     } catch (err) {
       console.error(err);
-      toast.error("An error occurred during publication");
+      toast.error(t("errorSaving"));
     } finally {
       setLoading(false);
     }
@@ -145,10 +147,10 @@ const AddSubCategory = ({
     <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-top-4 duration-500 pb-20">
       <div className="flex flex-col gap-1">
         <h2 className="text-2xl font-black text-gray-900 tracking-tight">
-          {editSubCategoryMode ? "Refine Segment" : "Initialize New Segment"}
+          {editSubCategoryMode ? t("refineSegment") : t("initializeNewSegment")}
         </h2>
         <p className="text-gray-500 font-medium text-sm">
-          {editSubCategoryMode ? "Update the structural properties of this node" : "Define a child node under a primary category"}
+          {editSubCategoryMode ? t("updateSegmentProperties") : t("defineChildNode")}
         </p>
       </div>
 
@@ -158,14 +160,14 @@ const AddSubCategory = ({
           <div className="bg-white rounded-[32px] p-8 border border-gray-100 shadow-sm flex flex-col gap-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Hierarchy Parent</label>
+                <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">{t("hierarchyParent")}</label>
                 <select
                   value={parentCategoryId || ""}
                   onChange={(e) => setParentCategoryId(Number(e.target.value))}
                   className="w-full bg-gray-50/50 border border-gray-100 rounded-2xl px-5 py-3.5 outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-400 transition-all font-bold text-gray-700"
                   required
                 >
-                  <option value="">Select Root Node...</option>
+                  <option value="">{t("selectRootNode")}</option>
                   {categories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
                       {cat.name}
@@ -175,24 +177,25 @@ const AddSubCategory = ({
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Identity Name</label>
+                <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">{t("identityName")}</label>
                 <input
                   value={subCategoryName || ""}
                   onChange={(e) => setSubCategoryName(e.target.value)}
                   className="w-full bg-gray-50/50 border border-gray-100 rounded-2xl px-5 py-3.5 outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-400 transition-all font-bold text-gray-700"
                   placeholder="e.g. Slim Fit Denims"
                   required
-                />
+                >
+                </input>
               </div>
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Narrative Insight</label>
+              <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">{t("narrativeInsight")}</label>
               <textarea
                 value={subCategoryDescription || ""}
                 onChange={(e) => setSubCategoryDescription(e.target.value)}
                 className="w-full bg-gray-50/50 border border-gray-100 rounded-2xl px-5 py-3.5 outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-400 transition-all font-medium text-gray-600 min-h-[120px]"
-                placeholder="Describe the specialized nature of this segment..."
+                placeholder={t("describeSegment")}
               />
             </div>
           </div>
@@ -203,8 +206,8 @@ const AddSubCategory = ({
           {/* Main Visual */}
           <div className="bg-white rounded-[32px] p-8 border border-gray-100 shadow-sm flex flex-col gap-6">
             <div className="flex flex-col">
-              <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Headshot Visual</label>
-              <p className="text-[11px] text-gray-400 ml-1 mt-0.5 font-bold">The primary identifier for this segment</p>
+              <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">{t("headshotVisual")}</label>
+              <p className="text-[11px] text-gray-400 ml-1 mt-0.5 font-bold">{t("primaryIdentifier")}</p>
             </div>
 
             <div className="relative group">
@@ -220,7 +223,7 @@ const AddSubCategory = ({
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    <span className="text-sm font-bold">Mount focal image</span>
+                    <span className="text-sm font-bold">{t("mountFocalImage")}</span>
                   </div>
                 )}
                 <input
@@ -236,8 +239,8 @@ const AddSubCategory = ({
           {/* Additional Visuals */}
           <div className="bg-white rounded-[32px] p-8 border border-gray-100 shadow-sm flex flex-col gap-6">
             <div className="flex flex-col">
-              <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">Supporting Matrix</label>
-              <p className="text-[11px] text-gray-400 ml-1 mt-0.5 font-bold">Secondary angles or detail shots</p>
+              <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">{t("supportingMatrix")}</label>
+              <p className="text-[11px] text-gray-400 ml-1 mt-0.5 font-bold">{t("secondaryAngles")}</p>
             </div>
 
             <div className="grid grid-cols-3 gap-3">
@@ -258,7 +261,7 @@ const AddSubCategory = ({
                     </svg>
                   </button>
                   {img.isNew && (
-                    <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-emerald-500 text-white text-[7px] font-black uppercase rounded-full">New</div>
+                    <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-emerald-500 text-white text-[7px] font-black uppercase rounded-full">{t("new")}</div>
                   )}
                 </div>
               ))}
@@ -285,7 +288,7 @@ const AddSubCategory = ({
             onClick={resetForm}
             className="px-8 py-4 text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors"
           >
-            Clear Data
+            {t("clearData")}
           </button>
           <button
             type="submit"
@@ -295,10 +298,10 @@ const AddSubCategory = ({
             {loading ? (
               <>
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Syncing...
+                {t("syncing")}
               </>
             ) : (
-              editSubCategoryMode ? "Push Updates" : "Validate & Publish"
+              editSubCategoryMode ? t("pushUpdates") : t("validatePublish")
             )}
           </button>
         </div>

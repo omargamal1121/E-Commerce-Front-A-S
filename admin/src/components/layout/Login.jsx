@@ -18,34 +18,58 @@ const Login = ({ setToken }) => {
     setLoading(true);
 
     try {
-      // ✅ Proper API request with correct content type
+      // ✅ Using new staff login endpoint
       const response = await axios.post(
-        `${backendUrl}/api/Account/login`,
+        `${backendUrl}/api/Account/staff/login`,
         { email, password },
         {
           headers: {
-            "Content-Type": "application/json-patch+json",
-            Accept: "text/plain",
+            "Content-Type": "application/json",
+            Accept: "application/json",
           },
         }
       );
 
-      // ✅ Handle API response according to schema
-      const { statuscode, responseBody } = response.data || {};
-      const token = responseBody?.data?.token;
-      const roles = responseBody?.data?.roles || [];
+      console.log("Full response:", response.data);
 
-      if (statuscode === 200 && token) {
+      // ✅ Handle multiple possible response structures
+      const responseData = response.data;
+      
+      // Try structure 1: { success, message, data }
+      let success = responseData?.success;
+      let message = responseData?.message;
+      let data = responseData?.data;
+      
+      // Try structure 2: { responseBody: { data, message } }
+      if (!success && responseData?.responseBody) {
+        success = responseData.statuscode === 200;
+        message = responseData.responseBody?.message;
+        data = responseData.responseBody?.data;
+      }
+      
+      // Try structure 3: Direct token in response
+      if (!data && responseData?.token) {
+        data = responseData;
+        success = true;
+      }
+
+      const token = data?.token || responseData?.token;
+      const refreshToken = data?.refreshToken || responseData?.refreshToken;
+      const roles = data?.roles || responseData?.roles || [];
+
+      console.log("Parsed login data:", { success, message, token, refreshToken, roles });
+
+      if (success && token) {
         setToken(token);
         sessionStorage.setItem("token", token);
+        if (refreshToken) {
+          sessionStorage.setItem("refreshToken", refreshToken);
+        }
         sessionStorage.setItem("roles", JSON.stringify(roles));
-        toast.success(responseBody?.message || "Login successful");
+        toast.success(message || "Login successful");
       } else {
         // Handle backend-provided error messages
-        const errMsg =
-          responseBody?.message ||
-          responseBody?.errors?.messages?.join(", ") ||
-          "Login failed. Please check your credentials.";
+        const errMsg = message || "Login failed. Please check your credentials.";
         toast.error(errMsg);
       }
     } catch (error) {
@@ -61,7 +85,10 @@ const Login = ({ setToken }) => {
 
         switch (status) {
           case 400:
-            toast.error(apiMessage || "Bad Request — please check your input.");
+            toast.error(apiMessage || "Invalid email or password");
+            break;
+          case 403:
+            toast.error(apiMessage || "You do not have permission to access this panel");
             break;
           case 401:
             toast.error(apiMessage || "Unauthorized — invalid email or password.");

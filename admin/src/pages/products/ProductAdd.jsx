@@ -2,8 +2,10 @@ import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { useNavigate, useLocation } from "react-router-dom";
 import API from "../../services/api";
+import { useTranslation } from "react-i18next";
 
 const ProductAdd = ({ token }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
@@ -24,7 +26,7 @@ const ProductAdd = ({ token }) => {
       try {
         const subs = await API.subcategories.getAll(token);
         setSubcategories(subs);
-      } catch (e) { toast.error("Failed to load categories"); }
+      } catch (e) { toast.error(t("failedToLoadCategories")); }
     })();
   }, [token]);
 
@@ -67,7 +69,7 @@ const ProductAdd = ({ token }) => {
             }))
           });
         }
-      } catch (e) { toast.error("Failed to load product details"); }
+      } catch (e) { toast.error(t("failedToLoadProductDetails")); }
     })();
   }, [editId, token]);
 
@@ -105,17 +107,17 @@ const ProductAdd = ({ token }) => {
     }
 
     if (!editId) return;
-    if (!window.confirm("Delete this image permanently?")) return;
+    if (!window.confirm(t("deleteImagePermanently"))) return;
 
     try {
       await API.images.delete(editId, imgId, token);
-      toast.success("Image deleted");
+      toast.success(t("imageDeleted"));
       setPreviews(prev => ({
         ...prev,
         additional: prev.additional.filter(img => img.id !== imgId)
       }));
     } catch {
-      toast.error("Failed to delete image");
+      toast.error(t("failedDeleteImage"));
     }
   };
 
@@ -136,7 +138,7 @@ const ProductAdd = ({ token }) => {
       if (productId && images.main) await API.images.uploadMain(productId, images.main, token);
       if (productId && images.additional.length) await API.images.uploadAdditional(productId, images.additional, token);
 
-      toast.success(editId ? "Product updated successfully" : "Product created successfully");
+      toast.success(editId ? t("productUpdated") : t("productCreated"));
       navigate("/products");
     } catch (err) {
       // Extract the actual server message to give the admin useful feedback
@@ -145,7 +147,7 @@ const ProductAdd = ({ token }) => {
         err?.response?.data?.message ||
         (err?.response?.data?.errors && Object.values(err.response.data.errors).flat()[0]) ||
         err?.message ||
-        "Failed to save product";
+        t("failedToSaveProduct");
       toast.error(serverMsg);
     } finally { setLoading(false); }
   };
@@ -159,30 +161,30 @@ const ProductAdd = ({ token }) => {
           <div className="bg-white p-10 rounded-[48px] border border-gray-100 shadow-sm flex flex-col gap-10">
             <div className="flex items-center gap-4">
               <div className="w-2 h-10 bg-emerald-500 rounded-full" />
-              <h3 className="text-2xl font-black text-gray-900 tracking-tighter uppercase">Product Details</h3>
+              <h3 className="text-2xl font-black text-gray-900 tracking-tighter uppercase">{t("productDetails")}</h3>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="flex flex-col gap-2 md:col-span-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Product Name</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">{t("productName")}</label>
                 <input
                   name="name" value={formData.name} onChange={handleInputChange} required
                   className="w-full bg-gray-50 border border-gray-100 rounded-[24px] px-8 py-4 outline-none focus:ring-8 focus:ring-emerald-50 focus:border-emerald-300 transition-all font-bold text-lg"
-                  placeholder="Enter product name"
+                  placeholder={t("enterProductName")}
                 />
               </div>
 
               <div className="flex flex-col gap-2 md:col-span-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Description</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">{t("description")}</label>
                 <textarea
                   name="description" value={formData.description} onChange={handleInputChange} required
                   className="w-full bg-gray-50 border border-gray-100 rounded-[32px] px-8 py-6 outline-none focus:ring-8 focus:ring-emerald-50 focus:border-emerald-300 transition-all font-medium text-gray-600 min-h-[150px]"
-                  placeholder="Enter product description..."
+                  placeholder={t("enterProductDescription")}
                 />
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Price</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">{t("price")}</label>
                 <input
                   name="price" type="number" value={formData.price} onChange={handleInputChange} required
                   className="w-full bg-gray-50 border border-gray-100 rounded-[24px] px-8 py-4 outline-none focus:ring-8 focus:ring-emerald-50 focus:border-emerald-300 transition-all font-black text-xl"
@@ -191,42 +193,42 @@ const ProductAdd = ({ token }) => {
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Subcategory</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">{t("subcategory")}</label>
                 <select
                   name="subcategoryid" value={formData.subcategoryid} onChange={handleInputChange} required
                   className="w-full bg-gray-50 border border-gray-100 rounded-[24px] px-8 py-4 outline-none focus:ring-8 focus:ring-emerald-50 focus:border-emerald-300 transition-all font-bold"
                 >
-                  <option value="">Select Subcategory</option>
+                  <option value="">{t("selectSubcategoryOption")}</option>
                   {subcategories.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Fit Type</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">{t("fitType")}</label>
                 <select
                   name="fitType" value={formData.fitType} onChange={handleInputChange} required
                   className="w-full bg-gray-50 border border-gray-100 rounded-[24px] px-8 py-4 outline-none focus:ring-8 focus:ring-emerald-50 focus:border-emerald-300 transition-all font-bold"
                 >
-                  <option value="">Select Fit Type</option>
-                  <option value="1">Slim</option>
-                  <option value="2">Regular</option>
-                  <option value="3">Oversized</option>
-                  <option value="4">Skinny</option>
-                  <option value="5">Loose</option>
+                  <option value="">{t("selectFitTypeOption")}</option>
+                  <option value="1">{t("slim")}</option>
+                  <option value="2">{t("regular")}</option>
+                  <option value="3">{t("oversized")}</option>
+                  <option value="4">{t("skinny")}</option>
+                  <option value="5">{t("loose")}</option>
                 </select>
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">Gender</label>
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">{t("gender")}</label>
                 <select
                   name="gender" value={formData.gender} onChange={handleInputChange} required
                   className="w-full bg-gray-50 border border-gray-100 rounded-[24px] px-8 py-4 outline-none focus:ring-8 focus:ring-emerald-50 focus:border-emerald-300 transition-all font-bold"
                 >
-                  <option value="">Select Gender</option>
-                  <option value="0">Man</option>
-                  <option value="1">Woman</option>
-                  <option value="2">Kids</option>
-                  <option value="3">Uni</option>
+                  <option value="">{t("selectGenderOption")}</option>
+                  <option value="0">{t("man")}</option>
+                  <option value="1">{t("woman")}</option>
+                  <option value="2">{t("kids")}</option>
+                  <option value="3">{t("uni")}</option>
                 </select>
               </div>
             </div>
@@ -238,14 +240,14 @@ const ProductAdd = ({ token }) => {
         <div className="lg:col-span-4 flex flex-col gap-8">
           {/* Main Visual Uplink */}
           <div className="bg-emerald-900 p-10 rounded-[48px] shadow-2xl shadow-emerald-900/20 text-white flex flex-col gap-8">
-            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400">Primary Image</h4>
+            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-emerald-400">{t("primaryImage")}</h4>
             <div className="relative aspect-square rounded-[40px] bg-white/5 border-2 border-dashed border-white/10 flex items-center justify-center overflow-hidden group">
               {previews.main ? (
                 <img src={previews.main} className="w-full h-full object-cover" alt="" />
               ) : (
                 <div className="text-center p-6">
                   <div className="text-4xl mb-4 opacity-30">📸</div>
-                  <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Upload Main Photo</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-40">{t("uploadMainPhoto")}</p>
                 </div>
               )}
               <input type="file" onChange={handleMainImageChange} className="absolute inset-0 opacity-0 cursor-pointer" accept="image/*" />
@@ -257,7 +259,7 @@ const ProductAdd = ({ token }) => {
 
           {/* Gallery Assets */}
           <div className="bg-white p-8 rounded-[48px] border border-gray-100 shadow-sm flex flex-col gap-6">
-            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 px-2">Gallery Images</h4>
+            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 px-2">{t("galleryImages")}</h4>
             <div className="grid grid-cols-3 gap-3">
               {previews.additional.map((img, idx) => (
                 <div key={idx} className="relative aspect-square rounded-[24px] overflow-hidden bg-gray-50 border border-gray-100 shadow-inner group">
@@ -291,14 +293,14 @@ const ProductAdd = ({ token }) => {
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : null}
-              {editId ? "Update Product" : "Create Product"}
+              {editId ? t("updateProduct") : t("saveProduct")}
             </button>
             <button
               type="button"
               onClick={() => navigate("/products")}
               className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-rose-500 transition-colors"
             >
-              Cancel
+              {t("cancel")}
             </button>
           </div>
         </div>

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { backendUrl } from "../../App";
+import { useTranslation } from "react-i18next";
 
 // Reuse existing components (no logic changes)
 import AddSubCategory from "../../components/categories/AddSubCategory";
@@ -10,6 +11,7 @@ import ListSubCategory from "../../components/categories/ListSubCategory";
 import ViewSubCategory from "../../components/categories/ViewSubCategory";
 
 const SubCategoryManager = ({ token }) => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("sub-list");
   const navigate = useNavigate();
 

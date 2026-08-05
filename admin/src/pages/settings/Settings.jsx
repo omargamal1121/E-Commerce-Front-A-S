@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import { backendUrl, currency } from '../../App'
 import { toast } from 'react-toastify'
+import { useTranslation } from 'react-i18next'
 
 const Settings = ({ token }) => {
+  const { t } = useTranslation()
   // Store settings
   const [storeSettings, setStoreSettings] = useState({
     storeName: 'Fashion Store',

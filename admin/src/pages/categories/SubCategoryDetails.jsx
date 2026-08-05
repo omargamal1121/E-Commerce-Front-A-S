@@ -6,8 +6,10 @@ import { backendUrl } from "../../App";
 import ViewSubCategory from "../../components/categories/ViewSubCategory";
 import AddSubCategory from "../../components/categories/AddSubCategory";
 import ListSubCategory from "../../components/categories/ListSubCategory";
+import { useTranslation } from "react-i18next";
 
 const SubCategoryDetails = ({ token }) => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const [activeTab, setActiveTab] = useState("view");
   const [hasInitializedFromUrl, setHasInitializedFromUrl] = useState(false);

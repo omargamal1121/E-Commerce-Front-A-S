@@ -2,8 +2,10 @@ import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "react-toastify";
 import { useLocation } from "react-router-dom";
 import API from "../../services/api";
+import { useTranslation } from "react-i18next";
 
 const BulkDiscountManager = ({ token }) => {
+  const { t } = useTranslation();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const initialDiscountId = queryParams.get("discountId");

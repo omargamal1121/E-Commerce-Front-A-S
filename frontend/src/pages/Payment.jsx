@@ -5,13 +5,18 @@ import Title from '../components/Title';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { getGuestToken } from '../utils/guestSession';
-import { getAuthHeaders } from '../utils/apiUtils';
 
 const Payment = () => {
     const { orderNumber } = useParams();
     const { backendUrl, token, currency } = useContext(ShopContext);
     const navigate = useNavigate();
     const guestToken = getGuestToken();
+    const buildAuthHeaders = (additionalHeaders = {}) => {
+        const headers = { "Content-Type": "application/json", ...additionalHeaders };
+        if (token) return { ...headers, Authorization: `Bearer ${token}` };
+        if (guestToken) return { ...headers, "X-Guest-Token": guestToken };
+        return headers;
+    };
 
     const [orderData, setOrderData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -33,7 +38,7 @@ const Payment = () => {
             setLoading(true);
             const endpoint = token ? `/api/Order/number/${orderNumber}` : `/api/Order/guest/number/${orderNumber}`;
             const response = await axios.get(`${backendUrl}${endpoint}`, {
-                headers: getAuthHeaders()
+                headers: buildAuthHeaders()
             });
             if (response.data.statuscode === 200) {
                 setOrderData(response.data.responseBody.data);
@@ -99,12 +104,11 @@ const Payment = () => {
             };
 
             const paymentResponse = await axios.post(
-                `${backendUrl}/api/Payment`,
+                `${backendUrl}/api/payment`,
                 paymentData,
                 {
                     headers: {
-                        ...getAuthHeaders(),
-                        "Content-Type": "application/json",
+                        ...buildAuthHeaders(),
                     },
                 }
             );
@@ -167,7 +171,7 @@ const Payment = () => {
             const response = await axios.put(
                 `${backendUrl}/api/Order/${orderId}/status?status=5`,
                 {},
-                { headers: getAuthHeaders() }
+                { headers: buildAuthHeaders() }
             );
 
             if (response.data?.success || response.status === 200) {

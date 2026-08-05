@@ -3,8 +3,10 @@ import { toast } from "react-toastify";
 import API from "../../services/api";
 import { currency } from "../../App";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const ViewProduct = ({ token, productId }) => {
+  const { t } = useTranslation();
   const [product, setProduct] = useState(null);
   const [variants, setVariants] = useState([]);
   const [collections, setCollections] = useState([]);

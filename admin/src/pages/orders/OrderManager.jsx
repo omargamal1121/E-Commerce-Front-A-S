@@ -3,6 +3,7 @@ import { toast } from "react-toastify";
 import axios from "axios";
 import { backendUrl } from "../../App";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 // Import components
 import OrderList from "./OrderList";
@@ -11,6 +12,7 @@ import OrderCreate from "./OrderCreate";
 const OrderManager = ({ token }) => {
     const location = useLocation();
     const navigate = useNavigate();
+    const { t } = useTranslation();
 
     const [activeTab, setActiveTab] = useState("list");
 
@@ -29,17 +31,17 @@ const OrderManager = ({ token }) => {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                 <div>
                     <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
-                        Orders
+                        {t('ordersManagement')}
                     </h1>
                     <p className="text-gray-500 mt-1 font-medium">
-                        View and manage customer orders and fulfillment
+                        {t('ordersManagementSubtitle')}
                     </p>
                 </div>
 
                 <div className="flex bg-gray-100 p-1 rounded-xl">
                     {[
-                        { id: "list", label: "Orders", icon: "📦" },
-                        { id: "create", label: "New Order", icon: "➕" }
+                        { id: "list", label: t('ordersList'), icon: "📦" },
+                        { id: "create", label: t('newOrder'), icon: "➕" }
                     ].map((tab) => (
                         <button
                             key={tab.id}

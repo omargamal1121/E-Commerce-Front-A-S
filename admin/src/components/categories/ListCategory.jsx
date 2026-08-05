@@ -2,12 +2,14 @@ import React, { useState, useEffect, useCallback } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { backendUrl } from "../../App";
+import { useTranslation } from "react-i18next";
 
 const ListCategory = ({
   token,
   handleEditCategory,
   handleViewCategory,
 }) => {
+  const { t } = useTranslation();
   const [categories, setCategories] = useState([]);
   const [search, setSearch] = useState("");
   const [isActive, setIsActive] = useState("");

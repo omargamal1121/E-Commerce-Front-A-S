@@ -9,6 +9,7 @@ const CheckoutModeSelector = () => {
 
   const handleGuestCheckout = () => {
     setGuestCheckoutMode(true);
+    navigate('/guest-checkout');
   };
 
   const handleLogin = () => {
