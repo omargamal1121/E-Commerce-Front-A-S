@@ -227,6 +227,15 @@ const OrderList = ({ token }) => {
             className="bg-white border border-gray-200 rounded-2xl px-4 py-3.5 text-xs font-black uppercase tracking-widest text-gray-500 shadow-sm focus:ring-4 focus:ring-blue-50 outline-none cursor-pointer"
           />
 
+          {(startDate || endDate) && (
+            <button
+              onClick={() => { setStartDate(''); setEndDate(''); }}
+              className="px-4 py-3.5 bg-red-50 text-red-600 rounded-2xl text-xs font-black uppercase tracking-widest shadow-sm hover:bg-red-100 transition-all"
+            >
+              Clear
+            </button>
+          )}
+
           <button
             onClick={() => navigate('/orders/create')}
             className="px-8 py-3.5 bg-blue-600 text-white rounded-2xl text-sm font-black hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 flex items-center gap-2"

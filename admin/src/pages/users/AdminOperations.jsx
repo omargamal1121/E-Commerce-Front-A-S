@@ -60,7 +60,7 @@ const AdminOperations = ({ token }) => {
 
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
-        setFilters((prev) => ({ ...prev, [name]: value }));
+        setFilters((prev) => ({ ...prev, [name]: value, page: 1 })); // Reset to page 1 on any filter change
     };
 
     const handleSearch = (e) => {
@@ -75,12 +75,28 @@ const AdminOperations = ({ token }) => {
         }
     };
 
+    const clearFilters = () => {
+        setFilters({
+            page: 1,
+            pageSize: 10,
+            userId: "",
+            name: "",
+            operation: "",
+            startDate: "",
+            endDate: "",
+        });
+    };
+
+    const clearDateFilters = () => {
+        setFilters(prev => ({ ...prev, startDate: '', endDate: '', page: 1 }));
+    };
+
     return (
         <div className="p-6 bg-white rounded-lg shadow-sm">
             <h1 className="text-2xl font-bold mb-6 text-gray-800">Admin Operations</h1>
 
             {/* Filters */}
-            <form onSubmit={handleSearch} className="mb-6 grid grid-cols-1 md:grid-cols-6 gap-4">
+            <form onSubmit={handleSearch} className="mb-6 grid grid-cols-1 md:grid-cols-8 gap-4">
                 <input
                     type="text"
                     name="userId"
@@ -125,11 +141,27 @@ const AdminOperations = ({ token }) => {
                     onChange={handleFilterChange}
                     className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
+                {(filters.startDate || filters.endDate) && (
+                    <button
+                        type="button"
+                        onClick={clearDateFilters}
+                        className="px-6 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100 transition-colors"
+                    >
+                        Clear Dates
+                    </button>
+                )}
                 <button
                     type="submit"
                     className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                 >
                     Search
+                </button>
+                <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                    Clear All
                 </button>
             </form>
 
