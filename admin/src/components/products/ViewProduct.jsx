@@ -137,11 +137,7 @@ const ViewProduct = ({ token, productId }) => {
     if (!window.confirm("Are you sure you want to remove the discount from this product?")) return;
     setActionLoading(true);
     try {
-      if (product.discount?.id) {
-        await API.discounts.removeDiscountFromProduct(product.discount.id, product.id, token);
-      } else {
-        await API.products.removeDiscount(product.id, token);
-      }
+      await API.products.removeDiscount(product.id, token);
       toast.success("Discount removed");
       fetchProduct();
     } catch {

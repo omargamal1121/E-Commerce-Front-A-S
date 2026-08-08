@@ -60,7 +60,7 @@ const DiscountDetails = ({ token }) => {
     if (!window.confirm("Remove discount from this product?")) return;
     setRemoveProductLoading(productId);
     try {
-      await API.discounts.removeDiscountFromProduct(id, productId, token);
+      await API.discounts.removeDiscountFromProduct(productId, token);
       toast.success("Discount removed from product");
       fetchDetails();
     } catch (e) {
