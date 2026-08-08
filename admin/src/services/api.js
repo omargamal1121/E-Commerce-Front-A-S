@@ -771,12 +771,13 @@ const API = {
       }
     },
 
-    removeDiscountFromProduct: async (productId, token) => {
+    removeDiscountFromProduct: async (discountId, productId, token) => {
       try {
         const response = await axios.delete(
-          `${backendUrl}/api/Products/${productId}/Discount`,
+          `${backendUrl}/api/Products/Discount/${discountId}/Products`,
           {
             headers: { Authorization: `Bearer ${token}` },
+            params: { productId },
           }
         );
         return response.data;

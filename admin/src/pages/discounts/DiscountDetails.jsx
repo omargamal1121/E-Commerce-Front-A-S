@@ -10,6 +10,7 @@ const DiscountDetails = ({ token }) => {
   const navigate = useNavigate();
   
   const [data, setData] = useState(null);
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toggleLoading, setToggleLoading] = useState(false);
   const [removeProductLoading, setRemoveProductLoading] = useState(null);
@@ -20,6 +21,14 @@ const DiscountDetails = ({ token }) => {
       const res = await API.discounts.getById(id, token);
       const discountData = res?.responseBody?.data || res?.data;
       setData(discountData);
+      
+      try {
+        const prodRes = await API.discounts.getProductsByDiscount(id, token);
+        setProducts(prodRes?.responseBody?.data || prodRes?.data || []);
+      } catch (prodErr) {
+        console.error("Failed to load products for discount:", prodErr);
+        setProducts([]);
+      }
     } catch (e) {
       toast.error("Failed to load discount details");
       navigate("/discounts");
@@ -51,7 +60,7 @@ const DiscountDetails = ({ token }) => {
     if (!window.confirm("Remove discount from this product?")) return;
     setRemoveProductLoading(productId);
     try {
-      await API.discounts.removeDiscountFromProduct(productId, token);
+      await API.discounts.removeDiscountFromProduct(id, productId, token);
       toast.success("Discount removed from product");
       fetchDetails();
     } catch (e) {
@@ -183,13 +192,13 @@ const DiscountDetails = ({ token }) => {
                 </div>
               </div>
               <span className="px-4 py-2 bg-purple-50 text-purple-600 rounded-xl text-xs font-black uppercase tracking-[0.2em]">
-                {data.products?.length || 0} Products
+                {products?.length || 0} Products
               </span>
             </div>
 
             <div className="divide-y divide-gray-50">
-              {data.products && data.products.length > 0 ? (
-                data.products.map((product) => (
+              {products && products.length > 0 ? (
+                products.map((product) => (
                   <div key={product.id} className="p-8 hover:bg-gray-50/50 transition-colors flex items-center justify-between group">
                     <div className="flex items-center gap-6">
                       <div className="w-20 h-20 bg-gray-100 rounded-3xl overflow-hidden shadow-sm flex-shrink-0 group-hover:scale-110 transition-transform duration-500">

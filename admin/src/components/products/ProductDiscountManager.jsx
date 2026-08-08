@@ -107,7 +107,11 @@ const ProductDiscountManager = ({ productId, token }) => {
     setLoading(true);
     try {
       // Use DELETE endpoint to remove discount
-      await API.products.removeDiscount(productId, token);
+      if (discountInfo?.id) {
+        await API.discounts.removeDiscountFromProduct(discountInfo.id, productId, token);
+      } else {
+        await API.products.removeDiscount(productId, token);
+      }
       toast.success("Discount removed");
       setDiscountInfo(null);
     } catch (error) {

@@ -50,7 +50,11 @@ const ProductDiscountPage = ({ token }) => {
 
   const handleRemove = async () => {
     try {
-      await API.products.removeDiscount(selectedProductId, token);
+      if (currentDiscount?.id) {
+        await API.discounts.removeDiscountFromProduct(currentDiscount.id, selectedProductId, token);
+      } else {
+        await API.products.removeDiscount(selectedProductId, token);
+      }
       toast.success("Discount removed successfully");
       setCurrentDiscount(null);
     } catch (e) { toast.error("Failed to remove discount"); }
