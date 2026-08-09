@@ -15,8 +15,8 @@ const ListCollection = ({
   const [collections, setCollections] = useState([]);
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
-  const [isActive, setIsActive] = useState("");
-  const [isDeleted, setIsDeleted] = useState("");
+  const [isActive, setIsActive] = useState("true");
+  const [isDeleted, setIsDeleted] = useState("false");
   const [page, setPage] = useState(1);
   const [pageSize] = useState(12);
   const [totalPages, setTotalPages] = useState(1);
@@ -81,7 +81,7 @@ const ListCollection = ({
         setCollections([]);
         setTotalPages(1);
       } else {
-        toast.error("Failed to load inventory repository");
+        toast.error(t('failedToLoadCollection'));
       }
     } finally {
       setLoading(false);
@@ -104,9 +104,9 @@ const ListCollection = ({
           col.id === id ? { ...col, isDeleted: true, wasDeleted: true } : col
         )
       );
-      toast.success("Collection moved to internal archive");
+      toast.success(t('collectionDeleted'));
     } catch (error) {
-      toast.error("Archive operation failed");
+      toast.error(t('deleteFailed'));
     } finally {
       setDeleteLoading(false);
       setDeleteId(null);
@@ -120,10 +120,10 @@ const ListCollection = ({
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      toast.success("Collection restored to active registry");
+      toast.success(t('collectionRestored'));
       fetchCollections();
     } catch (error) {
-      toast.error("Restoration sequence failed");
+      toast.error(t('restoreFailed'));
     }
   };
 

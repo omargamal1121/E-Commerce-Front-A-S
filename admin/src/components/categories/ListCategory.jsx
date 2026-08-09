@@ -12,8 +12,8 @@ const ListCategory = ({
   const { t } = useTranslation();
   const [categories, setCategories] = useState([]);
   const [search, setSearch] = useState("");
-  const [isActive, setIsActive] = useState("");
-  const [isDeleted, setIsDeleted] = useState("");
+  const [isActive, setIsActive] = useState("true");
+  const [isDeleted, setIsDeleted] = useState("false");
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
@@ -104,9 +104,9 @@ const ListCategory = ({
         )
       );
 
-      toast.success("Category moved to trash");
+      toast.success(t('categoryDeleted'));
     } catch {
-      toast.error("Failed to delete category");
+      toast.error(t('deleteFailed'));
     } finally {
       setDeleteLoading(false);
       setDeleteId(null);
@@ -114,15 +114,15 @@ const ListCategory = ({
   };
 
   const activateCategory = async (cat) => {
-    if (!cat.mainImage) return toast.error("Upload a main image first!");
+    if (!cat.mainImage) return toast.error(t('uploadMainImage'));
     try {
       await axios.patch(`${backendUrl}/api/categories/${cat.id}/activate`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast.success("Category is now live! ✨");
+      toast.success(t('categoryUpdated'));
       fetchCategories();
     } catch {
-      toast.error("Activation failed");
+      toast.error(t('updateFailed'));
     }
   };
 
@@ -132,10 +132,10 @@ const ListCategory = ({
         headers: { Authorization: `Bearer ${token}` },
         params: { isActive: false },
       });
-      toast.info("Category hidden from customers");
+      toast.info(t('inactive'));
       fetchCategories();
     } catch {
-      toast.error("Deactivation failed");
+      toast.error(t('updateFailed'));
     }
   };
 
@@ -144,10 +144,10 @@ const ListCategory = ({
       await axios.patch(`${backendUrl}/api/categories/${id}/restore`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      toast.success("Category restored from trash");
+      toast.success(t('categoryRestored'));
       fetchCategories();
     } catch {
-      toast.error("Restore failed");
+      toast.error(t('restoreFailed'));
     }
   };
 

@@ -2,11 +2,65 @@ import React, { useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { backendUrl } from "../../App";
+import { useTranslation } from "react-i18next";
 
 const Login = ({ setToken }) => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    if (!forgotEmail) {
+      toast.warn(t('pleaseEnterEmail'));
+      return;
+    }
+
+    setForgotLoading(true);
+
+    try {
+      const response = await axios.post(
+        `${backendUrl}/api/Account/forgot-password`,
+        { email: forgotEmail },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        }
+      );
+
+      console.log("Forgot password response:", response.data);
+
+      // Show success message to check email
+      toast.success(t('resetLinkSent'));
+      setForgotEmail("");
+      setShowForgotPassword(false);
+    } catch (error) {
+      console.error("Forgot Password Error:", error);
+
+      if (error.response) {
+        const { status, data } = error.response;
+        const apiMessage =
+          data?.responseBody?.message ||
+          data?.responseBody?.errors?.messages?.join(", ") ||
+          data?.message ||
+          "Unexpected error occurred.";
+
+        toast.error(apiMessage || t('failedToSendResetLink'));
+      } else if (error.request) {
+        toast.error("No response from the server. Please check your connection.");
+      } else {
+        toast.error(`Error setting up the request: ${error.message}`);
+      }
+    } finally {
+      setForgotLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -120,43 +174,89 @@ const Login = ({ setToken }) => {
       <div className="bg-white shadow-md rounded-lg px-8 py-6 max-w-md w-full">
         <h1 className="text-2xl font-bold mb-4 text-center">Admin Panel</h1>
 
-        <form onSubmit={handleSubmit}>
-          <div className="mb-3">
-            <p className="text-sm font-medium text-gray-700 mb-2">Email Address</p>
-            <input
-              type="email"
-              className="rounded-md w-full px-3 py-2 border border-gray-300 outline-none"
-              placeholder="Enter Email Address"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={loading}
-            />
-          </div>
+        {!showForgotPassword ? (
+          <form onSubmit={handleSubmit}>
+            <div className="mb-3">
+              <p className="text-sm font-medium text-gray-700 mb-2">{t('userEmail')}</p>
+              <input
+                type="email"
+                className="rounded-md w-full px-3 py-2 border border-gray-300 outline-none"
+                placeholder={t('userEmail')}
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
+              />
+            </div>
 
-          <div className="mb-3">
-            <p className="text-sm font-medium text-gray-700 mb-2">Password</p>
-            <input
-              type="password"
-              className="rounded-md w-full px-3 py-2 border border-gray-300 outline-none"
-              placeholder="Enter Password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
-            />
-          </div>
+            <div className="mb-3">
+              <p className="text-sm font-medium text-gray-700 mb-2">{t('password')}</p>
+              <input
+                type="password"
+                className="rounded-md w-full px-3 py-2 border border-gray-300 outline-none"
+                placeholder={t('password')}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+              />
+            </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className={`${
-              loading ? "bg-gray-400 cursor-not-allowed" : "bg-black hover:bg-gray-800"
-            } text-white px-4 py-2 rounded-md w-full transition`}
-          >
-            {loading ? "Logging in..." : "Login"}
-          </button>
-        </form>
+            <div className="mb-4 text-right">
+              <button
+                type="button"
+                onClick={() => setShowForgotPassword(true)}
+                className="text-sm text-blue-600 hover:text-blue-800 underline"
+              >
+                {t('forgotPassword')}
+              </button>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className={`${
+                loading ? "bg-gray-400 cursor-not-allowed" : "bg-black hover:bg-gray-800"
+              } text-white px-4 py-2 rounded-md w-full transition`}
+            >
+              {loading ? t('loading') : t('login')}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleForgotPassword}>
+            <div className="mb-4">
+              <p className="text-sm font-medium text-gray-700 mb-2">{t('enterEmailToReset')}</p>
+              <input
+                type="email"
+                className="rounded-md w-full px-3 py-2 border border-gray-300 outline-none"
+                placeholder={t('email')}
+                required
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
+                disabled={forgotLoading}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={forgotLoading}
+              className={`${
+                forgotLoading ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+              } text-white px-4 py-2 rounded-md w-full transition mb-3`}
+            >
+              {forgotLoading ? t('sending') : t('sendResetLink')}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowForgotPassword(false)}
+              disabled={forgotLoading}
+              className="text-gray-600 hover:text-gray-800 w-full text-sm underline"
+            >
+              {t('backToLogin')}
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );

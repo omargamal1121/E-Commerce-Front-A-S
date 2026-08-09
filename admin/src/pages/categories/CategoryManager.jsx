@@ -37,15 +37,15 @@ const CategoryManager = ({ token }) => {
   // search states for ViewCategory
   const [searchId, setSearchId] = useState(categoryId || "");
   const [searchActive, setSearchActive] = useState(
-    searchParams.get("isActive") || ""
+    searchParams.get("isActive") || "true"
   );
   const [searchDeleted, setSearchDeleted] = useState(
-    searchParams.get("includeDeleted") || ""
+    searchParams.get("includeDeleted") || "false"
   );
 
   useEffect(() => {
     if (!token) {
-      toast.error("Please login again.");
+      toast.error(t('authRequired'));
       return;
     }
   }, [token]);
@@ -86,7 +86,7 @@ const CategoryManager = ({ token }) => {
               setImages(cat.images.filter((img) => !img.isMain));
             }
           } catch (err) {
-            toast.error("Failed to load category details");
+            toast.error(t('failedToLoadCategory'));
           }
         };
 
@@ -217,7 +217,7 @@ const CategoryManager = ({ token }) => {
           />
           <button
             onClick={() => {
-              if (!searchId) return toast.error("Enter category ID");
+              if (!searchId) return toast.error(t('searchCategory'));
               setActiveTab("category");
               navigate(`/category/view/${searchId}`);
             }}
@@ -240,7 +240,7 @@ const CategoryManager = ({ token }) => {
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 const val = e.currentTarget.value;
-                if (!val) return toast.error("Enter subcategory ID");
+                if (!val) return toast.error(t('searchCategory'));
                 navigate(`/subcategories/${val}`);
               }
             }}
@@ -249,7 +249,7 @@ const CategoryManager = ({ token }) => {
             onClick={(e) => {
               const input = (e.currentTarget.previousElementSibling);
               const val = input && 'value' in input ? input.value : '';
-              if (!val) return toast.error("Enter subcategory ID");
+              if (!val) return toast.error(t('searchCategory'));
               navigate(`/subcategories/${val}`);
             }}
             className="px-4 py-1.5 bg-gray-900 border border-gray-900 text-white text-xs font-bold rounded-lg hover:bg-gray-800 transition-colors"

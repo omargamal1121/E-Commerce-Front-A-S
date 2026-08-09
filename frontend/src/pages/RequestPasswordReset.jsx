@@ -1,11 +1,13 @@
 import React, { useState, useContext } from "react";
 import { ShopContext } from "../context/ShopContext";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom"; // 👈 استدعاء useNavigate
+import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 const RequestPasswordReset = () => {
+  const { t } = useTranslation();
   const { backendUrl } = useContext(ShopContext);
-  const navigate = useNavigate(); // 👈 تفعيل النافيجيت
+  const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,7 +18,7 @@ const RequestPasswordReset = () => {
     e.preventDefault();
 
     if (!email) {
-      setError("Please enter your email address");
+      setError(t('ENTER_EMAIL'));
       return;
     }
 
@@ -40,24 +42,20 @@ const RequestPasswordReset = () => {
       if (response.ok) {
         setSuccess(
           data.responseBody?.message ||
-            "A reset link/token has been sent to your email!"
+            t('RESET_TOKEN_SENT')
         );
 
-        // 👇 بعد ثانيتين يروح لصفحة reset-password مع تمرير الايميل في الـ URL
-        setTimeout(() => {
-          navigate(`/reset-password?email=${encodeURIComponent(email)}`);
-        }, 2000);
-
+        // Just show success message, don't navigate automatically
         setEmail("");
       } else {
         setError(
           data.responseBody?.message ||
-            "Failed to send reset token. Please try again."
+            t('FAILED_TO_SEND_TOKEN')
         );
       }
     } catch (err) {
       console.error("Request password reset error:", err);
-      setError("Network error. Please try again.");
+      setError(t('NETWORK_ERROR'));
     } finally {
       setLoading(false);
     }
@@ -79,11 +77,11 @@ const RequestPasswordReset = () => {
       }}
     >
       <div className="inline-flex items-center gap-2 mb-2 mt-10">
-        <p className="text-3xl prata-regular">Request Password Reset</p>
+        <p className="text-3xl prata-regular">{t('REQUEST_PASSWORD_RESET')}</p>
         <hr className="border-none h-[1.5px] w-8 bg-gray-800" />
       </div>
       <p className="text-sm text-gray-600 w-full text-center">
-        Enter your email to receive a reset token.
+        {t('REQUEST_PASSWORD_RESET_DESC')}
       </p>
 
       {error && (
@@ -111,7 +109,7 @@ const RequestPasswordReset = () => {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         className="outline-none w-full border-2 border-gray-300 py-2 px-3 rounded-md focus:border-gray-600 transition-colors"
-        placeholder="Email Address"
+        placeholder={t('ENTER_EMAIL')}
         required
       />
 
@@ -124,8 +122,17 @@ const RequestPasswordReset = () => {
             : "bg-black text-white hover:bg-white hover:text-black"
         }`}
       >
-        {loading ? "Sending..." : "Send Reset Link"}
+        {loading ? t('SENDING') : t('SEND_RESET_LINK')}
       </button>
+      {success && (
+        <button
+          type="button"
+          onClick={() => navigate('/login')}
+          className="w-full font-light py-2 px-8 mt-2 border border-gray-300 transition-all duration-300 cursor-pointer bg-white text-black hover:bg-gray-100"
+        >
+          {t('BACK_TO_LOGIN')}
+        </button>
+      )}
     </motion.form>
   );
 };

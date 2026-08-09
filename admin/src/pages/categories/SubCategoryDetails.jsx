@@ -27,8 +27,8 @@ const SubCategoryDetails = ({ token }) => {
 
   // search states for ViewSubCategory
   const [searchId, setSearchId] = useState(id || "");
-  const [searchActive, setSearchActive] = useState("");
-  const [searchDeleted, setSearchDeleted] = useState("");
+  const [searchActive, setSearchActive] = useState("true");
+  const [searchDeleted, setSearchDeleted] = useState("false");
 
   // Fetch categories
   const fetchCategories = async () => {
@@ -43,14 +43,14 @@ const SubCategoryDetails = ({ token }) => {
       if (error.response?.status === 404) {
         setCategories([]);
       } else {
-        toast.error("Error fetching categories");
+        toast.error(t('failedToLoadCategories'));
       }
     }
   };
 
   useEffect(() => {
     if (!token) {
-      toast.error("Please login again.");
+      toast.error(t('authRequired'));
       return;
     }
     fetchCategories();
@@ -86,7 +86,7 @@ const SubCategoryDetails = ({ token }) => {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-6">SubCategory Management</h1>
+      <h1 className="text-2xl font-bold mb-6">{t('categoryManagement')}</h1>
 
       {/* Tab Navigation */}
       <div className="flex flex-wrap gap-2 mb-6">
@@ -95,21 +95,21 @@ const SubCategoryDetails = ({ token }) => {
           className={`px-4 py-2 rounded ${activeTab === "add-sub" ? "bg-blue-600 text-white" : "bg-gray-200"
             }`}
         >
-          Add Sub-Category
+          {t('addCategory')}
         </button>
         <button
           onClick={() => setActiveTab("sub-list")}
           className={`px-4 py-2 rounded ${activeTab === "sub-list" ? "bg-blue-600 text-white" : "bg-gray-200"
             }`}
         >
-          Sub-Categories List
+          {t('categoryList')}
         </button>
         <button
           onClick={() => setActiveTab("view")}
           className={`px-4 py-2 rounded ${activeTab === "view" ? "bg-blue-600 text-white" : "bg-gray-200"
             }`}
         >
-          View SubCategory
+          {t('viewCategory')}
         </button>
       </div>
 

@@ -27,15 +27,15 @@ const CollectionManager = ({ token }) => {
   // search states for ViewCollection
   const [searchId, setSearchId] = useState(collectionId || "");
   const [searchActive, setSearchActive] = useState(
-    searchParams.get("isActive") || ""
+    searchParams.get("isActive") || "true"
   );
   const [searchDeleted, setSearchDeleted] = useState(
-    searchParams.get("includeDeleted") || ""
+    searchParams.get("includeDeleted") || "false"
   );
 
   useEffect(() => {
     if (!token) {
-      toast.error("Please login again.");
+      toast.error(t('authRequired'));
       return;
     }
   }, [token]);
@@ -169,13 +169,13 @@ const CollectionManager = ({ token }) => {
         <div className="flex gap-2">
           <button
             onClick={() => {
-              if (!searchId) return toast.error("Enter collection ID");
+              if (!searchId) return toast.error(t('searchCollection'));
               setActiveTab("collection-view");
               navigate(`/collection/view/${searchId}`);
             }}
             className="px-4 py-1.5 bg-gray-900 border border-gray-900 text-white text-xs font-bold rounded-lg hover:bg-gray-800 transition-colors"
           >
-            View
+            {t('viewDetails')}
           </button>
         </div>
       </div>
@@ -209,8 +209,8 @@ const CollectionManager = ({ token }) => {
           {activeTab === "collection-view" && (
             <div className="p-4 md:p-8">
               <div className="mb-8 border-b border-gray-100 pb-4">
-                <h2 className="text-xl font-black text-gray-900">Collection Details</h2>
-                <p className="text-xs text-gray-500 font-bold uppercase tracking-tighter">Viewing Collection ID: {searchId || "Pending Input"}</p>
+                <h2 className="text-xl font-black text-gray-900">{t('collectionDetails')}</h2>
+                <p className="text-xs text-gray-500 font-bold uppercase tracking-tighter">{t('viewingCollectionId')}: {searchId || "Pending Input"}</p>
               </div>
 
               <ViewCollection

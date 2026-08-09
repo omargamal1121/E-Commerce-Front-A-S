@@ -14,8 +14,8 @@ const ListSubCategory = ({
 }) => {
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
-  const [isActive, setIsActive] = useState("");
-  const [isDeleted, setIsDeleted] = useState("");
+  const [isActive, setIsActive] = useState("true");
+  const [isDeleted, setIsDeleted] = useState("false");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [deleteId, setDeleteId] = useState(null);
@@ -89,7 +89,7 @@ const ListSubCategory = ({
         setSubCategories([]);
         setTotalPages(1);
       } else {
-        toast.error("Failed to load subcategories");
+        toast.error(t('failedToLoadCategories'));
       }
     } finally {
       setLoading(false);
@@ -109,9 +109,9 @@ const ListSubCategory = ({
       setSubCategories((prev) =>
         prev.map((sc) => (sc.id === id ? { ...sc, deleted: true } : sc))
       );
-      toast.success("Subcategory deleted successfully");
+      toast.success(t('categoryDeleted'));
     } catch (error) {
-      toast.error("Delete failed");
+      toast.error(t('deleteFailed'));
     } finally {
       setDeleteLoading(false);
       setDeleteId(null);
@@ -119,14 +119,14 @@ const ListSubCategory = ({
   };
 
   const toggleActivation = async (subCat) => {
-    if (!subCat.isActive && !subCat.mainImageUrl) return toast.error("Image required for activation");
+    if (!subCat.isActive && !subCat.mainImageUrl) return toast.error(t('uploadMainImage'));
 
     try {
       const endpoint = subCat.isActive ? "deactivate" : "activate";
       await axios.patch(`${backendUrl}/api/subcategories/${subCat.id}/${endpoint}`, {}, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      toast.success(subCat.isActive ? "Subcategory deactivated" : "Subcategory activated");
+      toast.success(subCat.isActive ? t('subcategoryDeactivated') : t('subcategoryActivated'));
       fetchSubCategories();
     } catch (err) {
       toast.error("Update failed");

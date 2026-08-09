@@ -2,8 +2,10 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import API from "../../services/api";
+import { useTranslation } from "react-i18next";
 
 const ProductVariant = ({ token }) => {
+  const { t } = useTranslation();
   const { productId } = useParams();
   const navigate = useNavigate();
 
@@ -48,9 +50,9 @@ const ProductVariant = ({ token }) => {
       setProduct(res.responseBody.data);
     } catch (e) {
       if (e.response?.status === 404) {
-        toast.error("Product not found or deleted. Please restore it first.");
+        toast.error(t('productNotFound'));
       } else {
-        toast.error("Failed to load product");
+        toast.error(t('failedToLoadProduct'));
       }
     }
     finally { setLoading(false); }
@@ -68,7 +70,7 @@ const ProductVariant = ({ token }) => {
       if (e.response?.status === 404) {
         setVariants([]);
       } else {
-        console.error("Failed to load variants", e);
+        console.error(t('failedToLoadVariants'), e);
       }
     }
     finally { setVariantsLoading(false); }
@@ -93,12 +95,12 @@ const ProductVariant = ({ token }) => {
         quantity: quantity ? Number(quantity) : 0,
       };
       await API.variants.add(productId, payload, token);
-      toast.success("Variant added");
+      toast.success(t('variantAdded'));
       setColor(""); setSize(""); setWaist(""); setLength(""); setQuantity("");
       fetchVariants();
     } catch (e) {
       if (e.response?.status === 404) {
-        toast.error("Product is deleted. Please restore it first before adding variants.");
+        toast.error(t('productDeletedWarning'));
       } else if (e.response?.data?.errors?.messages && Array.isArray(e.response.data.errors.messages)) {
         // Display validation error messages from API
         e.response.data.errors.messages.forEach((message) => {
@@ -107,7 +109,7 @@ const ProductVariant = ({ token }) => {
       } else if (e.response?.data?.message) {
         toast.error(e.response.data.message);
       } else {
-        toast.error("Failed to add variant");
+        toast.error(t('failedToAddVariant'));
       }
     }
     finally { setLoading(false); }
@@ -118,10 +120,10 @@ const ProductVariant = ({ token }) => {
     try {
       if (type === 'add') await API.variants.addQuantity(productId, selectedVariantId, adjustQuantity, token);
       else await API.variants.removeQuantity(productId, selectedVariantId, adjustQuantity, token);
-      toast.success("Quantity updated");
+      toast.success(t('quantityUpdated'));
       setSelectedVariantId(null); setAdjustQuantity("");
       fetchVariants();
-    } catch (e) { toast.error("Failed to update quantity"); }
+    } catch (e) { toast.error(t('failedToUpdateQuantity')); }
   };
 
   const handleToggleStatus = async (variant) => {
@@ -129,14 +131,14 @@ const ProductVariant = ({ token }) => {
     try {
       if (variant.isActive) {
         await API.variants.deactivate(productId, variant.id, token);
-        toast.success("Variant deactivated");
+        toast.success(t('variantDeactivated'));
       } else {
         await API.variants.activate(productId, variant.id, token);
-        toast.success("Variant activated");
+        toast.success(t('variantActivated'));
       }
       fetchVariants();
     } catch (error) {
-      toast.error("Failed to update status");
+      toast.error(t('failedToUpdateStatus'));
     } finally {
       setLoading(false);
     }
@@ -147,11 +149,11 @@ const ProductVariant = ({ token }) => {
     setActionLoading(true);
     try {
       await API.products.restore(product.id, token);
-      toast.success("Product restored");
+      toast.success(t('productRestored'));
       fetchProduct();
       fetchVariants();
     } catch (e) {
-      toast.error("Restore failed");
+      toast.error(t('restoreFailed'));
     } finally {
       setActionLoading(false);
     }
@@ -168,28 +170,28 @@ const ProductVariant = ({ token }) => {
           </div>
           <div>
             <div className="flex items-center gap-4">
-              <h1 className="text-3xl font-black text-gray-900 tracking-tighter uppercase">{product?.name || "Product"} Variants</h1>
+              <h1 className="text-3xl font-black text-gray-900 tracking-tighter uppercase">{product?.name || t('products')} {t('variantsManagement')}</h1>
               {isDeleted && (
                 <span className="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-600 text-white border border-rose-500">
-                  Deleted
+                  {t('deleted')}
                 </span>
               )}
             </div>
-            <p className="text-gray-400 font-bold text-[10px] uppercase tracking-[0.3em] mt-1">Manage variations and stock levels</p>
+            <p className="text-gray-400 font-bold text-[10px] uppercase tracking-[0.3em] mt-1">{t('manageVariationsAndStock')}</p>
           </div>
         </div>
         <div className="flex items-center gap-4">
           {isDeleted && (
-            <button 
-              onClick={handleRestoreProduct} 
+            <button
+              onClick={handleRestoreProduct}
               disabled={actionLoading}
               className="px-8 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-[22px] text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50"
             >
-              {actionLoading ? "Restoring..." : "Restore Product"}
+              {actionLoading ? t('restoring') : t('restoreProduct')}
             </button>
           )}
           <button onClick={() => navigate('/products')} className="px-8 py-3 bg-gray-50 border border-gray-100 rounded-[22px] text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 transition-all">
-            Back to Products
+            {t('backToProducts')}
           </button>
         </div>
       </div>
@@ -200,20 +202,20 @@ const ProductVariant = ({ token }) => {
           <div className="bg-gray-900 p-10 rounded-[56px] text-white shadow-2xl shadow-blue-900/20 border border-blue-900/30 flex flex-col gap-8">
             <div className="flex items-center gap-4">
               <div className="w-1.5 h-8 bg-blue-500 rounded-full" />
-              <h3 className="text-xl font-black uppercase tracking-tighter">Add New Variant</h3>
+              <h3 className="text-xl font-black uppercase tracking-tighter">{t('addNewVariant')}</h3>
             </div>
 
             {isDeleted ? (
               <div className="flex flex-col items-center gap-4 p-8 bg-rose-500/10 border border-rose-500/20 rounded-2xl">
                 <div className="text-4xl">⚠️</div>
                 <p className="text-center text-white/80 font-bold text-sm">
-                  This product is deleted. Please restore it first before adding variants.
+                  {t('productDeletedWarning')}
                 </p>
               </div>
             ) : (
               <form onSubmit={handleAddVariant} className="flex flex-col gap-6">
                 <div className="flex flex-col gap-2">
-                  <label className="text-[9px] font-bold uppercase text-gray-500 tracking-widest ml-1">Color (Hex or Name)</label>
+                  <label className="text-[9px] font-bold uppercase text-gray-500 tracking-widest ml-1">{t('color')} (Hex or Name)</label>
                   <div className="flex gap-2">
                     <input
                       type="text" value={color} onChange={(e) => setColor(e.target.value)}
@@ -225,7 +227,7 @@ const ProductVariant = ({ token }) => {
                         type="color" value={color.startsWith('#') ? color : "#000000"} onChange={(e) => setColor(e.target.value.toUpperCase())}
                         className="w-12 h-[50px] bg-transparent border-none cursor-pointer p-0 opacity-0 absolute inset-0 z-10"
                       />
-                      <div 
+                      <div
                         className="w-12 h-[50px] rounded-2xl border border-white/10 flex items-center justify-center text-lg transition-all"
                         style={{ backgroundColor: color || 'transparent' }}
                       >
@@ -233,7 +235,7 @@ const ProductVariant = ({ token }) => {
                       </div>
                     </div>
                   </div>
-                  
+
                   {/* Preset Colors */}
                   <div className="flex flex-wrap gap-2 mt-2">
                     {PRESET_COLORS.map(c => (
@@ -250,9 +252,9 @@ const ProductVariant = ({ token }) => {
                 </div>
 
                 {[
-                  { label: "Waist Size", state: waist, set: setWaist, type: "number", p: "0" },
-                  { label: "Length Size", state: length, set: setLength, type: "number", p: "0" },
-                  { label: "Initial Stock", state: quantity, set: setQuantity, type: "number", p: "0" },
+                  { label: t('waist'), state: waist, set: setWaist, type: "number", p: "0" },
+                  { label: t('length'), state: length, set: setLength, type: "number", p: "0" },
+                  { label: t('quantity'), state: quantity, set: setQuantity, type: "number", p: "0" },
                 ].map(f => (
                   <div key={f.label} className="flex flex-col gap-2">
                     <label className="text-[9px] font-bold uppercase text-gray-500 tracking-widest ml-1">{f.label}</label>
@@ -265,12 +267,12 @@ const ProductVariant = ({ token }) => {
                 ))}
 
                 <div className="flex flex-col gap-2">
-                  <label className="text-[9px] font-bold uppercase text-gray-500 tracking-widest ml-1">Size</label>
+                  <label className="text-[9px] font-bold uppercase text-gray-500 tracking-widest ml-1">{t('size')}</label>
                   <select
                     value={size} onChange={(e) => setSize(e.target.value)}
                     className="bg-white/5 border border-white/10 rounded-2xl px-6 py-3.5 outline-none focus:border-blue-500 font-bold text-sm transition-all appearance-none"
                   >
-                    <option value="" className="bg-gray-900">Select Size</option>
+                    <option value="" className="bg-gray-900">{t('selectSizeOptional')}</option>
                     {SIZE_OPTIONS.map(o => <option key={o.value} value={o.value} className="bg-gray-900">{o.label}</option>)}
                   </select>
                 </div>
@@ -279,7 +281,7 @@ const ProductVariant = ({ token }) => {
                   type="submit" disabled={loading}
                   className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-[28px] text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-blue-900/50 active:scale-95 disabled:opacity-20"
                 >
-                  {loading ? "Adding..." : "Add Variant"}
+                  {loading ? t('adding') : t('addVariant')}
                 </button>
               </form>
             )}
@@ -292,10 +294,10 @@ const ProductVariant = ({ token }) => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="w-2 h-10 bg-blue-500 rounded-full" />
-                <h3 className="text-xl font-black uppercase tracking-tighter">All Variants</h3>
+                <h3 className="text-xl font-black uppercase tracking-tighter">{t('variantList')}</h3>
               </div>
               <span className="text-[10px] font-black uppercase tracking-widest text-blue-600 bg-blue-50 px-6 py-2 rounded-full">
-                {variants.length} Variants Found
+                {variants.length} {t('noVariantsFound')}
               </span>
             </div>
 
@@ -304,9 +306,9 @@ const ProductVariant = ({ token }) => {
                 <div key={v.id} className="group p-8 bg-gray-50 rounded-[40px] border border-gray-100 flex flex-col gap-6 transition-all hover:bg-white hover:shadow-2xl hover:shadow-blue-900/10 hover:-translate-y-1">
                   <div className="flex justify-between items-start">
                     <div className="flex flex-col">
-                      <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Color</span>
+                      <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">{t('color')}</span>
                       <div className="flex items-center gap-3">
-                        <div 
+                        <div
                           className="w-4 h-4 rounded-full border border-gray-200 shadow-sm"
                           style={{ backgroundColor: v.color || 'transparent' }}
                         />
@@ -316,31 +318,31 @@ const ProductVariant = ({ token }) => {
                     <button
                       onClick={() => handleToggleStatus(v)}
                       className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all ${v.isActive ? "bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-100" : "bg-rose-50 text-rose-600 border border-rose-100 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-100"}`}
-                      title={v.isActive ? "Click to Deactivate" : "Click to Activate"}
+                      title={v.isActive ? t('deactivate') : t('activate')}
                     >
-                      {v.isActive ? "Live" : "Inactive"}
+                      {v.isActive ? t('active') : t('inactive')}
                     </button>
                   </div>
 
                   <div className="grid grid-cols-3 gap-4 py-6 border-y border-gray-200/60">
                     <div className="flex flex-col gap-1">
-                      <span className="text-[8px] font-bold uppercase text-gray-400">Size</span>
+                      <span className="text-[8px] font-bold uppercase text-gray-400">{t('size')}</span>
                       <span className="text-sm font-black text-gray-900">{SIZE_OPTIONS.find(o => o.value === v.size)?.label || "—"}</span>
                     </div>
                     <div className="flex flex-col gap-1 border-l border-gray-200/60 pl-4">
-                      <span className="text-[8px] font-bold uppercase text-gray-400">Waist</span>
+                      <span className="text-[8px] font-bold uppercase text-gray-400">{t('waist')}</span>
                       <span className="text-sm font-black text-gray-900">{v.waist || "—"}</span>
                     </div>
                     <div className="flex flex-col gap-1 border-l border-gray-200/60 pl-4">
-                      <span className="text-[8px] font-bold uppercase text-gray-400">Length</span>
+                      <span className="text-[8px] font-bold uppercase text-gray-400">{t('length')}</span>
                       <span className="text-sm font-black text-gray-900">{v.length || "—"}</span>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col">
-                      <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Stock</span>
-                      <span className="text-lg font-black text-blue-600 tracking-tighter">{v.quantity} Units</span>
+                      <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">{t('stock')}</span>
+                      <span className="text-lg font-black text-blue-600 tracking-tighter">{v.quantity} {t('units')}</span>
                     </div>
                     <button
                       onClick={() => setSelectedVariantId(v.id)}

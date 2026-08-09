@@ -20,8 +20,8 @@ const SubCategoryManager = ({ token }) => {
 
   // For quick view
   const [viewId, setViewId] = useState("");
-  const [isActiveFilter, setIsActiveFilter] = useState("");
-  const [includeDeletedFilter, setIncludeDeletedFilter] = useState("");
+  const [isActiveFilter, setIsActiveFilter] = useState("true");
+  const [includeDeletedFilter, setIncludeDeletedFilter] = useState("false");
 
   const [parentCategoryId, setParentCategoryId] = useState("");
   const [subCategoryName, setSubCategoryName] = useState("");
@@ -47,7 +47,7 @@ const SubCategoryManager = ({ token }) => {
         setCategories([]);
       } else {
         console.error("Error fetching categories:", error);
-        toast.error("Error fetching categories");
+        toast.error(t('failedToLoadCategories'));
       }
     }
   };
@@ -88,19 +88,19 @@ const SubCategoryManager = ({ token }) => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <div>
           <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
-            Sub-Category Manager
+            {t('subCategoryManager')}
           </h1>
           <p className="text-gray-500 mt-1 font-medium">
-            Manage and organize product subcategories
+            {t('categoryManagementSubtitle')}
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <div className="flex bg-gray-100 p-1 rounded-xl">
             {[
-              { id: "sub-list", label: "Subcategory List", icon: "📋" },
-              { id: "view-sub", label: "View Subcategory", icon: "🔍" },
-              { id: "add-sub", label: editSubCategoryMode ? "Edit Subcategory" : "Add Subcategory", icon: editSubCategoryMode ? "✏️" : "➕" }
+              { id: "sub-list", label: t('categoryList'), icon: "📋" },
+              { id: "view-sub", label: t('viewCategory'), icon: "🔍" },
+              { id: "add-sub", label: editSubCategoryMode ? t('editCategory') : t('addCategory'), icon: editSubCategoryMode ? "✏️" : "➕" }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -126,10 +126,10 @@ const SubCategoryManager = ({ token }) => {
           </div>
 
           <button
-            onClick={() => navigate('/collections')}
+            onClick={() => navigate('/categories')}
             className="flex items-center gap-2 px-5 py-2.5 border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl text-sm font-bold transition-all duration-200"
           >
-            ← Back to Categories
+            ← {t('backToList')}
           </button>
         </div>
       </div>
@@ -143,7 +143,7 @@ const SubCategoryManager = ({ token }) => {
         </div>
         <input
           type="number"
-          placeholder="Enter Subcategory ID..."
+          placeholder={t('searchCategory')}
           value={viewId}
           onChange={(e) => setViewId(e.target.value)}
           className="flex-1 bg-transparent border-none outline-none focus:ring-0 text-sm font-medium"
@@ -157,18 +157,18 @@ const SubCategoryManager = ({ token }) => {
             onChange={(e) => setIsActiveFilter(e.target.value)}
             className="p-1.5 text-[10px] font-black uppercase bg-gray-50 border-none rounded-lg focus:ring-0"
           >
-            <option value="">Status: All</option>
-            <option value="true">Active</option>
-            <option value="false">Inactive</option>
+            <option value="">{t('statusAll')}</option>
+            <option value="true">{t('statusActive')}</option>
+            <option value="false">{t('statusInactive')}</option>
           </select>
           <button
             onClick={() => {
-              if (!viewId) return toast.error("Enter subcategory ID");
+              if (!viewId) return toast.error(t('searchCategory'));
               setActiveTab("view-sub");
             }}
             className="px-4 py-1.5 bg-gray-900 border border-gray-900 text-white text-xs font-bold rounded-lg hover:bg-gray-800 transition-colors"
           >
-            View
+            {t('viewDetails')}
           </button>
         </div>
       </div>
