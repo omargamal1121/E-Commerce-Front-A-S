@@ -9,10 +9,13 @@ const ViewCollection = ({ token, collectionId, isActive = null, includeDeleted =
   const { t } = useTranslation();
   const [collection, setCollection] = useState(null);
   const [products, setProducts] = useState([]);
+  const [availableProducts, setAvailableProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [showAddProducts, setShowAddProducts] = useState(false);
+  const [selectedProductsToAdd, setSelectedProductsToAdd] = useState([]);
   const navigate = useNavigate();
 
   const fetchCollection = useCallback(async () => {
@@ -85,12 +88,52 @@ const ViewCollection = ({ token, collectionId, isActive = null, includeDeleted =
     }
   }, [collectionId, token]);
 
+  const fetchAvailableProducts = useCallback(async () => {
+    try {
+      const response = await axios.get(`${backendUrl}/api/Products`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { page: 1, pageSize: 100 }
+      });
+
+      if (response.status === 200) {
+        const allProducts = response.data?.responseBody?.data || [];
+        const existingProductIds = products.map(p => p.id);
+        const available = allProducts.filter(p => !existingProductIds.includes(p.id));
+        
+        const normalizedProducts = available.map(p => ({
+          ...p,
+          productImages: p.productImages?.map(img => ({
+            ...img,
+            url: img.url?.startsWith("http") ? img.url : `${backendUrl}/${img.url}`
+          })) || [],
+          mainImage: p.mainImage ? {
+            ...p.mainImage,
+            url: p.mainImage.url?.startsWith("http") ? p.mainImage.url : `${backendUrl}/${p.mainImage.url}`
+          } : null,
+          images: p.images?.map(img => ({
+            ...img,
+            url: img.url?.startsWith("http") ? img.url : `${backendUrl}/${img.url}`
+          })) || []
+        }));
+        setAvailableProducts(normalizedProducts);
+      }
+    } catch (err) {
+      console.error("❌ Error fetching available products:", err);
+    }
+  }, [token, products]);
+
   useEffect(() => {
     if (collectionId) {
       fetchCollection();
       fetchProductsByCollection();
     }
   }, [collectionId, fetchCollection, fetchProductsByCollection]);
+
+  useEffect(() => {
+    if (collectionId && showAddProducts) {
+      fetchAvailableProducts();
+    }
+  }, [collectionId, showAddProducts, fetchAvailableProducts]);
 
   const handleAction = async (action, successMsg) => {
     if (!collection) return;
@@ -138,9 +181,15 @@ const ViewCollection = ({ token, collectionId, isActive = null, includeDeleted =
 
     setActionLoading(true);
     try {
+      const formData = new FormData();
+      formData.append('ProductIds', productId.toString());
+      
       await axios.delete(`${backendUrl}/api/Collection/${collection.id}/products`, {
-        headers: { Authorization: `Bearer ${token}` },
-        data: { productIds: [productId] }
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        },
+        data: formData
       });
       toast.success("Product detached from collection 🔗");
       await fetchProductsByCollection();
@@ -149,6 +198,44 @@ const ViewCollection = ({ token, collectionId, isActive = null, includeDeleted =
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const addProductsToCollection = async () => {
+    if (!collection || selectedProductsToAdd.length === 0) return;
+    
+    setActionLoading(true);
+    try {
+      const formData = new FormData();
+      selectedProductsToAdd.forEach(id => {
+        formData.append('ProductIds', id.toString());
+      });
+      
+      await axios.post(`${backendUrl}/api/Collection/${collection.id}/products`, 
+        formData,
+        { 
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          } 
+        }
+      );
+      toast.success("Products added to collection successfully ✨");
+      setShowAddProducts(false);
+      setSelectedProductsToAdd([]);
+      await fetchProductsByCollection();
+    } catch (err) {
+      toast.error("Failed to add products to collection");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const toggleProductSelection = (productId) => {
+    setSelectedProductsToAdd(prev => 
+      prev.includes(productId) 
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
+    );
   };
 
   if (!collectionId) return (
@@ -286,8 +373,73 @@ const ViewCollection = ({ token, collectionId, isActive = null, includeDeleted =
           <div className="bg-gray-50/50 rounded-[50px] p-10 border border-gray-100 flex flex-col gap-8 shadow-inner overflow-hidden">
             <div className="flex items-center justify-between">
               <h3 className="font-black text-gray-900 uppercase tracking-widest text-xs">Linked Inventory ({products.length})</h3>
-              <button onClick={() => navigate(`/products?collection=${collectionId}`)} className="text-[9px] font-black uppercase tracking-widest text-rose-600 hover:text-rose-800 transition-colors">View All →</button>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setShowAddProducts(!showAddProducts)}
+                  className="text-[9px] font-black uppercase tracking-widest text-emerald-600 hover:text-emerald-800 transition-colors"
+                >
+                  {showAddProducts ? "− Close" : "+ Add Products"}
+                </button>
+                <button onClick={() => navigate(`/products?collection=${collectionId}`)} className="text-[9px] font-black uppercase tracking-widest text-rose-600 hover:text-rose-800 transition-colors">View All →</button>
+              </div>
             </div>
+
+            {showAddProducts && (
+              <div className="bg-white rounded-3xl p-6 border border-gray-200">
+                <h4 className="font-black text-gray-900 uppercase tracking-widest text-xs mb-4">Available Products ({availableProducts.length})</h4>
+                {availableProducts.length === 0 ? (
+                  <p className="text-gray-400 text-sm font-medium text-center py-8">No available products to add</p>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-64 overflow-y-auto">
+                    {availableProducts.map(product => (
+                      <div 
+                        key={product.id}
+                        onClick={() => toggleProductSelection(product.id)}
+                        className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                          selectedProductsToAdd.includes(product.id) 
+                            ? 'bg-emerald-50 border-emerald-300' 
+                            : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                        }`}
+                      >
+                        <div className="w-12 h-12 bg-white rounded-lg overflow-hidden border border-gray-100 shrink-0">
+                          <img 
+                            src={product.mainImage?.url || product.productImages?.[0]?.url || product.images?.[0]?.url || ""} 
+                            className="w-full h-full object-cover" 
+                            alt="" 
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-black text-gray-900 truncate text-xs uppercase tracking-tight">{product.name}</p>
+                          <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">EGP {product.price}</p>
+                        </div>
+                        <div className={`w-4 h-4 rounded-full border-2 shrink-0 ${
+                          selectedProductsToAdd.includes(product.id) 
+                            ? 'bg-emerald-500 border-emerald-500' 
+                            : 'border-gray-300'
+                        }`} />
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {selectedProductsToAdd.length > 0 && (
+                  <div className="mt-4 flex gap-3">
+                    <button
+                      onClick={addProductsToCollection}
+                      disabled={actionLoading}
+                      className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-emerald-700 transition-all disabled:opacity-50"
+                    >
+                      {actionLoading ? 'Adding...' : `Add ${selectedProductsToAdd.length} Products`}
+                    </button>
+                    <button
+                      onClick={() => setSelectedProductsToAdd([])}
+                      className="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-gray-300 transition-all"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="flex flex-col gap-4">
               {products.slice(0, 8).map(product => (

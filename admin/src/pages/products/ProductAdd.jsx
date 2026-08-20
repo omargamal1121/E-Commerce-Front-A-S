@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
 import API from "../../services/api";
 import { useTranslation } from "react-i18next";
 
@@ -12,6 +13,8 @@ const ProductAdd = ({ token }) => {
   const editId = searchParams.get("edit");
   const [loading, setLoading] = useState(false);
   const [subcategories, setSubcategories] = useState([]);
+  const [collections, setCollections] = useState([]);
+  const [selectedCollections, setSelectedCollections] = useState([]);
 
   const [formData, setFormData] = useState({
     name: "", description: "", subcategoryid: "", fitType: "", gender: "", price: "",
@@ -27,6 +30,20 @@ const ProductAdd = ({ token }) => {
         const subs = await API.subcategories.getAll(token);
         setSubcategories(subs);
       } catch (e) { toast.error(t("failedToLoadCategories")); }
+    })();
+  }, [token]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/Collection`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const collectionsData = response.data?.responseBody?.data || [];
+        setCollections(collectionsData);
+      } catch (e) { 
+        console.error("Failed to load collections:", e);
+      }
     })();
   }, [token]);
 
@@ -68,6 +85,17 @@ const ProductAdd = ({ token }) => {
               isNew: false 
             }))
           });
+
+          // Load existing collections for this product
+          try {
+            const collectionsRes = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/Products/${editId}/collections`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            const productCollections = collectionsRes.data?.responseBody?.data || [];
+            setSelectedCollections(productCollections.map(c => c.id));
+          } catch (e) {
+            console.error("Failed to load product collections:", e);
+          }
         }
       } catch (e) { toast.error(t("failedToLoadProductDetails")); }
     })();
@@ -137,6 +165,29 @@ const ProductAdd = ({ token }) => {
 
       if (productId && images.main) await API.images.uploadMain(productId, images.main, token);
       if (productId && images.additional.length) await API.images.uploadAdditional(productId, images.additional, token);
+
+      // Handle collections - add to each selected collection
+      if (productId && selectedCollections.length > 0) {
+        for (const collectionId of selectedCollections) {
+          try {
+            const formData = new FormData();
+            formData.append('ProductIds', productId.toString());
+            
+            await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/Collection/${collectionId}/products`, 
+              formData,
+              { 
+                headers: { 
+                  Authorization: `Bearer ${token}`,
+                  'Content-Type': 'multipart/form-data'
+                } 
+              }
+            );
+          } catch (e) {
+            console.error(`Failed to add to collection ${collectionId}:`, e);
+          }
+        }
+        toast.success(t("addedToCollection"));
+      }
 
       toast.success(editId ? t("productUpdated") : t("productCreated"));
       navigate("/products");
@@ -230,6 +281,29 @@ const ProductAdd = ({ token }) => {
                   <option value="2">{t("kids")}</option>
                   <option value="3">{t("uni")}</option>
                 </select>
+              </div>
+
+              <div className="flex flex-col gap-2 md:col-span-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">{t("addToCollection")}</label>
+                <div className="grid grid-cols-2 gap-3">
+                  {collections.map(c => (
+                    <label key={c.id} className="flex items-center gap-3 bg-gray-50 rounded-2xl px-6 py-4 cursor-pointer hover:bg-gray-100 transition-all border border-gray-100">
+                      <input
+                        type="checkbox"
+                        checked={selectedCollections.includes(c.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedCollections(prev => [...prev, c.id]);
+                          } else {
+                            setSelectedCollections(prev => prev.filter(id => id !== c.id));
+                          }
+                        }}
+                        className="w-5 h-5 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
+                      />
+                      <span className="font-bold text-gray-700 text-sm">{c.name}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
           </div>

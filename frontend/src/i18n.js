@@ -130,6 +130,7 @@ const resources = {
       OUR: 'OUR',
       SPECIAL: 'SPECIAL',
       COLLECTIONS: 'COLLECTIONS',
+      EXPLORE_OUR_COLLECTIONS: 'Explore our curated collections crafted for every style.',
 
       // --- Forgot Password ---
       FORGOT_PASSWORD: 'Forgot Password',
@@ -276,6 +277,7 @@ const resources = {
       OUR: 'أقسام',
       SPECIAL: 'مجموعات',
       COLLECTIONS: 'مميزة',
+      EXPLORE_OUR_COLLECTIONS: 'استكشف مجموعاتنا المنتقاة بعناية لكل أسلوب.',
 
       // --- Forgot Password ---
       FORGOT_PASSWORD: 'نسيت كلمة المرور',
