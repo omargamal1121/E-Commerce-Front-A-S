@@ -55,13 +55,12 @@ const ProductAdd = ({ token }) => {
         const p = res?.responseBody?.data;
         if (p) {
           const genderMap = { "Man": "0", "Woman": "1", "Kids": "2", "Uni": "3", "Both": "3" };
-          const fitMap = { "Slim": "1", "Regular": "2", "Oversized": "3", "Skinny": "4", "Loose": "5" };
 
           setFormData({
             name: p.name || "", 
             description: p.description || "", 
             subcategoryid: p.subCategoryId?.toString() || "",
-            fitType: fitMap[p.fitType] || p.fitType?.toString() || "", 
+            fitType: p.fitType || "", 
             gender: genderMap[p.gender] || p.gender?.toString() || "", 
             price: p.price?.toString() || "",
             isActive: p.isActive ?? true, 
@@ -153,7 +152,7 @@ const ProductAdd = ({ token }) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const productPayload = { ...formData, subcategoryid: Number(formData.subcategoryid), fitType: Number(formData.fitType), gender: Number(formData.gender), price: Number(formData.price) };
+      const productPayload = { ...formData, subcategoryid: Number(formData.subcategoryid), gender: Number(formData.gender), price: Number(formData.price) };
 
       let productId = editId;
       if (editId) {
@@ -257,15 +256,16 @@ const ProductAdd = ({ token }) => {
               <div className="flex flex-col gap-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">{t("fitType")}</label>
                 <select
-                  name="fitType" value={formData.fitType} onChange={handleInputChange} required
+                  name="fitType" value={formData.fitType} onChange={handleInputChange}
                   className="w-full bg-gray-50 border border-gray-100 rounded-[24px] px-8 py-4 outline-none focus:ring-8 focus:ring-emerald-50 focus:border-emerald-300 transition-all font-bold"
                 >
-                  <option value="">{t("selectFitTypeOption")}</option>
-                  <option value="1">{t("slim")}</option>
-                  <option value="2">{t("regular")}</option>
-                  <option value="3">{t("oversized")}</option>
-                  <option value="4">{t("skinny")}</option>
-                  <option value="5">{t("loose")}</option>
+                  <option value="">Select Fit Type</option>
+                  <option value="Regular">Regular</option>
+                  <option value="Slim">Slim</option>
+                  <option value="Oversized">Oversized</option>
+                  <option value="Skinny">Skinny</option>
+                  <option value="Loose">Loose</option>
+                  <option value="Relaxed">Relaxed</option>
                 </select>
               </div>
 

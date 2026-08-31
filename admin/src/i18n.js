@@ -291,6 +291,8 @@ const resources = {
       oversized: 'Oversized',
       skinny: 'Skinny',
       loose: 'Loose',
+      relaxed: 'Relaxed',
+      chest: 'Chest',
       man: 'Man',
       woman: 'Woman',
       kids: 'Kids',

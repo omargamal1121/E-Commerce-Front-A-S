@@ -190,8 +190,8 @@ const API = {
             requestBody.subcategoryid = parseInt(filters.subcategoryId);
           if (filters.gender && parseInt(filters.gender) !== 0)
             requestBody.gender = parseInt(filters.gender);
-          if (filters.fitType && parseInt(filters.fitType) !== 0)
-            requestBody.fitType = parseInt(filters.fitType);
+          if (filters.fitType && filters.fitType.trim() !== "")
+            requestBody.fitType = filters.fitType;
           if (filters.minPrice && parseFloat(filters.minPrice) !== 0)
             requestBody.minPrice = parseFloat(filters.minPrice);
           if (filters.maxPrice && parseFloat(filters.maxPrice) !== 0)
