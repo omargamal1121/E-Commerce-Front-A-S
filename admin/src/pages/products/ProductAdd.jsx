@@ -255,18 +255,11 @@ const ProductAdd = ({ token }) => {
 
               <div className="flex flex-col gap-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">{t("fitType")}</label>
-                <select
+                <input
                   name="fitType" value={formData.fitType} onChange={handleInputChange}
                   className="w-full bg-gray-50 border border-gray-100 rounded-[24px] px-8 py-4 outline-none focus:ring-8 focus:ring-emerald-50 focus:border-emerald-300 transition-all font-bold"
-                >
-                  <option value="">Select Fit Type</option>
-                  <option value="Regular">Regular</option>
-                  <option value="Slim">Slim</option>
-                  <option value="Oversized">Oversized</option>
-                  <option value="Skinny">Skinny</option>
-                  <option value="Loose">Loose</option>
-                  <option value="Relaxed">Relaxed</option>
-                </select>
+                  placeholder="Enter fit type (e.g. Regular, Slim)"
+                />
               </div>
 
               <div className="flex flex-col gap-2">

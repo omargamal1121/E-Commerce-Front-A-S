@@ -267,9 +267,17 @@ const Product = () => {
 
             {/* Details & Specs */}
             <div className="grid grid-cols-1 gap-4 pt-10">
-              <div className="p-6 rounded-3xl bg-gray-50/50 border border-gray-100">
-                <h5 className="text-[10px] font-black uppercase tracking-[0.3em] mb-4 text-black">Master Narrative</h5>
-                <p className="text-sm text-gray-500 font-medium leading-relaxed">{productData.description}</p>
+              <div className="p-6 rounded-3xl bg-gray-50/50 border border-gray-100 flex flex-col gap-6">
+                <div>
+                  <h5 className="text-[10px] font-black uppercase tracking-[0.3em] mb-3 text-black">Master Narrative</h5>
+                  <p className="text-sm text-gray-500 font-medium leading-relaxed">{productData.description}</p>
+                </div>
+                {productData.fitType && (
+                  <div className="flex items-center gap-3">
+                    <h5 className="text-[10px] font-black uppercase tracking-[0.3em] text-black m-0">Fit Type:</h5>
+                    <span className="text-xs font-bold text-gray-600 bg-white px-3 py-1.5 rounded-full shadow-sm border border-gray-100 capitalize">{productData.fitType}</span>
+                  </div>
+                )}
               </div>
               <div className="grid grid-cols-3 gap-2">
                 {[
