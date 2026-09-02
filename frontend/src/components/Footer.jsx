@@ -72,7 +72,14 @@ const Footer = () => {
 
           <div className="w-full md:w-auto text-right md:text-left text-gray-500">
             <span>© 2025 R&amp;S , All rights reserved. </span>
-            <a href="/about" className="underline hover:text-gray-300">Powered by Omar Gamal</a>
+            <a
+              href="https://omar-gamal-eng.vercel.app/#"
+              target="_blank"
+              rel="noreferrer"
+              className="underline hover:text-gray-300"
+            >
+              Powered by Omar Gamal
+            </a>
           </div>
         </div>
 
