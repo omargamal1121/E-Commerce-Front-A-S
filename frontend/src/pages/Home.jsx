@@ -6,7 +6,6 @@ import MostWanted from "../components/MostWanted";
 import OurPolicy from "../components/OurPolicy";
 import NewLetterBox from '../components/NewLetterBox';
 import { motion } from "framer-motion";
-import HeroImage from "../components/HeroImage";
 import { assets } from "../assets/frontend_assets/assets";
 import ScrollSection from "../components/ScrollSection";
 import TypeCollection from "../components/TypeCollection";
@@ -29,7 +28,10 @@ const Home = () => {
         whileInView="visible"
         viewport={{ once: true, amount: 0.3 }}
         variants={itemVariants}>
-        <HeroImage height={100} />
+        {/* HeroBanner full width at the start */}
+        <div className="w-screen relative left-1/2 right-1/2 -mx-[50vw]">
+          <HeroBanner />
+        </div>
       </motion.div>
       <motion.div
         initial="hidden"
@@ -72,16 +74,6 @@ const Home = () => {
         viewport={{ once: true, amount: 0.3 }}
         variants={itemVariants}>
         <TypeCollection />
-      </motion.div>
-      <motion.div
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.3 }}
-        variants={itemVariants}>
-        {/* HeroBanner full width */}
-        <div className="w-screen relative left-1/2 right-1/2 -mx-[50vw]">
-          <HeroBanner />
-        </div>
       </motion.div>
       <motion.div
         initial="hidden"

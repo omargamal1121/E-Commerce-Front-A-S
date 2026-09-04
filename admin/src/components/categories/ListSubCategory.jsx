@@ -20,7 +20,7 @@ const ListSubCategory = ({
   const [totalPages, setTotalPages] = useState(1);
   const [deleteId, setDeleteId] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const [pageSize, setPageSize] = useState(12);
+  const [pageSize] = useState(12);
   const [subcategories, setSubCategories] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -38,13 +38,15 @@ const ListSubCategory = ({
         },
       });
 
-      console.log("Subcategories API response:", res.data);
-
       if (res.data?.responseBody) {
         const subCats = res.data.responseBody.data || [];
         const totalCount = res.data.responseBody.totalCount || subCats.length;
 
-        console.log("Subcategories count:", subCats.length, "Total count:", totalCount);
+        // If current page returns empty data and we're not on page 1, go back to previous page
+        if (subCats.length === 0 && page > 1) {
+          setPage(page - 1);
+          return;
+        }
 
         const normalized = subCats.map((sc) => {
           const mainImg = sc.mainImage || sc.images?.find((i) => i.isMain) || sc.images?.[0] || null;
@@ -99,7 +101,7 @@ const ListSubCategory = ({
     } finally {
       setLoading(false);
     }
-  }, [token, search, isActive, isDeleted, page, pageSize, t]);
+  }, [token, search, isActive, isDeleted, page, pageSize, t, setPage]);
 
   useEffect(() => {
     if (token) fetchSubCategories();
@@ -213,9 +215,7 @@ const ListSubCategory = ({
             <button onClick={() => { setSearch(""); setIsActive(""); setIsDeleted(""); }} className="text-blue-600 text-xs font-black uppercase mt-2 tracking-widest">Clear Filters</button>
           </div>
         ) : (
-          <>
-            {console.log("Rendering subcategories:", subcategories.length)}
-            {subcategories.map((subCat) => (
+          subcategories.map((subCat) => (
             <div
               key={subCat.id}
               className="group relative bg-white border border-gray-100 rounded-[40px] p-5 hover:border-blue-200 hover:shadow-2xl transition-all duration-500 flex flex-col"
@@ -319,51 +319,37 @@ const ListSubCategory = ({
                 </div>
               </div>
             </div>
-          ))}
-          </>
+          ))
         )}
       </div>
 
       {/* Modern Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm">
-          <p className="text-xs font-black uppercase tracking-widest text-gray-400">Pagination</p>
-          <div className="flex items-center gap-4">
+      {!loading && (
+        <div className="mt-12 flex justify-center">
+          <div className="inline-flex items-center gap-3 p-1.5 bg-white border border-gray-100 rounded-[28px] shadow-sm">
             <button
               disabled={page <= 1}
               onClick={() => setPage(p => p - 1)}
-              className="p-3 bg-gray-50 rounded-2xl hover:bg-gray-100 disabled:opacity-30 transition-all font-bold text-gray-600"
+              className="p-2 rounded-full hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-colors text-gray-500"
             >
-              ← Prev
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
             </button>
-            <div className="flex gap-1">
-              {[...Array(totalPages)].map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setPage(i + 1)}
-                  className={`w-10 h-10 rounded-xl text-xs font-black transition-all ${page === i + 1 ? "bg-blue-600 text-white shadow-lg shadow-blue-100" : "hover:bg-gray-50 text-gray-400"}`}
-                >
-                  {i + 1}
-                </button>
-              ))}
+            <div className="flex px-4 items-center">
+              <span className="text-sm font-black text-gray-900">{page}</span>
+              <span className="text-gray-300 mx-2 text-xs font-bold">/</span>
+              <span className="text-sm font-bold text-gray-400">{totalPages}</span>
             </div>
             <button
-              disabled={page >= totalPages}
               onClick={() => setPage(p => p + 1)}
-              className="p-3 bg-gray-50 rounded-2xl hover:bg-gray-100 disabled:opacity-30 transition-all font-bold text-gray-600"
+              className="p-2 rounded-full hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-colors text-gray-500"
             >
-              Next →
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+              </svg>
             </button>
           </div>
-          <select
-            value={pageSize}
-            onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
-            className="p-3 bg-gray-50 border-none rounded-2xl text-xs font-black uppercase tracking-widest text-gray-500 focus:ring-0"
-          >
-            <option value={12}>12 Rows</option>
-            <option value={24}>24 Rows</option>
-            <option value={48}>48 Rows</option>
-          </select>
         </div>
       )}
 

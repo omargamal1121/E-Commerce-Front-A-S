@@ -15,7 +15,7 @@ const ListCategory = ({
   const [isActive, setIsActive] = useState("true");
   const [isDeleted, setIsDeleted] = useState("false");
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [deleteId, setDeleteId] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -37,6 +37,12 @@ const ListCategory = ({
 
       const cats = res.data?.responseBody?.data || [];
       const totalCount = res.data?.responseBody?.totalCount || cats.length;
+
+      // If current page returns empty data and we're not on page 1, go back to previous page
+      if (cats.length === 0 && page > 1) {
+        setPage(page - 1);
+        return;
+      }
 
       const normalized = cats.map((cat) => {
         // Helper to normalize any url-like string
@@ -85,7 +91,7 @@ const ListCategory = ({
     } finally {
       setLoading(false);
     }
-  }, [token, search, isActive, isDeleted, page, pageSize, t]);
+  }, [token, search, isActive, isDeleted, page, pageSize, t, setPage]);
 
   useEffect(() => {
     fetchCategories();
@@ -351,7 +357,7 @@ const ListCategory = ({
       )}
 
       {/* Pagination Shell */}
-      {!loading && totalPages > 1 && (
+      {!loading && (
         <div className="mt-12 flex justify-center">
           <div className="inline-flex items-center gap-3 p-1.5 bg-white border border-gray-100 rounded-[28px] shadow-sm">
             <button
@@ -369,7 +375,6 @@ const ListCategory = ({
               <span className="text-sm font-bold text-gray-400">{totalPages}</span>
             </div>
             <button
-              disabled={page >= totalPages}
               onClick={() => setPage((p) => p + 1)}
               className="p-2 rounded-full hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent transition-colors text-gray-500"
             >
@@ -377,16 +382,6 @@ const ListCategory = ({
                 <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
               </svg>
             </button>
-            <div className="w-px h-6 bg-gray-200 mx-2" />
-            <select
-              value={pageSize}
-              onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
-              className="bg-transparent border-none text-xs font-black uppercase tracking-widest text-gray-500 focus:ring-0 cursor-pointer pr-2"
-            >
-              <option value={10}>10 Rows</option>
-              <option value={20}>20 Rows</option>
-              <option value={50}>50 Rows</option>
-            </select>
           </div>
         </div>
       )}
