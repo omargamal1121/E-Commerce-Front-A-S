@@ -38,9 +38,13 @@ const ListSubCategory = ({
         },
       });
 
+      console.log("Subcategories API response:", res.data);
+
       if (res.data?.responseBody) {
         const subCats = res.data.responseBody.data || [];
         const totalCount = res.data.responseBody.totalCount || subCats.length;
+
+        console.log("Subcategories count:", subCats.length, "Total count:", totalCount);
 
         const normalized = subCats.map((sc) => {
           const mainImg = sc.mainImage || sc.images?.find((i) => i.isMain) || sc.images?.[0] || null;
@@ -85,6 +89,7 @@ const ListSubCategory = ({
         setTotalPages(Math.ceil(totalCount / pageSize));
       }
     } catch (error) {
+      console.error("Error fetching subcategories:", error);
       if (error.response?.status === 404) {
         setSubCategories([]);
         setTotalPages(1);
@@ -94,7 +99,7 @@ const ListSubCategory = ({
     } finally {
       setLoading(false);
     }
-  }, [token, search, isActive, isDeleted, page, pageSize]);
+  }, [token, search, isActive, isDeleted, page, pageSize, t]);
 
   useEffect(() => {
     if (token) fetchSubCategories();
@@ -208,7 +213,9 @@ const ListSubCategory = ({
             <button onClick={() => { setSearch(""); setIsActive(""); setIsDeleted(""); }} className="text-blue-600 text-xs font-black uppercase mt-2 tracking-widest">Clear Filters</button>
           </div>
         ) : (
-          subcategories.map((subCat) => (
+          <>
+            {console.log("Rendering subcategories:", subcategories.length)}
+            {subcategories.map((subCat) => (
             <div
               key={subCat.id}
               className="group relative bg-white border border-gray-100 rounded-[40px] p-5 hover:border-blue-200 hover:shadow-2xl transition-all duration-500 flex flex-col"
@@ -312,7 +319,8 @@ const ListSubCategory = ({
                 </div>
               </div>
             </div>
-          ))
+          ))}
+          </>
         )}
       </div>
 
