@@ -18,7 +18,7 @@ const ListCollection = ({
   const [isActive, setIsActive] = useState("true");
   const [isDeleted, setIsDeleted] = useState("false");
   const [page, setPage] = useState(1);
-  const [pageSize] = useState(12);
+  const [pageSize, setPageSize] = useState(12);
   const [totalPages, setTotalPages] = useState(1);
   const [deleteId, setDeleteId] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -86,7 +86,7 @@ const ListCollection = ({
     } finally {
       setLoading(false);
     }
-  }, [token, search, isActive, isDeleted, page, pageSize]);
+  }, [token, search, isActive, isDeleted, page, pageSize, t]);
 
   useEffect(() => {
     fetchCollections();
@@ -317,7 +317,7 @@ const ListCollection = ({
       {/* Pagination Command Bar */}
       {totalPages > 1 && (
         <div className="flex justify-center mt-12 pb-10">
-          <div className="inline-flex items-center gap-2 p-2 bg-white border border-gray-100 rounded-full shadow-lg">
+          <div className="inline-flex items-center gap-3 p-2 bg-white border border-gray-100 rounded-full shadow-lg">
             <button
               disabled={page <= 1}
               onClick={() => setPage(p => p - 1)}
@@ -341,6 +341,16 @@ const ListCollection = ({
                 <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
               </svg>
             </button>
+            <div className="w-px h-6 bg-gray-200 mx-2" />
+            <select
+              value={pageSize}
+              onChange={(e) => { setPageSize(Number(e.target.value)); setPage(1); }}
+              className="bg-transparent border-none text-xs font-black uppercase tracking-widest text-gray-500 focus:ring-0 cursor-pointer pr-2"
+            >
+              <option value={12}>12 Rows</option>
+              <option value={24}>24 Rows</option>
+              <option value={48}>48 Rows</option>
+            </select>
           </div>
         </div>
       )}
