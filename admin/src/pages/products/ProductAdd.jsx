@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "react-toastify";
 import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
@@ -27,11 +27,20 @@ const ProductAdd = ({ token }) => {
   useEffect(() => {
     (async () => {
       try {
-        const subs = await API.subcategories.getAll(token);
-        setSubcategories(subs);
-      } catch (e) { toast.error(t("failedToLoadCategories")); }
+        const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/subcategories`, {
+          headers: { Authorization: `Bearer ${token}` },
+          params: {
+            // Don't send isActive and includeDeleted to get all subcategories
+          }
+        });
+        const subcategoriesData = response.data?.responseBody?.data || [];
+        setSubcategories(subcategoriesData);
+      } catch (e) { 
+        console.error("Failed to load subcategories:", e);
+        toast.error(t("failedToLoadCategories")); 
+      }
     })();
-  }, [token]);
+  }, [token, t]);
 
   useEffect(() => {
     (async () => {
@@ -103,6 +112,152 @@ const ProductAdd = ({ token }) => {
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
+  };
+
+  // Custom Searchable Dropdown Component
+  const SearchableSubcategoryDropdown = ({ value, onChange, subcategories, token }) => {
+    const { t } = useTranslation();
+    const [isOpen, setIsOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [filteredSubcategories, setFilteredSubcategories] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const dropdownRef = useRef(null);
+    const searchInputRef = useRef(null);
+    const searchTimeoutRef = useRef(null);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+          setIsOpen(false);
+          setSearchTerm("");
+          setFilteredSubcategories(subcategories);
+        }
+      };
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [subcategories]);
+
+    // Focus search input when dropdown opens and load initial data
+    useEffect(() => {
+      if (isOpen && searchInputRef.current) {
+        searchInputRef.current.focus();
+        // Load initial subcategories when dropdown opens
+        setFilteredSubcategories(subcategories);
+      }
+    }, [isOpen, subcategories]);
+
+    // Debounced search function
+    const debouncedSearch = useCallback((term) => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+
+      setIsSearching(true);
+
+      searchTimeoutRef.current = setTimeout(async () => {
+        try {
+          const response = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/api/subcategories`, {
+            headers: { Authorization: `Bearer ${token}` },
+            params: {
+              key: term || undefined,
+            }
+          });
+          const data = response.data?.responseBody?.data || [];
+          setFilteredSubcategories(data);
+        } catch (error) {
+          console.error("Search failed:", error);
+          setFilteredSubcategories([]);
+        } finally {
+          setIsSearching(false);
+        }
+      }, 450); // 450ms debounce
+    }, [token]);
+
+    // Handle search input changes
+    const handleSearchChange = (e) => {
+      const term = e.target.value;
+      setSearchTerm(term);
+      debouncedSearch(term);
+    };
+
+    // Handle subcategory selection
+    const handleSelect = (subcategory) => {
+      onChange(subcategory.id);
+      setIsOpen(false);
+      setSearchTerm("");
+    };
+
+    // Get selected subcategory name
+    const selectedSubcategory = subcategories.find(s => s.id === value);
+
+    return (
+      <div className="relative" ref={dropdownRef}>
+        {/* Main dropdown trigger */}
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full bg-gray-50 border border-gray-100 rounded-[24px] px-8 py-4 outline-none focus:ring-8 focus:ring-emerald-50 focus:border-emerald-300 transition-all font-bold text-left flex items-center justify-between"
+        >
+          <span className={selectedSubcategory ? "text-gray-900" : "text-gray-400"}>
+            {selectedSubcategory ? selectedSubcategory.name : "Select Subcategory"}
+          </span>
+          <svg className="w-5 h-5 text-gray-400 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {/* Dropdown panel */}
+        {isOpen && (
+          <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-[24px] shadow-xl max-h-[300px] overflow-hidden">
+            {/* Search input */}
+            <div className="p-4 border-b border-gray-100">
+              <div className="relative">
+                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Search subcategories..."
+                  value={searchTerm}
+                  onChange={handleSearchChange}
+                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-300 transition-all font-medium"
+                />
+              </div>
+            </div>
+
+            {/* Results */}
+            <div className="max-h-[220px] overflow-y-auto">
+              {isSearching ? (
+                <div className="p-8 text-center text-gray-400">
+                  <div className="w-8 h-8 border-2 border-gray-300 border-t-emerald-500 rounded-full animate-spin mx-auto mb-2" />
+                  <p className="text-sm">Searching...</p>
+                </div>
+              ) : filteredSubcategories.length === 0 ? (
+                <div className="p-8 text-center text-gray-400">
+                  <p className="text-sm">No subcategories found</p>
+                </div>
+              ) : (
+                filteredSubcategories.map((subcategory) => (
+                  <button
+                    key={subcategory.id}
+                    type="button"
+                    onClick={() => handleSelect(subcategory)}
+                    className="w-full px-6 py-3 text-left hover:bg-emerald-50 transition-colors border-b border-gray-50 last:border-b-0"
+                  >
+                    <div className="font-medium text-gray-900">{subcategory.name}</div>
+                    {subcategory.categoryName && (
+                      <div className="text-xs text-gray-500 mt-1">{subcategory.categoryName}</div>
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
   };
 
   const handleMainImageChange = (e) => {
@@ -244,13 +399,12 @@ const ProductAdd = ({ token }) => {
 
               <div className="flex flex-col gap-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">{t("subcategory")}</label>
-                <select
-                  name="subcategoryid" value={formData.subcategoryid} onChange={handleInputChange} required
-                  className="w-full bg-gray-50 border border-gray-100 rounded-[24px] px-8 py-4 outline-none focus:ring-8 focus:ring-emerald-50 focus:border-emerald-300 transition-all font-bold"
-                >
-                  <option value="">{t("selectSubcategoryOption")}</option>
-                  {subcategories.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
+                <SearchableSubcategoryDropdown
+                  value={formData.subcategoryid}
+                  onChange={(value) => setFormData(prev => ({ ...prev, subcategoryid: value }))}
+                  subcategories={subcategories}
+                  token={token}
+                />
               </div>
 
               <div className="flex flex-col gap-2">

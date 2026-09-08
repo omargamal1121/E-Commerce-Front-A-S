@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { backendUrl } from "../../App";
@@ -26,6 +26,27 @@ const AddSubCategory = ({
 }) => {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
+  const [allCategories, setAllCategories] = useState([]);
+
+  // Load all categories for the searchable dropdown
+  useEffect(() => {
+    if (token) {
+      (async () => {
+        try {
+          const response = await axios.get(`${backendUrl}/api/categories`, {
+            headers: { Authorization: `Bearer ${token}` },
+            params: {
+              // Don't send isActive and includeDeleted to get all categories
+            }
+          });
+          const categoriesData = response.data?.responseBody?.data || [];
+          setAllCategories(categoriesData);
+        } catch (error) {
+          console.error("Failed to load categories:", error);
+        }
+      })();
+    }
+  }, [token]);
 
   const cleanText = (text) => text?.replace(/\s+/g, " ").trim();
 
@@ -143,6 +164,151 @@ const AddSubCategory = ({
     }
   };
 
+  // Custom Searchable Dropdown Component for Categories
+  const SearchableCategoryDropdown = ({ value, onChange, categories, token }) => {
+    const { t } = useTranslation();
+    const [isOpen, setIsOpen] = useState(false);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [filteredCategories, setFilteredCategories] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const dropdownRef = useRef(null);
+    const searchInputRef = useRef(null);
+    const searchTimeoutRef = useRef(null);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+          setIsOpen(false);
+          setSearchTerm("");
+          setFilteredCategories(categories);
+        }
+      };
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [categories]);
+
+    // Focus search input when dropdown opens and load initial data
+    useEffect(() => {
+      if (isOpen && searchInputRef.current) {
+        searchInputRef.current.focus();
+        setFilteredCategories(categories);
+      }
+    }, [isOpen, categories]);
+
+    // Debounced search function
+    const debouncedSearch = useCallback((term) => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+
+      setIsSearching(true);
+
+      searchTimeoutRef.current = setTimeout(async () => {
+        try {
+          const response = await axios.get(`${backendUrl}/api/categories`, {
+            headers: { Authorization: `Bearer ${token}` },
+            params: {
+              search: term || undefined,
+            }
+          });
+          const data = response.data?.responseBody?.data || [];
+          setFilteredCategories(data);
+        } catch (error) {
+          console.error("Search failed:", error);
+          setFilteredCategories([]);
+        } finally {
+          setIsSearching(false);
+        }
+      }, 450); // 450ms debounce
+    }, [token]);
+
+    // Handle search input changes
+    const handleSearchChange = (e) => {
+      const term = e.target.value;
+      setSearchTerm(term);
+      debouncedSearch(term);
+    };
+
+    // Handle category selection
+    const handleSelect = (category) => {
+      onChange(category.id);
+      setIsOpen(false);
+      setSearchTerm("");
+    };
+
+    // Get selected category name
+    const selectedCategory = categories.find(c => c.id === value);
+
+    return (
+      <div className="relative" ref={dropdownRef}>
+        {/* Main dropdown trigger */}
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full bg-gray-50/50 border border-gray-100 rounded-2xl px-5 py-3.5 outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-400 transition-all font-bold text-gray-700 text-left flex items-center justify-between"
+        >
+          <span className={selectedCategory ? "text-gray-700" : "text-gray-400"}>
+            {selectedCategory ? selectedCategory.name : t("selectRootNode")}
+          </span>
+          <svg className="w-5 h-5 text-gray-400 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {/* Dropdown panel */}
+        {isOpen && (
+          <div className="absolute z-50 w-full mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl max-h-[300px] overflow-hidden">
+            {/* Search input */}
+            <div className="p-4 border-b border-gray-100">
+              <div className="relative">
+                <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder={t("searchCategories") || "Search categories..."}
+                  value={searchTerm}
+                  onChange={handleSearchChange}
+                  className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300 transition-all font-medium"
+                />
+              </div>
+            </div>
+
+            {/* Results */}
+            <div className="max-h-[220px] overflow-y-auto">
+              {isSearching ? (
+                <div className="p-8 text-center text-gray-400">
+                  <div className="w-8 h-8 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin mx-auto mb-2" />
+                  <p className="text-sm">Searching...</p>
+                </div>
+              ) : filteredCategories.length === 0 ? (
+                <div className="p-8 text-center text-gray-400">
+                  <p className="text-sm">No categories found</p>
+                </div>
+              ) : (
+                filteredCategories.map((category) => (
+                  <button
+                    key={category.id}
+                    type="button"
+                    onClick={() => handleSelect(category)}
+                    className="w-full px-6 py-3 text-left hover:bg-blue-50 transition-colors border-b border-gray-50 last:border-b-0"
+                  >
+                    <div className="font-medium text-gray-900">{category.name}</div>
+                    {category.description && (
+                      <div className="text-xs text-gray-500 mt-1 line-clamp-1">{category.description}</div>
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-top-4 duration-500 pb-20">
       <div className="flex flex-col gap-1">
@@ -161,19 +327,12 @@ const AddSubCategory = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-black uppercase tracking-widest text-gray-400 ml-1">{t("hierarchyParent")}</label>
-                <select
+                <SearchableCategoryDropdown
                   value={parentCategoryId || ""}
-                  onChange={(e) => setParentCategoryId(Number(e.target.value))}
-                  className="w-full bg-gray-50/50 border border-gray-100 rounded-2xl px-5 py-3.5 outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-400 transition-all font-bold text-gray-700"
-                  required
-                >
-                  <option value="">{t("selectRootNode")}</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(value) => setParentCategoryId(Number(value))}
+                  categories={allCategories}
+                  token={token}
+                />
               </div>
 
               <div className="flex flex-col gap-2">
