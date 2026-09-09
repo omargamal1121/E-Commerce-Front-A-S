@@ -26,11 +26,6 @@ const ProductVariant = ({ token }) => {
   const [adjustQuantity, setAdjustQuantity] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
 
-  const SIZE_OPTIONS = [
-    { value: 0, label: "XS" }, { value: 1, label: "S" }, { value: 2, label: "M" },
-    { value: 3, label: "L" }, { value: 4, label: "XL" }, { value: 5, label: "XXL" }, { value: 6, label: "XXXL" },
-  ];
-
   const PRESET_COLORS = [
     { name: "White", hex: "#FFFFFF" },
     { name: "Black", hex: "#000000" },
@@ -90,7 +85,7 @@ const ProductVariant = ({ token }) => {
     try {
       const payload = {
         color: color || undefined,
-        size: size !== "" ? Number(size) : undefined,
+        size: size || undefined,
         waist: waist !== "" ? Number(waist) : undefined,
         length: length !== "" ? Number(length) : undefined,
         chest: chest !== "" ? Number(chest) : undefined,
@@ -271,13 +266,13 @@ const ProductVariant = ({ token }) => {
 
                 <div className="flex flex-col gap-2">
                   <label className="text-[9px] font-bold uppercase text-gray-500 tracking-widest ml-1">{t('size')}</label>
-                  <select
-                    value={size} onChange={(e) => setSize(e.target.value)}
-                    className="bg-white/5 border border-white/10 rounded-2xl px-6 py-3.5 outline-none focus:border-blue-500 font-bold text-sm transition-all appearance-none"
-                  >
-                    <option value="" className="bg-gray-900">{t('selectSizeOptional')}</option>
-                    {SIZE_OPTIONS.map(o => <option key={o.value} value={o.value} className="bg-gray-900">{o.label}</option>)}
-                  </select>
+                  <input
+                    type="text"
+                    value={size}
+                    onChange={(e) => setSize(e.target.value)}
+                    placeholder="e.g. S, M, L, XL"
+                    className="bg-white/5 border border-white/10 rounded-2xl px-6 py-3.5 outline-none focus:border-blue-500 font-bold text-sm transition-all"
+                  />
                 </div>
 
                 <button
@@ -330,7 +325,7 @@ const ProductVariant = ({ token }) => {
                   <div className="grid grid-cols-2 gap-4 py-6 border-y border-gray-200/60">
                     <div className="flex flex-col gap-1">
                       <span className="text-[8px] font-bold uppercase text-gray-400">{t('size')}</span>
-                      <span className="text-sm font-black text-gray-900">{SIZE_OPTIONS.find(o => o.value == v.size || o.label === v.size)?.label || "—"}</span>
+                      <span className="text-sm font-black text-gray-900">{v.size || "—"}</span>
                     </div>
                     <div className="flex flex-col gap-1 border-l border-gray-200/60 pl-4">
                       <span className="text-[8px] font-bold uppercase text-gray-400">{t('waist')}</span>

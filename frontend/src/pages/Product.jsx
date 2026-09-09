@@ -31,18 +31,6 @@ const Product = () => {
   // Intersection observer for related products
   const { ref: relatedProductsRef, inView: isRelatedInView } = useInView({ threshold: 0.2, triggerOnce: true });
 
-  const mapSizeToLabel = (value) => {
-    if (!value) return "N/A";
-    const val = String(value).toLowerCase();
-    const map = {
-      "30": "S", "31": "S", "32": "S",
-      "33": "M", "34": "M", "35": "M",
-      "36": "L", "37": "L", "38": "L",
-      "39": "XL", "40": "XL", "41": "XL",
-      "42": "XXL", "43": "XXL", "44": "XXL"
-    };
-    return map[val] || value;
-  };
 
   const updateLocalStock = (variantId, qty) => {
     if (variantId) {
@@ -129,7 +117,7 @@ const Product = () => {
   );
 
   const colors = [...new Set(variants.map(v => v.color))].filter(Boolean);
-  const availableSizes = [...new Set(variants.map(v => mapSizeToLabel(v.size)))].filter(Boolean);
+  const availableSizes = [...new Set(variants.map(v => v.size))].filter(Boolean);
 
   return (
     <div className="bg-white min-h-screen pt-24 pb-20">
@@ -234,7 +222,7 @@ const Product = () => {
               </div>
               <div className="grid grid-cols-4 gap-3">
                 {availableSizes.map((s, i) => {
-                  const isAvailable = variants.some(v => mapSizeToLabel(v.size) === s && v.color === selectedVariant?.color);
+                  const isAvailable = variants.some(v => v.size === s && v.color === selectedVariant?.color);
                   return (
                     <button
                       key={i}

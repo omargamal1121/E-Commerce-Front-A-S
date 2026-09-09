@@ -13,6 +13,7 @@ const ProductAdd = ({ token }) => {
   const editId = searchParams.get("edit");
   const [loading, setLoading] = useState(false);
   const [subcategories, setSubcategories] = useState([]);
+  const [currentSubcategoryName, setCurrentSubcategoryName] = useState("");
   const [collections, setCollections] = useState([]);
   const [selectedCollections, setSelectedCollections] = useState([]);
 
@@ -79,6 +80,9 @@ const ProductAdd = ({ token }) => {
             careInstructions: p.careInstructions || "", 
             shippingInfo: p.shippingInfo || ""
           });
+          
+          // Set the current subcategory name for display
+          setCurrentSubcategoryName(p.subCategoryName || "");
 
           // Set existing images for preview with backend URL resolution
           const normalizeUrl = (u) => u?.startsWith("http") ? u : (u ? `${import.meta.env.VITE_BACKEND_URL}/${u}` : null);
@@ -115,7 +119,7 @@ const ProductAdd = ({ token }) => {
   };
 
   // Custom Searchable Dropdown Component
-  const SearchableSubcategoryDropdown = ({ value, onChange, subcategories, token }) => {
+  const SearchableSubcategoryDropdown = ({ value, onChange, subcategories, token, currentSubcategoryName, setCurrentSubcategoryName }) => {
     const { t } = useTranslation();
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -184,12 +188,14 @@ const ProductAdd = ({ token }) => {
     // Handle subcategory selection
     const handleSelect = (subcategory) => {
       onChange(subcategory.id);
+      setCurrentSubcategoryName(subcategory.name); // Update the displayed name
       setIsOpen(false);
       setSearchTerm("");
     };
 
     // Get selected subcategory name
     const selectedSubcategory = subcategories.find(s => s.id === value);
+    const displaySubcategoryName = selectedSubcategory ? selectedSubcategory.name : currentSubcategoryName || "";
 
     return (
       <div className="relative" ref={dropdownRef}>
@@ -199,8 +205,8 @@ const ProductAdd = ({ token }) => {
           onClick={() => setIsOpen(!isOpen)}
           className="w-full bg-gray-50 border border-gray-100 rounded-[24px] px-8 py-4 outline-none focus:ring-8 focus:ring-emerald-50 focus:border-emerald-300 transition-all font-bold text-left flex items-center justify-between"
         >
-          <span className={selectedSubcategory ? "text-gray-900" : "text-gray-400"}>
-            {selectedSubcategory ? selectedSubcategory.name : "Select Subcategory"}
+          <span className={displaySubcategoryName ? "text-gray-900" : "text-gray-400"}>
+            {displaySubcategoryName || "Select Subcategory"}
           </span>
           <svg className="w-5 h-5 text-gray-400 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -404,6 +410,8 @@ const ProductAdd = ({ token }) => {
                   onChange={(value) => setFormData(prev => ({ ...prev, subcategoryid: value }))}
                   subcategories={subcategories}
                   token={token}
+                  currentSubcategoryName={currentSubcategoryName}
+                  setCurrentSubcategoryName={setCurrentSubcategoryName}
                 />
               </div>
 
