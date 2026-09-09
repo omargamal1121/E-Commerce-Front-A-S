@@ -266,11 +266,27 @@ const ProductVariant = ({ token }) => {
 
                 <div className="flex flex-col gap-2">
                   <label className="text-[9px] font-bold uppercase text-gray-500 tracking-widest ml-1">{t('size')}</label>
+                  
+                  {/* Preset Size Buttons */}
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {['S', 'M', 'L', 'XL', 'XXL'].map(s => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setSize(s)}
+                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase transition-all ${size === s ? 'bg-blue-600 text-white' : 'bg-white/10 text-white/70 hover:bg-white/20'}`}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Custom Size Input */}
                   <input
                     type="text"
                     value={size}
                     onChange={(e) => setSize(e.target.value)}
-                    placeholder="e.g. S, M, L, XL"
+                    placeholder="Or enter custom size (e.g. 30, 32, 3XL)"
                     className="bg-white/5 border border-white/10 rounded-2xl px-6 py-3.5 outline-none focus:border-blue-500 font-bold text-sm transition-all"
                   />
                 </div>
