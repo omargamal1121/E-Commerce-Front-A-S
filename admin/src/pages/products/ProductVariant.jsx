@@ -20,6 +20,7 @@ const ProductVariant = ({ token }) => {
   const [waist, setWaist] = useState("");
   const [length, setLength] = useState("");
   const [chest, setChest] = useState("");
+  const [hip, setHip] = useState("");
   const [quantity, setQuantity] = useState("");
 
   const [selectedVariantId, setSelectedVariantId] = useState(null);
@@ -89,11 +90,12 @@ const ProductVariant = ({ token }) => {
         waist: waist !== "" ? Number(waist) : undefined,
         length: length !== "" ? Number(length) : undefined,
         chest: chest !== "" ? Number(chest) : undefined,
+        hip: hip !== "" ? Number(hip) : undefined,
         quantity: quantity ? Number(quantity) : 0,
       };
       await API.variants.add(productId, payload, token);
       toast.success(t('variantAdded'));
-      setColor(""); setSize(""); setWaist(""); setLength(""); setChest(""); setQuantity("");
+      setColor(""); setSize(""); setWaist(""); setLength(""); setChest(""); setHip(""); setQuantity("");
       fetchVariants();
     } catch (e) {
       if (e.response?.status === 404) {
@@ -252,6 +254,7 @@ const ProductVariant = ({ token }) => {
                   { label: t('waist'), state: waist, set: setWaist, type: "number", p: "0" },
                   { label: t('length'), state: length, set: setLength, type: "number", p: "0" },
                   { label: t('chest') || 'Chest', state: chest, set: setChest, type: "number", p: "0" },
+                  { label: t('hip') || 'Hip', state: hip, set: setHip, type: "number", p: "0" },
                   { label: t('quantity'), state: quantity, set: setQuantity, type: "number", p: "0" },
                 ].map(f => (
                   <div key={f.label} className="flex flex-col gap-2">
@@ -354,6 +357,10 @@ const ProductVariant = ({ token }) => {
                     <div className="flex flex-col gap-1 border-l border-gray-200/60 pl-4">
                       <span className="text-[8px] font-bold uppercase text-gray-400">{t('chest') || 'Chest'}</span>
                       <span className="text-sm font-black text-gray-900">{v.chest || "—"}</span>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[8px] font-bold uppercase text-gray-400">{t('hip') || 'Hip'}</span>
+                      <span className="text-sm font-black text-gray-900">{v.hip || "—"}</span>
                     </div>
                   </div>
 

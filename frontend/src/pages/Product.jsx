@@ -253,6 +253,39 @@ const Product = () => {
               </button>
             </div>
 
+            {/* Variant Measurements */}
+            {selectedVariant && (selectedVariant.waist || selectedVariant.length || selectedVariant.chest || selectedVariant.hip) && (
+              <div className="p-6 rounded-3xl bg-gray-50 border border-gray-100">
+                <h5 className="text-[10px] font-black uppercase tracking-[0.3em] mb-4 text-black">{t('VARIANT_DETAILS')}</h5>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {selectedVariant.waist && (
+                    <div className="flex flex-col items-center p-3 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                      <span className="text-[8px] font-black uppercase tracking-widest text-gray-400 mb-1">{t('WAIST')}</span>
+                      <span className="text-lg font-black text-gray-900">{selectedVariant.waist}<span className="text-xs font-bold text-gray-400 ml-0.5">cm</span></span>
+                    </div>
+                  )}
+                  {selectedVariant.length && (
+                    <div className="flex flex-col items-center p-3 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                      <span className="text-[8px] font-black uppercase tracking-widest text-gray-400 mb-1">{t('LENGTH')}</span>
+                      <span className="text-lg font-black text-gray-900">{selectedVariant.length}<span className="text-xs font-bold text-gray-400 ml-0.5">cm</span></span>
+                    </div>
+                  )}
+                  {selectedVariant.chest && (
+                    <div className="flex flex-col items-center p-3 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                      <span className="text-[8px] font-black uppercase tracking-widest text-gray-400 mb-1">{t('CHEST')}</span>
+                      <span className="text-lg font-black text-gray-900">{selectedVariant.chest}<span className="text-xs font-bold text-gray-400 ml-0.5">cm</span></span>
+                    </div>
+                  )}
+                  {selectedVariant.hip && (
+                    <div className="flex flex-col items-center p-3 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                      <span className="text-[8px] font-black uppercase tracking-widest text-gray-400 mb-1">{t('HIP')}</span>
+                      <span className="text-lg font-black text-gray-900">{selectedVariant.hip}<span className="text-xs font-bold text-gray-400 ml-0.5">cm</span></span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Details & Specs */}
             <div className="grid grid-cols-1 gap-4 pt-10">
               <div className="p-6 rounded-3xl bg-gray-50/50 border border-gray-100 flex flex-col gap-6">
@@ -319,13 +352,20 @@ const Product = () => {
               <div className="overflow-hidden rounded-3xl border border-gray-100">
                 <table className="w-full text-xs">
                   <thead className="bg-black text-white px-4">
-                    <tr><th className="py-5 px-6 text-left font-black uppercase tracking-widest">Global Size</th><th className="py-5 px-6 text-left font-black uppercase tracking-widest">Dimension Info</th></tr>
+                    <tr>
+                      <th className="py-5 px-6 text-left font-black uppercase tracking-widest">Size</th>
+                      <th className="py-5 px-6 text-left font-black uppercase tracking-widest">{t('WAIST')} (cm)</th>
+                      <th className="py-5 px-6 text-left font-black uppercase tracking-widest">{t('LENGTH')} (cm)</th>
+                      <th className="py-5 px-6 text-left font-black uppercase tracking-widest">{t('CHEST')} (cm)</th>
+                      <th className="py-5 px-6 text-left font-black uppercase tracking-widest">{t('HIP')} (cm)</th>
+                    </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 font-bold">
-                    <tr><td className="py-5 px-6">SMALL</td><td className="py-5 px-6 text-gray-400 font-medium">Standard Fit (EU 30-32)</td></tr>
-                    <tr><td className="py-5 px-6">MEDIUM</td><td className="py-5 px-6 text-gray-400 font-medium">Standard Fit (EU 33-35)</td></tr>
-                    <tr><td className="py-5 px-6">LARGE</td><td className="py-5 px-6 text-gray-400 font-medium">Standard Fit (EU 36-38)</td></tr>
-                    <tr><td className="py-5 px-6">X-LARGE</td><td className="py-5 px-6 text-gray-400 font-medium">Standard Fit (EU 39-41)</td></tr>
+                    <tr><td className="py-5 px-6">S</td><td className="py-5 px-6 text-gray-500">72–76</td><td className="py-5 px-6 text-gray-500">98–100</td><td className="py-5 px-6 text-gray-500">86–90</td><td className="py-5 px-6 text-gray-500">90–94</td></tr>
+                    <tr><td className="py-5 px-6">M</td><td className="py-5 px-6 text-gray-500">80–84</td><td className="py-5 px-6 text-gray-500">102–104</td><td className="py-5 px-6 text-gray-500">94–98</td><td className="py-5 px-6 text-gray-500">98–102</td></tr>
+                    <tr><td className="py-5 px-6">L</td><td className="py-5 px-6 text-gray-500">88–92</td><td className="py-5 px-6 text-gray-500">104–106</td><td className="py-5 px-6 text-gray-500">102–106</td><td className="py-5 px-6 text-gray-500">106–110</td></tr>
+                    <tr><td className="py-5 px-6">XL</td><td className="py-5 px-6 text-gray-500">96–100</td><td className="py-5 px-6 text-gray-500">106–108</td><td className="py-5 px-6 text-gray-500">110–114</td><td className="py-5 px-6 text-gray-500">114–118</td></tr>
+                    <tr><td className="py-5 px-6">XXL</td><td className="py-5 px-6 text-gray-500">104–110</td><td className="py-5 px-6 text-gray-500">108–110</td><td className="py-5 px-6 text-gray-500">118–124</td><td className="py-5 px-6 text-gray-500">122–128</td></tr>
                   </tbody>
                 </table>
               </div>
