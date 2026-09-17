@@ -31,6 +31,7 @@ import CategoryPage from "./pages/CategoryPage";
 import SubcategoryPage from "./pages/SubcategoryPage";
 import CollectionProducts from "./pages/CollectionProducts";
 import RequestPasswordReset from "./pages/RequestPasswordReset";
+import ConfirmEmail from "./pages/ConfirmEmail";
 import ScrollToTopButton from "./components/ScrollToTopButton";
 import Wishlist from "./pages/Wishlist";
 import Erroe404 from "./pages/Erroe404";
@@ -137,6 +138,7 @@ const App = () => {
         <Route path="/place-order" element={<PrivateRoute><PlaceOrder /></PrivateRoute>} />
         <Route path="/product/:productId" element={<Product />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/confirm-email" element={<ConfirmEmail />} />
         <Route path="/request-password" element={<RequestPasswordReset />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
