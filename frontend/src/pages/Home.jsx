@@ -4,7 +4,6 @@ import LatestCollection from "../components/LatestCollection";
 import BestSeller from "../components/BestSeller";
 import MostWanted from "../components/MostWanted";
 import OurPolicy from "../components/OurPolicy";
-import NewLetterBox from '../components/NewLetterBox';
 import { motion } from "framer-motion";
 import { assets } from "../assets/frontend_assets/assets";
 import ScrollSection from "../components/ScrollSection";
@@ -88,13 +87,6 @@ const Home = () => {
         viewport={{ once: true, amount: 0.3 }}
         variants={itemVariants}>
         <OurPolicy />
-      </motion.div>
-      <motion.div
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.3 }}
-        variants={itemVariants}>
-        <NewLetterBox />
       </motion.div>
     </div>
   );

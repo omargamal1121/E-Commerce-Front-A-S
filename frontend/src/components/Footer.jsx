@@ -11,9 +11,8 @@ const Footer = () => {
     <footer className="bg-[#151515] text-white mt-24">
       <div className="px-4 sm:px-[2vw] md:px-[2vw] lg:px-[3vw] pt-20 pb-10">
 
-        {/* Top row: Support + Newsletter */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-
+        {/* Top row: Support */}
+        <div>
           {/* Support */}
           <div>
             <p className="uppercase tracking-widest text-xs text-gray-400 mb-4">Support</p>
@@ -43,22 +42,6 @@ const Footer = () => {
               </li>
             </ul>
           </div>
-
-          {/* Newsletter */}
-          <div>
-            <p className="uppercase tracking-widest text-xs text-gray-400 mb-4">Newsletter</p>
-            <div className="flex items-center bg-transparent border border-gray-600 focus-within:border-gray-300 transition-colors max-w-xl">
-              <input
-                type="email"
-                placeholder="Email"
-                className="flex-1 bg-transparent text-gray-200 placeholder-gray-400 px-4 py-3 focus:outline-none"
-              />
-              <button className="px-4 py-3 text-gray-300 hover:text-white" aria-label="Subscribe">
-                →
-              </button>
-            </div>
-          </div>
-
         </div>
 
         {/* Bottom row: language, copyright */}

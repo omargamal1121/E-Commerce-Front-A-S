@@ -1,7 +1,6 @@
 import React from 'react'
 import Title from '../components/Title'
 import { assets } from '../assets/frontend_assets/assets'
-import NewLetterBox from '../components/NewLetterBox'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next';
 
@@ -67,28 +66,10 @@ const Contact = () => {
             className='flex flex-col gap-6'>
             <motion.p variants={itemVariants} className='font-semibold text-xl text-gray-600'>{t('OUR_STORE')}</motion.p>
             <motion.p variants={itemVariants} className='text-gray-500'>{t('STORE_ADDRESS')}</motion.p>
-            <motion.p variants={itemVariants} className='text-gray-500'>{t('STORE_CONTACT')}</motion.p>
-            <motion.p variants={itemVariants} className='font-semibold text-xl text-gray-600'>{t('CAREERS')}</motion.p>
-            <motion.p variants={itemVariants} className='text-gray-500'>{t('CAREERS_DESC')}</motion.p>
-            <motion.button
-              variants={itemVariants}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className='bg-white text-black px-8 py-4 text-sm border hover:bg-black hover:text-white border-black transition-all duration-300 cursor-pointer'>
-              {t('EXPLORE_JOBS')}
-            </motion.button>
+            <motion.p variants={itemVariants} className='text-gray-500' dangerouslySetInnerHTML={{ __html: t('STORE_CONTACT') }}></motion.p>
           </motion.div>
         </motion.div>
       </div>
-
-      {/* Newsletter Section */}
-      <motion.div
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.3 }}
-        variants={sectionVariants}>
-        <NewLetterBox />
-      </motion.div>
     </div>
   )
 }
