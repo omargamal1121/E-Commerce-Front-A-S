@@ -5,6 +5,26 @@ import { currency } from "../../App";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
+const PRESET_COLORS = [
+  { name: "White", hex: "#FFFFFF" },
+  { name: "Black", hex: "#000000" },
+  { name: "Red", hex: "#FF0000" },
+  { name: "Blue", hex: "#0000FF" },
+  { name: "Green", hex: "#008000" },
+  { name: "Yellow", hex: "#FFFF00" },
+  { name: "Gray", hex: "#808080" },
+  { name: "Navy", hex: "#000080" },
+  { name: "Purple", hex: "#800080" },
+  { name: "Orange", hex: "#FFA500" },
+];
+
+const getColorName = (c) => {
+  if (!c) return "—";
+  if (!c.startsWith('#')) return c;
+  const found = PRESET_COLORS.find(p => p.hex.toLowerCase() === c.toLowerCase());
+  return found ? found.name : c;
+};
+
 const ViewProduct = ({ token, productId }) => {
   const { t } = useTranslation();
   const [product, setProduct] = useState(null);
@@ -454,7 +474,7 @@ const ViewProduct = ({ token, productId }) => {
                 <div className="flex justify-between items-start">
                   <div className="flex flex-col gap-1">
                     <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Variant</span>
-                    <span className="text-2xl font-black uppercase tracking-tighter">{vs.color} / {vs.size}</span>
+                    <span className="text-2xl font-black uppercase tracking-tighter">{getColorName(vs.color)} / {vs.size}</span>
                   </div>
                   <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-xl">✨</div>
                 </div>
@@ -501,7 +521,13 @@ const ViewProduct = ({ token, productId }) => {
               <div className="flex justify-between items-start">
                 <div className="flex flex-col">
                   <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Color</span>
-                  <span className="text-lg font-black text-gray-900 uppercase">{v.color || "Static"}</span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <div
+                      className="w-3.5 h-3.5 rounded-full border border-gray-300 shadow-sm shrink-0"
+                      style={{ backgroundColor: v.color || 'transparent' }}
+                    />
+                    <span className="text-lg font-black text-gray-900 uppercase">{getColorName(v.color)}</span>
+                  </div>
                 </div>
                 <div className={`w-3 h-3 rounded-full ${v.isActive ? "bg-emerald-500 shadow-lg shadow-emerald-200" : "bg-gray-300"}`} />
               </div>

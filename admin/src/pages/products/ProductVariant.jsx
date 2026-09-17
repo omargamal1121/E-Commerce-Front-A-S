@@ -42,6 +42,13 @@ const ProductVariant = ({ token }) => {
     { name: "Orange", hex: "#FFA500" },
   ];
 
+  const getColorName = (c) => {
+    if (!c) return "—";
+    if (!c.startsWith('#')) return c;
+    const found = PRESET_COLORS.find(p => p.hex.toLowerCase() === c.toLowerCase());
+    return found ? found.name : c;
+  };
+
   const fetchProduct = async () => {
     setLoading(true);
     try {
@@ -346,7 +353,7 @@ const ProductVariant = ({ token }) => {
                           className="w-4 h-4 rounded-full border border-gray-200 shadow-sm"
                           style={{ backgroundColor: v.color || 'transparent' }}
                         />
-                        <span className="text-xl font-black text-gray-900 uppercase tracking-tight">{v.color || "Static"}</span>
+                        <span className="text-xl font-black text-gray-900 uppercase tracking-tight">{getColorName(v.color)}</span>
                         {v.isFreeSize && (
                           <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-blue-100 text-blue-700">
                             {t('freeSize') || 'Free Size'}
