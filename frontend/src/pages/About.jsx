@@ -1,7 +1,6 @@
 import React from 'react'
 import Title from '../components/Title'
 import { assets } from '../assets/frontend_assets/assets'
-import NewLetterBox from '../components/NewLetterBox'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next';
 
@@ -98,13 +97,7 @@ const About = () => {
         </motion.div>
       </motion.div>
 
-      <motion.div
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.3 }}
-        variants={sectionVariants}>
-        <NewLetterBox />
-      </motion.div>
+
     </div>
   )
 }
