@@ -44,6 +44,8 @@ const resources = {
       SORT_BY_HIGH_LOW: 'Sort by: High to Low',
       NO_PRODUCTS_MATCH: 'No products match your filters.',
       SELECT_SIZE: 'Select Size',
+      SLEEVE_LENGTH: 'Sleeve Length',
+      FREE_SIZE: 'Free Size',
       ADD_TO_CART: 'ADD TO CART',
       PRODUCT_ORIGINAL: '100% Original product.',
       PRODUCT_COD: 'Cash on delivery is available on this product.',

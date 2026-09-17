@@ -63,6 +63,9 @@ const resources = {
       trashExclude: 'Exclude Trash',
       showAll: 'Show All',
       restoreFailed: 'Restore failed',
+      sleeveLength: 'Sleeve Length',
+      freeSize: 'Free Size',
+      isFreeSize: 'Free Size',
 
       // --- Product Form ---
       identityName: 'Product Name',

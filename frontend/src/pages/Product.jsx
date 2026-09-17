@@ -254,7 +254,7 @@ const Product = () => {
             </div>
 
             {/* Variant Measurements */}
-            {selectedVariant && (selectedVariant.waist || selectedVariant.length || selectedVariant.chest || selectedVariant.hip) && (
+            {selectedVariant && (selectedVariant.waist || selectedVariant.length || selectedVariant.chest || selectedVariant.hip || selectedVariant.sleeveLength || selectedVariant.isFreeSize) && (
               <div className="p-6 rounded-3xl bg-gray-50 border border-gray-100">
                 <h5 className="text-[10px] font-black uppercase tracking-[0.3em] mb-4 text-black">{t('VARIANT_DETAILS')}</h5>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -280,6 +280,18 @@ const Product = () => {
                     <div className="flex flex-col items-center p-3 bg-white rounded-2xl border border-gray-100 shadow-sm">
                       <span className="text-[8px] font-black uppercase tracking-widest text-gray-400 mb-1">{t('HIP')}</span>
                       <span className="text-lg font-black text-gray-900">{selectedVariant.hip}<span className="text-xs font-bold text-gray-400 ml-0.5">cm</span></span>
+                    </div>
+                  )}
+                  {selectedVariant.sleeveLength && (
+                    <div className="flex flex-col items-center p-3 bg-white rounded-2xl border border-gray-100 shadow-sm">
+                      <span className="text-[8px] font-black uppercase tracking-widest text-gray-400 mb-1">{t('SLEEVE_LENGTH') || 'SLEEVE LENGTH'}</span>
+                      <span className="text-lg font-black text-gray-900">{selectedVariant.sleeveLength}<span className="text-xs font-bold text-gray-400 ml-0.5">cm</span></span>
+                    </div>
+                  )}
+                  {selectedVariant.isFreeSize && (
+                    <div className="flex flex-col items-center p-3 bg-black text-white rounded-2xl border border-black shadow-sm">
+                      <span className="text-[8px] font-black uppercase tracking-widest text-gray-300 mb-1">{t('SIZE')}</span>
+                      <span className="text-xs font-black uppercase tracking-wider">{t('FREE_SIZE') || 'FREE SIZE'}</span>
                     </div>
                   )}
                 </div>

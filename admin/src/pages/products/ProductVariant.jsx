@@ -21,6 +21,8 @@ const ProductVariant = ({ token }) => {
   const [length, setLength] = useState("");
   const [chest, setChest] = useState("");
   const [hip, setHip] = useState("");
+  const [sleeveLength, setSleeveLength] = useState("");
+  const [isFreeSize, setIsFreeSize] = useState(false);
   const [quantity, setQuantity] = useState("");
 
   const [selectedVariantId, setSelectedVariantId] = useState(null);
@@ -91,11 +93,13 @@ const ProductVariant = ({ token }) => {
         length: length !== "" ? Number(length) : undefined,
         chest: chest !== "" ? Number(chest) : undefined,
         hip: hip !== "" ? Number(hip) : undefined,
+        sleeveLength: sleeveLength !== "" ? Number(sleeveLength) : undefined,
+        isFreeSize: Boolean(isFreeSize),
         quantity: quantity ? Number(quantity) : 0,
       };
       await API.variants.add(productId, payload, token);
       toast.success(t('variantAdded'));
-      setColor(""); setSize(""); setWaist(""); setLength(""); setChest(""); setHip(""); setQuantity("");
+      setColor(""); setSize(""); setWaist(""); setLength(""); setChest(""); setHip(""); setSleeveLength(""); setIsFreeSize(false); setQuantity("");
       fetchVariants();
     } catch (e) {
       if (e.response?.status === 404) {
@@ -255,17 +259,30 @@ const ProductVariant = ({ token }) => {
                   { label: t('length'), state: length, set: setLength, type: "number", p: "0" },
                   { label: t('chest') || 'Chest', state: chest, set: setChest, type: "number", p: "0" },
                   { label: t('hip') || 'Hip', state: hip, set: setHip, type: "number", p: "0" },
+                  { label: t('sleeveLength') || 'Sleeve Length', state: sleeveLength, set: setSleeveLength, type: "number", p: "0" },
                   { label: t('quantity'), state: quantity, set: setQuantity, type: "number", p: "0" },
                 ].map(f => (
                   <div key={f.label} className="flex flex-col gap-2">
                     <label className="text-[9px] font-bold uppercase text-gray-500 tracking-widest ml-1">{f.label}</label>
                     <input
                       type={f.type} value={f.state} onChange={(e) => f.set(e.target.value)}
-                      className="bg-white/5 border border-white/10 rounded-2xl px-6 py-3.5 outline-none focus:border-blue-500 font-bold text-sm transition-all"
+                      className="bg-white/5 border border-white/10 rounded-2xl px-6 py-3.5 outline-none focus:border-blue-500 font-bold text-sm transition-all text-white"
                       placeholder={f.p}
                     />
                   </div>
                 ))}
+
+                <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-6 py-3.5 cursor-pointer" onClick={() => setIsFreeSize(!isFreeSize)}>
+                  <input
+                    type="checkbox"
+                    checked={isFreeSize}
+                    onChange={(e) => setIsFreeSize(e.target.checked)}
+                    className="w-5 h-5 accent-blue-600 rounded cursor-pointer"
+                  />
+                  <label className="text-xs font-bold uppercase text-white/90 cursor-pointer select-none">
+                    {t('freeSize') || 'Free Size'}
+                  </label>
+                </div>
 
                 <div className="flex flex-col gap-2">
                   <label className="text-[9px] font-bold uppercase text-gray-500 tracking-widest ml-1">{t('size')}</label>
@@ -290,7 +307,7 @@ const ProductVariant = ({ token }) => {
                     value={size}
                     onChange={(e) => setSize(e.target.value)}
                     placeholder="Or enter custom size (e.g. 30, 32, 3XL)"
-                    className="bg-white/5 border border-white/10 rounded-2xl px-6 py-3.5 outline-none focus:border-blue-500 font-bold text-sm transition-all"
+                    className="bg-white/5 border border-white/10 rounded-2xl px-6 py-3.5 outline-none focus:border-blue-500 font-bold text-sm transition-all text-white"
                   />
                 </div>
 
@@ -330,6 +347,11 @@ const ProductVariant = ({ token }) => {
                           style={{ backgroundColor: v.color || 'transparent' }}
                         />
                         <span className="text-xl font-black text-gray-900 uppercase tracking-tight">{v.color || "Static"}</span>
+                        {v.isFreeSize && (
+                          <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-blue-100 text-blue-700">
+                            {t('freeSize') || 'Free Size'}
+                          </span>
+                        )}
                       </div>
                     </div>
                     <button
@@ -344,7 +366,7 @@ const ProductVariant = ({ token }) => {
                   <div className="grid grid-cols-2 gap-4 py-6 border-y border-gray-200/60">
                     <div className="flex flex-col gap-1">
                       <span className="text-[8px] font-bold uppercase text-gray-400">{t('size')}</span>
-                      <span className="text-sm font-black text-gray-900">{v.size || "—"}</span>
+                      <span className="text-sm font-black text-gray-900">{v.isFreeSize ? (t('freeSize') || 'Free Size') : (v.size || "—")}</span>
                     </div>
                     <div className="flex flex-col gap-1 border-l border-gray-200/60 pl-4">
                       <span className="text-[8px] font-bold uppercase text-gray-400">{t('waist')}</span>
@@ -361,6 +383,10 @@ const ProductVariant = ({ token }) => {
                     <div className="flex flex-col gap-1">
                       <span className="text-[8px] font-bold uppercase text-gray-400">{t('hip') || 'Hip'}</span>
                       <span className="text-sm font-black text-gray-900">{v.hip || "—"}</span>
+                    </div>
+                    <div className="flex flex-col gap-1 border-l border-gray-200/60 pl-4">
+                      <span className="text-[8px] font-bold uppercase text-gray-400">{t('sleeveLength') || 'Sleeve Length'}</span>
+                      <span className="text-sm font-black text-gray-900">{v.sleeveLength || "—"}</span>
                     </div>
                   </div>
 
