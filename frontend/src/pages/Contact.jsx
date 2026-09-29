@@ -65,7 +65,6 @@ const Contact = () => {
             variants={containerVariants}
             className='flex flex-col gap-6'>
             <motion.p variants={itemVariants} className='font-semibold text-xl text-gray-600'>{t('OUR_STORE')}</motion.p>
-            <motion.p variants={itemVariants} className='text-gray-500'>{t('STORE_ADDRESS')}</motion.p>
             <motion.p variants={itemVariants} className='text-gray-500' dangerouslySetInnerHTML={{ __html: t('STORE_CONTACT') }}></motion.p>
           </motion.div>
         </motion.div>

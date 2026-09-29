@@ -7,7 +7,7 @@
    ============================================ */
 :root {
   /* --- Brand Palette --- */
-  --green-50:  #F4F7F4;
+  --green-50: #F4F7F4;
   --green-100: #E6ECE5;
   --green-200: #CBD7C9;
   --green-300: #9EB59B;
@@ -15,14 +15,15 @@
   --green-500: #52734D;
   --green-600: #3E5A3A;
   --green-700: #32492F;
-  --green-800: #2C3E2E;   /* PRIMARY DEEP GREEN */
+  --green-800: #2C3E2E;
+  /* PRIMARY DEEP GREEN */
   --green-900: #202D21;
   --green-950: #121B13;
 
   /* --- Accent / Gold Tones --- */
-  --sand-light:  #F5EDD8;
-  --sand-mid:    #E8D5B0;
-  --gold-warm:   #D4AF37;
+  --sand-light: #F5EDD8;
+  --sand-mid: #E8D5B0;
+  --gold-warm: #D4AF37;
   --gold-accent: #B8860B;
 
   /* --- Legacy aliases --- */
@@ -43,15 +44,19 @@ body {
 }
 
 /* Force luxury green text hierarchy across Tailwind classes */
-.text-black, .text-gray-900, .text-gray-800 {
+.text-black,
+.text-gray-900,
+.text-gray-800 {
   color: #2C3E2E !important;
 }
 
-.text-gray-700, .text-gray-600 {
+.text-gray-700,
+.text-gray-600 {
   color: #3E5A3A !important;
 }
 
-.text-gray-500, .text-gray-400 {
+.text-gray-500,
+.text-gray-400 {
   color: #52734D !important;
 }
 
