@@ -1,5 +1,6 @@
 import React from "react";
 import Title from "../components/Title";
+import { motion } from "framer-motion";
 
 const Policy = () => {
   const sectionVariants = {
@@ -24,7 +25,7 @@ const Policy = () => {
         whileInView="visible"
         viewport={{ once: true, amount: 0.3 }}
         variants={sectionVariants}
-        className="text-2xl text-center pt-10 border-t border-gray-200"
+        className="text-2xl text-center pt-10 border-t border-[var(--border)]"
       >
         <Title text1="RETURN &amp;" text2="EXCHANGE POLICY" />
       </motion.div>
@@ -37,13 +38,13 @@ const Policy = () => {
         className="max-w-4xl mx-auto mt-12 space-y-10 text-gray-700 leading-relaxed"
       >
         <motion.p variants={itemVariants} className="text-base sm:text-lg">
-          At <strong className="text-[#29251F]">R&amp;S Fashion Wear</strong>, we want you to be satisfied with your purchase. You may request a return or exchange within <strong className="text-[#6B705C]">14 days of receiving your order</strong>, subject to the conditions below.
+          At <strong className="text-[var(--text)]">R&amp;S Fashion Wear</strong>, we want you to be satisfied with your purchase. You may request a return or exchange within <strong className="text-[var(--text-muted)]">14 days of receiving your order</strong>, subject to the conditions below.
         </motion.p>
 
         <motion.section variants={itemVariants} className="space-y-4">
-          <h2 className="text-lg sm:text-xl font-bold text-[#29251F] font-serif-title">Opening the Package</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-[var(--text)] font-serif-title">Opening the Package</h2>
           <p className="text-base sm:text-lg">
-            Customers are <strong className="text-[#6B705C]">allowed to open and inspect the package upon delivery</strong> to make sure that the received items are correct and in acceptable condition.
+            Customers are <strong className="text-[var(--text-muted)]">allowed to open and inspect the package upon delivery</strong> to make sure that the received items are correct and in acceptable condition.
           </p>
           <p className="text-base sm:text-lg">
             Opening the package does not affect your eligibility for a return or exchange, provided that the item remains in its original condition and meets the conditions stated below.
@@ -51,11 +52,11 @@ const Policy = () => {
         </motion.section>
 
         <motion.section variants={itemVariants} className="space-y-4">
-          <h2 className="text-lg sm:text-xl font-bold text-[#29251F] font-serif-title">Exchange</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-[var(--text)] font-serif-title">Exchange</h2>
           <p className="text-base sm:text-lg">
-            Exchange requests must be submitted within <strong className="text-[#6B705C]">14 days of receiving the order</strong>.
+            Exchange requests must be submitted within <strong className="text-[var(--text-muted)]">14 days of receiving the order</strong>.
           </p>
-          <p className="text-base sm:text-lg font-semibold text-[#29251F]">To be eligible for an exchange, the item must:</p>
+          <p className="text-base sm:text-lg font-semibold text-[var(--text)]">To be eligible for an exchange, the item must:</p>
           <ul className="list-disc pl-6 space-y-2 text-base sm:text-lg">
             <li>Be unused and unwashed.</li>
             <li>Be undamaged and in its original condition.</li>
@@ -64,11 +65,11 @@ const Policy = () => {
         </motion.section>
 
         <motion.section variants={itemVariants} className="space-y-4">
-          <h2 className="text-lg sm:text-xl font-bold text-[#29251F] font-serif-title">Returns</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-[var(--text)] font-serif-title">Returns</h2>
           <p className="text-base sm:text-lg">
-            Return requests must be submitted within <strong className="text-[#6B705C]">14 days of receiving the order</strong>.
+            Return requests must be submitted within <strong className="text-[var(--text-muted)]">14 days of receiving the order</strong>.
           </p>
-          <p className="text-base sm:text-lg font-semibold text-[#29251F]">To be eligible for a return, the item must:</p>
+          <p className="text-base sm:text-lg font-semibold text-[var(--text)]">To be eligible for a return, the item must:</p>
           <ul className="list-disc pl-6 space-y-2 text-base sm:text-lg">
             <li>Be unused and unwashed.</li>
             <li>Be undamaged and in its original condition.</li>
@@ -77,29 +78,29 @@ const Policy = () => {
         </motion.section>
 
         <motion.section variants={itemVariants} className="space-y-4">
-          <h2 className="text-lg sm:text-xl font-bold text-[#29251F] font-serif-title">Washing &amp; Care</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-[var(--text)] font-serif-title">Washing &amp; Care</h2>
           <p className="text-base sm:text-lg">
-            To keep your garment looking its best, please follow the <strong className="text-[#6B705C]">washing and care instructions provided on the garment's care label</strong>.
+            To keep your garment looking its best, please follow the <strong className="text-[var(--text-muted)]">washing and care instructions provided on the garment's care label</strong>.
           </p>
         </motion.section>
 
         <motion.section variants={itemVariants} className="space-y-4">
-          <h2 className="text-lg sm:text-xl font-bold text-[#29251F] font-serif-title">Damaged or Incorrect Items</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-[var(--text)] font-serif-title">Damaged or Incorrect Items</h2>
           <p className="text-base sm:text-lg">
-            If you receive a <strong className="text-[#6B705C]">damaged, defective, or incorrect item</strong>, please contact us as soon as possible after receiving your order.
+            If you receive a <strong className="text-[var(--text-muted)]">damaged, defective, or incorrect item</strong>, please contact us as soon as possible after receiving your order.
           </p>
           <p className="text-base sm:text-lg">
-            Please provide your <strong className="text-[#29251F]">order number</strong> and, where applicable, clear photos of the item and the issue. We will review the case and provide an appropriate solution.
+            Please provide your <strong className="text-[var(--text)]">order number</strong> and, where applicable, clear photos of the item and the issue. We will review the case and provide an appropriate solution.
           </p>
         </motion.section>
 
         <motion.section variants={itemVariants} className="space-y-4">
-          <h2 className="text-lg sm:text-xl font-bold text-[#29251F] font-serif-title">Shipping Fees</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-[var(--text)] font-serif-title">Shipping Fees</h2>
           <p className="text-base sm:text-lg">
             Return or exchange shipping fees may apply depending on the reason for the request.
           </p>
           <p className="text-base sm:text-lg">
-            If the return or exchange is due to receiving a <strong className="text-[#6B705C]">damaged, defective, or incorrect item</strong>, R&amp;S Fashion Wear will review the case and determine the applicable shipping arrangements.
+            If the return or exchange is due to receiving a <strong className="text-[var(--text-muted)]">damaged, defective, or incorrect item</strong>, R&amp;S Fashion Wear will review the case and determine the applicable shipping arrangements.
           </p>
           <p className="text-base sm:text-lg">
             For other return or exchange requests, any applicable shipping fees will be communicated to the customer before processing the request.
@@ -107,7 +108,7 @@ const Policy = () => {
         </motion.section>
 
         <motion.section variants={itemVariants} className="space-y-4">
-          <h2 className="text-lg sm:text-xl font-bold text-[#29251F] font-serif-title">Refunds</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-[var(--text)] font-serif-title">Refunds</h2>
           <p className="text-base sm:text-lg">
             For approved returns, the refund will be processed after the returned item has been received and inspected.
           </p>
@@ -118,27 +119,27 @@ const Policy = () => {
 
         <motion.section
           variants={itemVariants}
-          className="space-y-4 bg-[#F5F1E8]/60 border border-[#B89B62]/30 rounded-xl p-6 sm:p-8"
+          className="space-y-4 bg-[var(--surface)]/60 border border-[var(--accent)]/30 rounded-xl p-6 sm:p-8"
         >
-          <h2 className="text-lg sm:text-xl font-bold text-[#29251F] font-serif-title">How to Request a Return or Exchange</h2>
+          <h2 className="text-lg sm:text-xl font-bold text-[var(--text)] font-serif-title">How to Request a Return or Exchange</h2>
           <p className="text-base sm:text-lg">
             To request a return or exchange, please contact us through:
           </p>
           <div className="space-y-3 text-base sm:text-lg pl-2">
             <p className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-              <span className="font-semibold text-[#6B705C]">Phone:</span>
-              <a href="tel:01555522161" className="font-semibold text-[#29251F] hover:text-[#B89B62] transition-colors">
+              <span className="font-semibold text-[var(--text-muted)]">Phone:</span>
+              <a href="tel:01555522161" className="font-semibold text-[var(--text)] hover:text-[var(--accent)] transition-colors">
                 01555522161
               </a>
             </p>
             <p className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-              <span className="font-semibold text-[#6B705C]">Email:</span>
-              <a href="mailto:r.s.store.0012@gmail.com" className="font-semibold text-[#29251F] hover:text-[#B89B62] transition-colors break-all">
+              <span className="font-semibold text-[var(--text-muted)]">Email:</span>
+              <a href="mailto:r.s.store.0012@gmail.com" className="font-semibold text-[var(--text)] hover:text-[var(--accent)] transition-colors break-all">
                 r.s.store.0012@gmail.com
               </a>
             </p>
           </div>
-          <p className="text-base sm:text-lg pt-2 font-semibold text-[#29251F]">Please include:</p>
+          <p className="text-base sm:text-lg pt-2 font-semibold text-[var(--text)]">Please include:</p>
           <ul className="list-disc pl-6 space-y-2 text-base sm:text-lg">
             <li>Your order number.</li>
             <li>The reason for the return or exchange.</li>

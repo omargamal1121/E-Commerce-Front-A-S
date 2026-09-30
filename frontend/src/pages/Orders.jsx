@@ -76,7 +76,7 @@ const Orders = () => {
     if (statusStr.includes('delivered') || statusStr.includes('complete')) {
       return 'bg-green-100 text-green-800 border-green-200';
     } else if (statusStr.includes('shipped')) {
-      return 'bg-blue-100 text-blue-800 border-blue-200';
+      return 'bg-[var(--brand)]/20 text-[var(--brand)] border-[var(--brand)]/30';
     } else if (statusStr.includes('cancelled') || statusStr.includes('failed') || statusStr.includes('expired')) {
       return 'bg-red-100 text-red-800 border-red-200';
     } else if (statusStr.includes('confirmed') || statusStr.includes('processing')) {
@@ -505,7 +505,7 @@ const Orders = () => {
                       <div className="relative flex justify-between items-start min-w-[360px] max-w-3xl mx-auto mb-2">
                         {getStepperSteps(selectedOrderDetails).map((step, i, arr) => (
                           <div key={i} className="flex flex-col items-center relative z-10 flex-1">
-                            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center text-lg sm:text-xl shadow-lg transition-all duration-500 ${step.error ? 'bg-red-600' : step.neutral ? 'bg-blue-600' : step.active ? 'bg-black' : 'bg-gray-100 grayscale opacity-40'} ${step.active && !step.error && !step.neutral ? 'scale-110' : ''}`}>
+                            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center text-lg sm:text-xl shadow-lg transition-all duration-500 ${step.error ? 'bg-[var(--danger)]' : step.neutral ? 'bg-[var(--brand)]' : step.active ? 'bg-[var(--text)]' : 'bg-[var(--surface-raised)] grayscale opacity-40'} ${step.active && !step.error && !step.neutral ? 'scale-110' : ''}`}>
                               {step.icon}
                             </div>
                             <span className={`text-[8px] sm:text-[9px] font-black uppercase tracking-tighter mt-2 text-center transition-colors ${step.active ? 'text-black' : 'text-gray-300'}`}>{step.label}</span>

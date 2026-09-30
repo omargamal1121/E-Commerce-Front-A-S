@@ -54,44 +54,44 @@ const ProductCard = ({ product }) => {
       </div>
 
       {/* Product image with hover effect */}
-      <Link to={`/product/${product.id}`} className="block overflow-hidden rounded-t-xl bg-gray-50 flex-shrink-0">
+      <Link to={`/product/${product.id}`} className="block overflow-hidden rounded-t-xl bg-[var(--surface-raised)] flex-shrink-0">
         <div className="relative aspect-[3/4] overflow-hidden">
           <img
             src={mainImage}
             alt={product.name}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-104"
           />
           <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
         </div>
       </Link>
 
       {/* Product details */}
-      <div className="p-4 flex flex-col flex-grow justify-between bg-white">
+      <div className="p-4 flex flex-col flex-grow justify-between bg-[var(--surface)]">
         <Link to={`/product/${product.id}`} className="block">
-          <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1 font-medium">New Arrival</p>
-          <h3 className="mb-1 text-sm font-semibold text-gray-800 group-hover:text-black transition-colors line-clamp-1 leading-snug">
+          <p className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] mb-1 font-medium">New Arrival</p>
+          <h3 className="mb-1 text-sm font-semibold text-[var(--text)] group-hover:text-[var(--accent)] transition-colors line-clamp-1 leading-snug">
             {product.name}
           </h3>
-          <p className="text-[13px] text-gray-500 line-clamp-2 mt-1 mb-2 leading-relaxed">
+          <p className="text-[13px] text-[var(--text-muted)] line-clamp-2 mt-1 mb-2 leading-relaxed">
             {product.description}
           </p>
         </Link>
 
-        <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+        <div className="mt-3 pt-3 border-t border-[var(--border)] flex items-center justify-between">
           <div>
             {hasDiscount ? (
               <div className="flex items-center gap-2">
-                <span className="text-[15px] font-bold text-black">
+                <span className="text-[15px] font-bold text-[var(--accent)]">
                   {currency}
                   {finalPrice}
                 </span>
-                <span className="text-xs text-gray-400 font-medium line-through">
+                <span className="text-xs text-[var(--text-muted)] font-medium line-through">
                   {currency}
                   {price}
                 </span>
               </div>
             ) : (
-              <span className="text-[15px] font-bold text-black">
+              <span className="text-[15px] font-bold text-[var(--accent)]">
                 {currency}
                 {price}
               </span>

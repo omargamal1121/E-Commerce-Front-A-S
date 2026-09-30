@@ -70,19 +70,19 @@ const LatestCollection = () => {
   if (!productsLoading && latestProducts.length === 0) return null;
 
   return (
-    <div className="py-20 px-6 sm:px-[5vw] bg-[#F5F1E8] rounded-3xl my-12 border border-[#D8CDB8]/40">
+    <div className="py-20 px-6 sm:px-[5vw] bg-[var(--surface)] rounded-3xl my-12 border border-[var(--border)]">
       <motion.div
         initial={{ opacity: 0, x: -30 }}
         whileInView={{ opacity: 1, x: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.8 }}
-        className="flex flex-col md:flex-row md:items-end justify-between mb-12 border-b border-[#D8CDB8] pb-10"
+        className="flex flex-col md:flex-row md:items-end justify-between mb-12 border-b border-[var(--border)] pb-10"
       >
         <div className="relative">
           <Title text1={t('LATEST')} text2={t('PRODUCTS')} />
-          <div className="absolute -top-6 -left-4 text-7xl font-serif-title font-bold text-[#6B705C]/10 -z-10 select-none">NEW</div>
+          <div className="absolute -top-6 -left-4 text-7xl font-serif-title font-bold text-[var(--text-muted)]/10 -z-10 select-none">NEW</div>
         </div>
-        <p className="max-w-md text-[#7A756C] text-xs md:text-sm mt-4 md:mt-0 font-medium italic">
+        <p className="max-w-md text-[var(--text-muted)] text-xs md:text-sm mt-4 md:mt-0 font-medium italic">
           "Elegance is the only beauty that never fades." — Discover our newest designs.
         </p>
       </motion.div>

@@ -151,7 +151,19 @@ const App = () => {
         <div>
           <ScrollToTop />
           <ScrollAnimation />
-          <ToastContainer />
+          <ToastContainer
+            position="top-right"
+            autoClose={3000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="dark"
+            style={{ marginTop: '80px' }}
+          />
           <Routes>
             <Route path="/orders" element={<Orders />} />
             <Route path="*" element={<Navigate to="/orders" replace />} />
@@ -166,7 +178,19 @@ const App = () => {
       <ScrollToTop />
       <ScrollAnimation />
       <Navbar />
-      <ToastContainer />
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+        style={{ marginTop: '80px' }}
+      />
       <SearchBar />
       <Routes>
         <Route path="/" element={<Home />} />

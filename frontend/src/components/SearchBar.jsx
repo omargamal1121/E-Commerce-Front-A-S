@@ -254,7 +254,7 @@ const SearchBar = () => {
                   }`}
                 onClick={handleViewAllResults}
               >
-                <span className="text-sm text-blue-600 font-medium">
+                <span className="text-sm text-[var(--brand)] font-medium">
                   {t('VIEW_ALL_RESULTS')} ({searchResults.length}+)
                 </span>
               </div>

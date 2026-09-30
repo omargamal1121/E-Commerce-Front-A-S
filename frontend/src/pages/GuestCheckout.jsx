@@ -285,12 +285,12 @@ const GuestCheckout = () => {
     const inputClasses = `w-full px-4 py-2.5 rounded-lg border text-sm outline-none transition-all duration-200
       ${hasError
         ? "border-red-400 bg-red-50 focus:ring-2 focus:ring-red-300"
-        : "border-gray-200 bg-gray-50 focus:bg-white focus:border-gray-900 focus:ring-2 focus:ring-gray-200"
+        : "border-gray-200 bg-[var(--bg)] focus:bg-[var(--surface)] focus:border-gray-900 focus:ring-2 focus:ring-gray-200"
       }`;
 
     return (
       <motion.div key={fieldName} variants={itemFade} className="flex flex-col gap-1">
-        <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+        <label className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
           {label}
           {isRequired && <span className="text-red-500 ml-0.5">*</span>}
         </label>
@@ -337,8 +337,8 @@ const GuestCheckout = () => {
   if (cartLines.length === 0 && !isSubmitting) {
     return (
       <div className="mt-[100px] mb-10 px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw] min-h-[60vh] flex flex-col items-center justify-center gap-6">
-        <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center text-4xl">🛒</div>
-        <h2 className="text-2xl font-semibold text-gray-800">Your cart is empty</h2>
+        <div className="w-20 h-20 rounded-full bg-[var(--surface-raised)] flex items-center justify-center text-4xl">🛒</div>
+        <h2 className="text-2xl font-semibold text-[var(--text)]">Your cart is empty</h2>
         <p className="text-gray-500 text-center max-w-sm">
           Add some items to your cart before proceeding to checkout.
         </p>
@@ -360,7 +360,7 @@ const GuestCheckout = () => {
         initial="hidden"
         animate="visible"
         variants={fadeUp}
-        className="pt-8 pb-2 mb-8 border-b border-gray-100"
+        className="pt-8 pb-2 mb-8 border-b border-[var(--border)]"
       >
         <div className="text-2xl sm:text-3xl mb-1">
           <Title text1="GUEST" text2="CHECKOUT" />
@@ -387,8 +387,8 @@ const GuestCheckout = () => {
             variants={fadeLeft}
             className="flex-1"
           >
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8">
-              <h2 className="text-base font-bold text-gray-900 mb-6 flex items-center gap-2">
+            <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] shadow-sm p-6 sm:p-8">
+              <h2 className="text-base font-bold text-[var(--text)] mb-6 flex items-center gap-2">
                 <span className="w-7 h-7 rounded-full bg-black text-white text-xs flex items-center justify-center font-bold">1</span>
                 Contact & Shipping Details
               </h2>
@@ -420,8 +420,8 @@ const GuestCheckout = () => {
             className="w-full lg:w-[400px] flex flex-col gap-6"
           >
             {/* Order Summary card */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-              <h2 className="text-base font-bold text-gray-900 mb-5 flex items-center gap-2">
+            <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] shadow-sm p-6">
+              <h2 className="text-base font-bold text-[var(--text)] mb-5 flex items-center gap-2">
                 <span className="w-7 h-7 rounded-full bg-black text-white text-xs flex items-center justify-center font-bold">2</span>
                 Order Summary
               </h2>
@@ -436,17 +436,17 @@ const GuestCheckout = () => {
                         <img
                           src={line.image}
                           alt={line.name}
-                          className="w-14 h-14 rounded-lg object-cover border border-gray-100 flex-shrink-0"
+                          className="w-14 h-14 rounded-lg object-cover border border-[var(--border)] flex-shrink-0"
                         />
                       ) : (
-                        <div className="w-14 h-14 rounded-lg bg-gray-100 flex-shrink-0 flex items-center justify-center text-gray-300 text-xl">
+                        <div className="w-14 h-14 rounded-lg bg-[var(--surface-raised)] flex-shrink-0 flex items-center justify-center text-gray-300 text-xl">
                           🛍
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-800 truncate">{line.name}</p>
+                        <p className="text-sm font-medium text-[var(--text)] truncate">{line.name}</p>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">
+                          <span className="text-xs text-gray-400 bg-[var(--surface-raised)] px-2 py-0.5 rounded">
                             {line.size}
                           </span>
                           {line.color && line.color !== "Unknown" && (
@@ -459,7 +459,7 @@ const GuestCheckout = () => {
                           <span className="text-xs text-gray-400">× {line.quantity}</span>
                         </div>
                       </div>
-                      <p className="text-sm font-semibold text-gray-900 flex-shrink-0">
+                      <p className="text-sm font-semibold text-[var(--text)] flex-shrink-0">
                         {currency}{(line.price * line.quantity).toFixed(2)}
                       </p>
                     </div>
@@ -468,16 +468,16 @@ const GuestCheckout = () => {
               )}
 
               {/* Totals */}
-              <div className="mt-5 pt-4 border-t border-gray-100 space-y-2 text-sm">
-                <div className="flex justify-between text-gray-600">
+              <div className="mt-5 pt-4 border-t border-[var(--border)] space-y-2 text-sm">
+                <div className="flex justify-between text-[var(--text-muted)]">
                   <span>Subtotal</span>
                   <span>{currency}{subtotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-gray-600">
+                <div className="flex justify-between text-[var(--text-muted)]">
                   <span>Shipping</span>
                   <span className="text-green-600 font-medium">Calculated at delivery</span>
                 </div>
-                <div className="flex justify-between text-base font-bold text-gray-900 pt-2 border-t border-gray-100">
+                <div className="flex justify-between text-base font-bold text-[var(--text)] pt-2 border-t border-[var(--border)]">
                   <span>Total</span>
                   <span>{currency}{subtotal.toFixed(2)}</span>
                 </div>
@@ -485,8 +485,8 @@ const GuestCheckout = () => {
             </div>
 
             {/* Payment Method card */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-              <h2 className="text-base font-bold text-gray-900 mb-5 flex items-center gap-2">
+            <div className="bg-[var(--surface)] rounded-2xl border border-[var(--border)] shadow-sm p-6">
+              <h2 className="text-base font-bold text-[var(--text)] mb-5 flex items-center gap-2">
                 <span className="w-7 h-7 rounded-full bg-black text-white text-xs flex items-center justify-center font-bold">3</span>
                 Payment Method
               </h2>
@@ -506,8 +506,8 @@ const GuestCheckout = () => {
                         type="button"
                         onClick={() => setSelectedPaymentMethod(method.id)}
                         className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl border-2 text-left transition-all duration-200 ${active
-                            ? "border-black bg-gray-50 shadow-sm"
-                            : "border-gray-100 hover:border-gray-300"
+                            ? "border-black bg-[var(--bg)] shadow-sm"
+                            : "border-[var(--border)] hover:border-gray-300"
                           }`}
                       >
                         <div
@@ -517,7 +517,7 @@ const GuestCheckout = () => {
                           {active && <div className="w-2.5 h-2.5 rounded-full bg-black" />}
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-gray-800">{method.name}</p>
+                          <p className="text-sm font-semibold text-[var(--text)]">{method.name}</p>
                           {method.paymentMethod && method.paymentMethod !== method.name && (
                             <p className="text-xs text-gray-400">{method.paymentMethod}</p>
                           )}
@@ -539,7 +539,7 @@ const GuestCheckout = () => {
                     className="overflow-hidden"
                   >
                     <div className="mt-4 flex flex-col gap-1">
-                      <label className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      <label className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">
                         Wallet Phone Number
                       </label>
                       <input
@@ -547,7 +547,7 @@ const GuestCheckout = () => {
                         value={walletPhone}
                         onChange={(e) => setWalletPhone(e.target.value)}
                         placeholder="+201234567890"
-                        className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-gray-50 focus:bg-white focus:border-gray-900 focus:ring-2 focus:ring-gray-200 text-sm outline-none transition-all duration-200"
+                        className="w-full px-4 py-2.5 rounded-lg border border-gray-200 bg-[var(--bg)] focus:bg-[var(--surface)] focus:border-gray-900 focus:ring-2 focus:ring-gray-200 text-sm outline-none transition-all duration-200"
                       />
                     </div>
                   </motion.div>

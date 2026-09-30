@@ -337,7 +337,7 @@ const PlaceOrder = () => {
   // Show guest checkout form if guest checkout mode is selected
   if (!token && isGuestCheckout) {
     return (
-      <div className="min-h-screen pt-24 pb-20 px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw] bg-gray-50/30">
+      <div className="min-h-screen pt-24 pb-20 px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw] bg-[var(--bg)]">
         <div className="max-w-4xl mx-auto">
           <div className="mb-8">
             <Title text1={'GUEST'} text2={'CHECKOUT'} />
@@ -351,7 +351,7 @@ const PlaceOrder = () => {
                 <CartTotal />
                 <button
                   onClick={() => setGuestCheckoutMode(false)}
-                  className="w-full mt-4 px-4 py-3 border border-gray-300 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-all"
+                  className="w-full mt-4 px-4 py-3 border border-[var(--border)] rounded-xl text-sm font-semibold hover:bg-[var(--surface-raised)] transition-all text-[var(--text)]"
                 >
                   ← Back to Checkout Options
                 </button>
@@ -374,15 +374,15 @@ const PlaceOrder = () => {
 
           <motion.div variants={containerVariants} className="flex flex-col gap-4">
             <motion.div variants={itemVariants}>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-[var(--text)] mb-2">
                 Select Delivery Address
               </label>
               {addresses.map((address) => (
                 <motion.div
                   key={address.id}
                   className={`border rounded-md p-3 transition-colors ${selectedAddressId === address.id
-                    ? "border-green-500 bg-green-50"
-                    : "border-gray-300 hover:border-gray-400"
+                    ? "border-[var(--success)] bg-[var(--success)]/10"
+                    : "border-[var(--border)] hover:border-gray-400"
                     }`}
                 >
                   <div
@@ -396,7 +396,7 @@ const PlaceOrder = () => {
                     <p>{address.country}</p>
                     <p>Phone: {address.phoneNumber}</p>
                     {address.isDefault && (
-                      <span className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mt-1">
+                      <span className="inline-block bg-[var(--accent)]/20 text-[var(--accent)] text-xs px-2 py-1 rounded mt-1">
                         Default
                       </span>
                     )}
@@ -461,33 +461,33 @@ const PlaceOrder = () => {
                   // Add new address - open form in add mode
                   handleAddNewAddress();
                 }
-              }} className="w-full border border-gray-300 rounded-md px-3.5 py-2 text-gray-700 hover:border-gray-400 transition-colors">
+              }} className="w-full border border-[var(--border)] rounded-md px-3.5 py-2 text-[var(--text)] hover:border-gray-400 transition-colors">
                 {showAddAddressForm ? "Cancel" : "+ Add New Address"}
               </button>
             </motion.div>
 
             {showAddAddressForm && (
-              <motion.div initial="hidden" animate="visible" variants={containerVariants} className="border border-gray-200 rounded-md p-4 bg-gray-50 mt-4">
+              <motion.div initial="hidden" animate="visible" variants={containerVariants} className="border border-gray-200 rounded-md p-4 bg-[var(--surface)] mt-4">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">
                   {editingAddressId ? "Update Address" : "Add New Address"}
                 </h3>
                 <form onSubmit={handleAddAddress}>
-                  <motion.input variants={itemVariants} className="border border-gray-300 rounded-md px-3.5 py-1.5 w-full mb-3" type="text" name="streetAddress" onChange={onChangeHandler} value={addressFormData.streetAddress} placeholder="Street Address" required />
+                  <motion.input variants={itemVariants} className="border border-[var(--border)] rounded-md px-3.5 py-1.5 w-full mb-3" type="text" name="streetAddress" onChange={onChangeHandler} value={addressFormData.streetAddress} placeholder="Street Address" required />
                   <motion.div variants={itemVariants} className="flex gap-3 mb-3">
-                    <input className="border border-gray-300 rounded-md px-3.5 py-1.5 w-full" type="text" name="city" onChange={onChangeHandler} value={addressFormData.city} placeholder="City" required />
-                    <input className="border border-gray-300 rounded-md px-3.5 py-1.5 w-full" type="text" name="state" onChange={onChangeHandler} value={addressFormData.state} placeholder="State" required />
+                    <input className="border border-[var(--border)] rounded-md px-3.5 py-1.5 w-full" type="text" name="city" onChange={onChangeHandler} value={addressFormData.city} placeholder="City" required />
+                    <input className="border border-[var(--border)] rounded-md px-3.5 py-1.5 w-full" type="text" name="state" onChange={onChangeHandler} value={addressFormData.state} placeholder="State" required />
                   </motion.div>
                   <motion.div variants={itemVariants} className="flex gap-3 mb-3">
-                    <input className="border border-gray-300 rounded-md px-3.5 py-1.5 w-full" type="text" name="postalCode" onChange={onChangeHandler} value={addressFormData.postalCode} placeholder="Postal Code" required />
-                    <input className="border border-gray-300 rounded-md px-3.5 py-1.5 w-full" type="text" name="country" onChange={onChangeHandler} value={addressFormData.country} placeholder="Country" required />
+                    <input className="border border-[var(--border)] rounded-md px-3.5 py-1.5 w-full" type="text" name="postalCode" onChange={onChangeHandler} value={addressFormData.postalCode} placeholder="Postal Code" required />
+                    <input className="border border-[var(--border)] rounded-md px-3.5 py-1.5 w-full" type="text" name="country" onChange={onChangeHandler} value={addressFormData.country} placeholder="Country" required />
                   </motion.div>
-                  <motion.input variants={itemVariants} className="border border-gray-300 rounded-md px-3.5 py-1.5 w-full mb-3" type="tel" name="phoneNumber" onChange={onChangeHandler} value={addressFormData.phoneNumber} placeholder="Phone Number" required />
-                  <motion.textarea variants={itemVariants} className="border border-gray-300 rounded-md px-3.5 py-1.5 w-full mb-3" name="additionalNotes" onChange={onChangeHandler} value={addressFormData.additionalNotes} placeholder="Additional Notes (Optional)" rows="2" />
+                  <motion.input variants={itemVariants} className="border border-[var(--border)] rounded-md px-3.5 py-1.5 w-full mb-3" type="tel" name="phoneNumber" onChange={onChangeHandler} value={addressFormData.phoneNumber} placeholder="Phone Number" required />
+                  <motion.textarea variants={itemVariants} className="border border-[var(--border)] rounded-md px-3.5 py-1.5 w-full mb-3" name="additionalNotes" onChange={onChangeHandler} value={addressFormData.additionalNotes} placeholder="Additional Notes (Optional)" rows="2" />
                   <motion.div variants={itemVariants} className="flex items-center gap-2 mb-3">
                     <input type="checkbox" name="isDefault" onChange={onChangeHandler} checked={addressFormData.isDefault} className="rounded" />
-                    <label className="text-sm text-gray-700">Set as default address</label>
+                    <label className="text-sm text-[var(--text)]">Set as default address</label>
                   </motion.div>
-                  <motion.button variants={itemVariants} type="submit" className="w-full bg-black text-white px-4 py-2 rounded-md hover:bg-gray-800 transition-colors">
+                  <motion.button variants={itemVariants} type="submit" className="w-full bg-[var(--brand)] text-[var(--text)] px-4 py-2 rounded-md hover:bg-gray-800 transition-colors">
                     {editingAddressId ? "Update Address" : "Add Address"}
                   </motion.button>
                 </form>
@@ -506,8 +506,8 @@ const PlaceOrder = () => {
                 <div
                   key={method.id}
                   className={`border rounded-md p-3 cursor-pointer transition-colors ${selectedPaymentMethod === method.id
-                    ? "border-green-500 bg-green-50"
-                    : "border-gray-300 hover:border-gray-400"
+                    ? "border-[var(--success)] bg-[var(--success)]/10"
+                    : "border-[var(--border)] hover:border-gray-400"
                     }`}
                 >
                   <div
@@ -518,8 +518,8 @@ const PlaceOrder = () => {
                     <p className="text-sm text-gray-500">{method.paymentMethod}</p>
                   </div>
                   <div className={`w-4 h-4 rounded-full border-2 ${selectedPaymentMethod === method.id
-                    ? "border-green-500 bg-green-500"
-                    : "border-gray-300"
+                    ? "border-[var(--success)] bg-[var(--success)]/100"
+                    : "border-[var(--border)]"
                     }`}>
                     {selectedPaymentMethod === method.id && (
                       <div className="w-full h-full rounded-full bg-white scale-50"></div>
@@ -531,27 +531,27 @@ const PlaceOrder = () => {
 
             {/* Wallet Phone Number (if needed) */}
             <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-[var(--text)] mb-2">
                 Wallet Phone Number (Optional)
               </label>
               <input
                 type="tel"
                 value={walletPhoneNumber}
                 onChange={(e) => setWalletPhoneNumber(e.target.value)}
-                className="border border-gray-300 rounded-md px-3.5 py-1.5 w-full"
+                className="border border-[var(--border)] rounded-md px-3.5 py-1.5 w-full"
                 placeholder="Enter wallet phone number"
               />
             </div>
 
             {/* Payment Notes */}
             <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-[var(--text)] mb-2">
                 Payment Notes (Optional)
               </label>
               <textarea
                 value={paymentNotes}
                 onChange={(e) => setPaymentNotes(e.target.value)}
-                className="border border-gray-300 rounded-md px-3.5 py-1.5 w-full"
+                className="border border-[var(--border)] rounded-md px-3.5 py-1.5 w-full"
                 placeholder="Add any payment notes"
                 rows="2"
               />
@@ -569,7 +569,7 @@ const PlaceOrder = () => {
                 whileTap={{ scale: selectedAddressId ? 0.95 : 1 }}
                 onClick={onSubmitHandler}
                 disabled={!selectedAddressId || !selectedPaymentMethod || isLoading}
-                className={`px-16 py-3 uppercase font-medium transition-all duration-300 ${selectedAddressId && selectedPaymentMethod && !isLoading ? "bg-black text-white cursor-pointer hover:bg-white hover:text-black border border-black" : "bg-gray-300 text-gray-500 cursor-not-allowed border border-gray-300"}`}
+                className={`px-16 py-3 uppercase font-medium transition-all duration-300 ${selectedAddressId && selectedPaymentMethod && !isLoading ? "bg-[var(--brand)] text-[var(--text)] cursor-pointer hover:bg-white hover:text-black border border-black" : "bg-gray-300 text-gray-500 cursor-not-allowed border border-[var(--border)]"}`}
               >
                 {isLoading ? "Processing..." : "Place Order & Pay"}
               </motion.button>

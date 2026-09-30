@@ -53,14 +53,14 @@ const ProductItem = ({
     <motion.div
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="card-luxury relative group cursor-pointer flex flex-col h-full bg-[#FFFDF7] border border-[#D8CDB8] rounded-2xl overflow-hidden"
+      className="card-luxury relative group cursor-pointer flex flex-col h-full bg-[var(--surface)] border border-[var(--border)] rounded-2xl overflow-hidden"
     >
       <Link
         to={`/product/${productId}`}
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         className="flex flex-col h-full"
       >
-        <div className="overflow-hidden relative aspect-[3/4] bg-[#F5F1E8] rounded-t-2xl">
+        <div className="overflow-hidden relative aspect-[3/4] bg-[var(--surface-raised)] rounded-t-2xl">
           {/* 🔖 Discount Badge */}
           {hasDiscount && (
             <div className="absolute top-3 left-3 z-20 discount-badge shadow-md">
@@ -98,37 +98,37 @@ const ProductItem = ({
                 {imageArray.map((_, idx) => (
                   <div
                     key={idx}
-                    className={`h-1 flex-1 rounded-full transition-all duration-300 ${idx === currentImageIndex ? 'bg-[#B89B62] w-4' : 'bg-[#FFFDF7]/60 backdrop-blur-sm'}`}
+                    className={`h-1 flex-1 rounded-full transition-all duration-300 ${idx === currentImageIndex ? 'bg-[var(--accent)] w-4' : 'bg-[var(--text)]/60 backdrop-blur-sm'}`}
                   />
                 ))}
               </div>
             )}
           </div>
 
-          <div className="absolute inset-0 bg-[#29251F]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+          <div className="absolute inset-0 bg-[var(--bg)]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
         </div>
 
         {/* 🏷️ Product Info - Enclosed padding */}
-        <div className="p-5 flex flex-col flex-grow justify-between bg-[#FFFDF7]">
+        <div className="p-5 flex flex-col flex-grow justify-between bg-[var(--surface)]">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-[#6B705C] mb-1 font-bold">R&S Essential</p>
-            <p className="text-sm font-bold text-[#29251F] group-hover:text-[#414635] transition-colors line-clamp-2 leading-snug">{name}</p>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)] mb-1 font-bold">R&S Essential</p>
+            <p className="text-sm font-bold text-[var(--text)] group-hover:text-[var(--accent)] transition-colors line-clamp-2 leading-snug">{name}</p>
           </div>
 
           {/* 💰 Price Display (Conditional) */}
           {!hidePrice && (
-            <div className="mt-3 pt-3 border-t border-[#D8CDB8]/50">
+            <div className="mt-3 pt-3 border-t border-[var(--border)]/50">
               {hasDiscount ? (
                 <div className="flex items-center gap-2">
-                  <span className="text-[15px] font-bold text-[#29251F]">
+                  <span className="text-[15px] font-bold text-[var(--accent)]">
                     {currency}{effectivePrice}
                   </span>
-                  <span className="text-xs line-through text-[#7A756C] font-medium">
+                  <span className="text-xs line-through text-[var(--text-muted)] font-medium">
                     {currency}{originalPrice}
                   </span>
                 </div>
               ) : (
-                <p className="text-[15px] font-bold text-[#29251F]">
+                <p className="text-[15px] font-bold text-[var(--accent)]">
                   {currency}{originalPrice}
                 </p>
               )}

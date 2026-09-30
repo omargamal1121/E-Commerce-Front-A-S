@@ -54,7 +54,7 @@ const BestSeller = () => {
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
           {[...Array(4)].map((_, index) => (
-            <div key={index} className="animate-pulse bg-gray-100 aspect-[3/4] rounded-sm"></div>
+            <div key={index} className="animate-pulse bg-[var(--surface-raised)] aspect-[3/4] rounded-sm"></div>
           ))}
         </div>
       </div>
@@ -64,7 +64,7 @@ const BestSeller = () => {
   if (!productsLoading && bestSeller.length === 0) return null;
 
   return (
-    <div className="my-28 bg-gray-50/50 py-20 px-4 sm:px-[5vw] border-y border-gray-100">
+    <div className="my-28 bg-[var(--surface)] py-20 px-4 sm:px-[5vw] border-y border-[var(--border)]">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -75,7 +75,7 @@ const BestSeller = () => {
           <div className="mb-4">
             <Title text1={t('BEST')} text2={t('SELLERS')} />
           </div>
-          <p className="max-w-2xl text-gray-500 font-light italic text-lg shimmer-text">
+          <p className="max-w-2xl text-[var(--text-muted)] font-light italic text-lg shimmer-text">
             Loved by many, owned by you. These are the pieces everyone is talking about.
           </p>
         </motion.div>
@@ -112,7 +112,7 @@ const BestSeller = () => {
           transition={{ delay: 0.5, duration: 0.8 }}
           className="mt-16 flex justify-center"
         >
-          <Link to="/collection" className="btn-premium px-12 py-4 bg-black text-white rounded-full font-bold text-sm uppercase tracking-[0.2em] shadow-xl hover:scale-105 transition-all flex items-center gap-3">
+          <Link to="/collection" className="btn-primary-fashion px-12 py-4 rounded-full font-bold text-sm uppercase tracking-[0.2em] shadow-xl hover:scale-105 transition-all flex items-center gap-3">
             {t('VIEW_ALL_COLLECTION') || "Explore Selection"}
             <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />

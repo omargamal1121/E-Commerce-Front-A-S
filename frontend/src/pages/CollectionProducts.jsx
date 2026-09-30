@@ -197,7 +197,7 @@ const CollectionProducts = () => {
           <p className="text-gray-700">{error}</p>
           <Link
             to="/"
-            className="mt-4 inline-block text-blue-600 hover:underline"
+            className="mt-4 inline-block text-[var(--brand)] hover:underline"
           >
             {t("BACK_TO_HOME")}
           </Link>
@@ -350,7 +350,7 @@ const CollectionProducts = () => {
                     type="checkbox"
                     checked={inStock}
                     onChange={() => setInStock(!inStock)}
-                    className="h-5 w-5 text-blue-600"
+                    className="h-5 w-5 text-[var(--brand)]"
                   />
                   <span>{t("IN_STOCK_ONLY")}</span>
                 </label>
@@ -391,7 +391,7 @@ const CollectionProducts = () => {
             <p className="text-xl text-gray-500">{t("NO_PRODUCTS_FOUND")}</p>
             <Link
               to="/"
-              className="mt-4 inline-block text-blue-600 hover:underline"
+              className="mt-4 inline-block text-[var(--brand)] hover:underline"
             >
               {t("CONTINUE_SHOPPING")}
             </Link>

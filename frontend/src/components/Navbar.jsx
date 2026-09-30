@@ -122,11 +122,11 @@ const Navbar = () => {
         variants={navbarVariants}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        className="w-full bg-[#414635] text-[#F5F1E8] border-b border-[#6B705C]/30 flex items-center py-4 px-4 sm:px-[2vw] md:px-[2vw] lg:px-[3vw] relative shadow-md"
+        className="w-full header-sticky text-[var(--text)] flex items-center py-4 px-4 sm:px-[2vw] md:px-[2vw] lg:px-[3vw] relative shadow-md"
       >
         {/* Background animation overlay */}
         <div
-          className="absolute inset-0 bg-[#34382B] z-[-1] transition-all duration-500"
+          className="absolute inset-0 bg-[var(--surface-raised)] z-[-1] transition-all duration-500"
           style={{
             transform: `translateY(${scrolled || hovered ? "0%" : "-100%"})`,
           }}
@@ -134,28 +134,28 @@ const Navbar = () => {
 
         {/* --- الروابط الرئيسية --- */}
         <ul
-          className="hidden sm:flex gap-6 text-xs font-bold uppercase tracking-widest text-[#F5F1E8] flex-1 items-center"
+          className="hidden sm:flex gap-6 text-xs font-bold uppercase tracking-widest text-[var(--text)] flex-1 items-center"
         >
           <NavLink
             to="/"
             className={({ isActive }) =>
-              `flex flex-col items-center gap-1 group ${isActive ? "font-bold text-[#B89B62]" : ""}`
+              `flex flex-col items-center gap-1 group ${isActive ? "font-bold text-[var(--accent)]" : ""}`
             }
           >
             <p>{t("HOME")}</p>
-            <span className="w-2/4 h-[2px] transition-all duration-300 bg-[#B89B62] group-hover:w-full group-hover:bg-[#B89B62] opacity-0 group-hover:opacity-100"></span>
+            <span className="w-2/4 h-[2px] transition-all duration-300 bg-[var(--accent)] group-hover:w-full group-hover:bg-[var(--accent)] opacity-0 group-hover:opacity-100"></span>
           </NavLink>
 
           <div className="relative group">
             <NavLink
               to="/collection"
-              className="flex items-center gap-1 focus:outline-none uppercase tracking-widest hover:text-[#B89B62] transition-colors"
+              className="flex items-center gap-1 focus:outline-none uppercase tracking-widest hover:text-[var(--accent)] transition-colors"
             >
               {t("CATEGORY")} <span className="ml-1 text-[10px]">&#9662;</span>
             </NavLink>
 
             {/* Main Categories Dropdown */}
-            <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-72 bg-[#F5F1E8] shadow-2xl z-[100] hidden group-hover:block transition-all duration-300 border border-[#D8CDB8] rounded-b-2xl">
+            <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-72 bg-[var(--surface)] shadow-2xl z-[100] hidden group-hover:block transition-all duration-300 border border-[var(--border)] rounded-b-2xl">
               <ul className="flex flex-col py-3">
                 {Array.isArray(categories) && categories.length > 0 ? (
                   categories.map((cat) => (
@@ -165,7 +165,7 @@ const Navbar = () => {
                     >
                       <Link
                         to={`/category/${cat.id}`}
-                        className="flex justify-between items-center px-4 py-3.5 hover:bg-[#414635] hover:text-[#FFFDF7] rounded-xl cursor-pointer text-[#29251F] font-bold transition-all duration-200"
+                        className="flex justify-between items-center px-4 py-3.5 hover:bg-[var(--surface-raised)] hover:text-[var(--text)] rounded-xl cursor-pointer text-[var(--text)] font-bold transition-all duration-200"
                       >
                         <span className="text-sm tracking-tight">{cat.name}</span>
                         {Array.isArray(categorySubcategories[cat.id]) &&
@@ -180,9 +180,9 @@ const Navbar = () => {
                           <div
                             className="absolute left-[calc(100%-10px)] top-0 pl-4 hidden group-hover/sub:block z-[110]"
                           >
-                            <ul className="w-64 bg-[#FFFDF7] shadow-2xl border border-[#D8CDB8] rounded-2xl py-3 transform transition-all duration-300">
-                              <li className="px-5 py-2 border-b border-[#D8CDB8]/40 mb-2">
-                                <span className="text-[10px] font-black text-[#6B705C] uppercase tracking-widest leading-none">
+                            <ul className="w-64 bg-[var(--surface-raised)] shadow-2xl border border-[var(--border)] rounded-2xl py-3 transform transition-all duration-300">
+                              <li className="px-5 py-2 border-b border-[var(--border)]/40 mb-2">
+                                <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none">
                                   Explore {cat.name}
                                 </span>
                               </li>
@@ -190,7 +190,7 @@ const Navbar = () => {
                                 <li key={sub.id} className="px-3">
                                   <Link
                                     to={`/subcategory/${sub.id}`}
-                                    className="block px-4 py-2.5 hover:bg-[#F5F1E8] hover:pl-6 rounded-xl cursor-pointer text-[#414635] text-xs font-bold transition-all duration-200"
+                                    className="block px-4 py-2.5 hover:bg-[var(--surface)] hover:pl-6 rounded-xl cursor-pointer text-[var(--text)] text-xs font-bold transition-all duration-200"
                                   >
                                     {sub.name}
                                   </Link>
@@ -202,7 +202,7 @@ const Navbar = () => {
                     </li>
                   ))
                 ) : (
-                  <li className="px-8 py-5 text-[#6B705C] text-[10px] font-black uppercase tracking-widest text-center italic">
+                  <li className="px-8 py-5 text-[var(--text-muted)] text-[10px] font-black uppercase tracking-widest text-center italic">
                     Loading Categories...
                   </li>
                 )}
@@ -213,11 +213,11 @@ const Navbar = () => {
           <NavLink
             to="/policy"
             className={({ isActive }) =>
-              `flex flex-col items-center gap-1 group ${isActive ? "font-bold text-[#B89B62]" : ""}`
+              `flex flex-col items-center gap-1 group ${isActive ? "font-bold text-[var(--accent)]" : ""}`
             }
           >
             <p>{t("POLICY")}</p>
-            <span className="w-2/4 h-[2px] transition-all duration-300 bg-[#B89B62] group-hover:w-full group-hover:bg-[#B89B62] opacity-0 group-hover:opacity-100"></span>
+            <span className="w-2/4 h-[2px] transition-all duration-300 bg-[var(--accent)] group-hover:w-full group-hover:bg-[var(--accent)] opacity-0 group-hover:opacity-100"></span>
           </NavLink>
 
           {(user || guestToken) && (
@@ -225,11 +225,11 @@ const Navbar = () => {
             <NavLink
               to="/orders"
               className={({ isActive }) =>
-                `flex flex-col items-center gap-1 group ${isActive ? "font-bold text-[#B89B62]" : ""}`
+                `flex flex-col items-center gap-1 group ${isActive ? "font-bold text-[var(--accent)]" : ""}`
               }
             >
               <p>{t("ORDERS")}</p>
-              <span className="w-2/4 h-[2px] transition-all duration-300 bg-[#B89B62] group-hover:w-full group-hover:bg-[#B89B62] opacity-0 group-hover:opacity-100" />
+              <span className="w-2/4 h-[2px] transition-all duration-300 bg-[var(--accent)] group-hover:w-full group-hover:bg-[var(--accent)] opacity-0 group-hover:opacity-100" />
             </NavLink>
           )}
         </ul>
@@ -239,7 +239,7 @@ const Navbar = () => {
           <Link to={"/"}>
             <img
               src={assets.logo}
-              className="w-20 transition-opacity duration-300 opacity-100 filter brightness-125"
+              className="w-32 transition-opacity duration-300 opacity-100"
               alt="R&S Logo"
             />
           </Link>
@@ -292,34 +292,34 @@ const Navbar = () => {
                 />
 
                 {profileMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg py-2 transition-all duration-200">
+                  <div className="absolute right-0 mt-2 w-48 bg-[var(--surface)] shadow-lg rounded-lg py-2 transition-all duration-200 border border-[var(--border)]">
                     <Link
                       to="/profile"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="block px-4 py-2 text-sm text-[var(--text)] hover:bg-[var(--surface-raised)]"
                     >
                       My Profile
                     </Link>
                     <Link
                       to="/change-email"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="block px-4 py-2 text-sm text-[var(--text)] hover:bg-[var(--surface-raised)]"
                     >
                       Change Email
                     </Link>
                     <Link
                       to="/change-password"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="block px-4 py-2 text-sm text-[var(--text)] hover:bg-[var(--surface-raised)]"
                     >
                       Change Password
                     </Link>
                     <Link
                       to="/upload-photo"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="block px-4 py-2 text-sm text-[var(--text)] hover:bg-[var(--surface-raised)]"
                     >
                       Upload Photo
                     </Link>
                     <button
                       onClick={handleLogout}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="w-full text-left px-4 py-2 text-sm text-[var(--text)] hover:bg-[var(--surface-raised)]"
                     >
                       Logout
                     </button>
@@ -340,7 +340,7 @@ const Navbar = () => {
           {/* عربة التسوق */}
           <Link to="/cart" className="relative">
             <img src={assets.cart_icon} className="w-5 min-w-5" alt="" />
-            <p className="absolute right-[-5px] bottom-[-5px] w-4 text-center leading-4 bg-black text-white aspect-square rounded-full text-[8px]">
+            <p className="absolute right-[-5px] bottom-[-5px] w-4 text-center leading-4 bg-[var(--accent)] text-[var(--bg)] aspect-square rounded-full text-[8px]">
               {getCartCount()}
             </p>
           </Link>
@@ -356,10 +356,10 @@ const Navbar = () => {
 
         {/* Sidebar menu for small screen */}
         <div
-          className={`absolute top-0 right-0 bottom-0 bg-white h-screen transition-all ${visible ? "w-full" : "w-0"
+          className={`absolute top-0 right-0 bottom-0 bg-[var(--surface)] h-screen transition-all ${visible ? "w-full" : "w-0"
             }`}
         >
-          <div className="flex flex-col text-gray-600">
+          <div className="flex flex-col text-[var(--text-muted)]">
             <div
               onClick={() => setvisible(false)}
               className="flex items-center gap-4 p-3 cursor-pointer"
