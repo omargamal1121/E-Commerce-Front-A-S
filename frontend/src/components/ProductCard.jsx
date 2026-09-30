@@ -35,16 +35,16 @@ const ProductCard = ({ product }) => {
   const hasDiscount = discountPercentage > 0;
 
   return (
-    <div className="group relative overflow-hidden rounded-lg transition-all hover:shadow-lg">
+    <div className="card-luxury relative group cursor-pointer flex flex-col h-full">
       {/* Discount badge */}
       {hasDiscount && (
-        <div className="absolute top-2 right-2 z-10 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+        <div className="absolute top-3 left-3 z-20 discount-badge">
           -{discountPercentage}%
         </div>
       )}
 
       {/* Wishlist button */}
-      <div className="absolute top-2 left-2 z-10">
+      <div className="absolute top-3 right-3 z-20 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-[-10px] group-hover:translate-y-0">
         <WishlistButton
           productId={product.id}
           size="small"
@@ -54,42 +54,44 @@ const ProductCard = ({ product }) => {
       </div>
 
       {/* Product image with hover effect */}
-      <Link to={`/product/${product.id}`} className="block overflow-hidden">
-        <div className="relative h-100 overflow-hidden">
+      <Link to={`/product/${product.id}`} className="block overflow-hidden rounded-t-xl bg-gray-50 flex-shrink-0">
+        <div className="relative aspect-[3/4] overflow-hidden">
           <img
             src={mainImage}
             alt={product.name}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
+          <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
         </div>
       </Link>
 
       {/* Product details */}
-      <div className="p-4">
+      <div className="p-4 flex flex-col flex-grow justify-between bg-white">
         <Link to={`/product/${product.id}`} className="block">
-          <h3 className="mb-1 text-sm font-medium text-gray-900 line-clamp-1">
+          <p className="text-[10px] uppercase tracking-widest text-gray-400 mb-1 font-medium">New Arrival</p>
+          <h3 className="mb-1 text-sm font-semibold text-gray-800 group-hover:text-black transition-colors line-clamp-1 leading-snug">
             {product.name}
           </h3>
-          <p className="text-xs text-gray-500 line-clamp-2 h-8">
+          <p className="text-[13px] text-gray-500 line-clamp-2 mt-1 mb-2 leading-relaxed">
             {product.description}
           </p>
         </Link>
 
-        <div className="mt-2 flex items-center justify-between">
+        <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
           <div>
             {hasDiscount ? (
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-gray-500 line-through">
-                  {currency}
-                  {price}
-                </span>
-                <span className="text-sm font-bold text-red-500">
+              <div className="flex items-center gap-2">
+                <span className="text-[15px] font-bold text-black">
                   {currency}
                   {finalPrice}
                 </span>
+                <span className="text-xs text-gray-400 font-medium line-through">
+                  {currency}
+                  {price}
+                </span>
               </div>
             ) : (
-              <span className="text-sm font-medium text-gray-900">
+              <span className="text-[15px] font-bold text-black">
                 {currency}
                 {price}
               </span>

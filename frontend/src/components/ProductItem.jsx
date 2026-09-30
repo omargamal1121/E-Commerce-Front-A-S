@@ -53,16 +53,17 @@ const ProductItem = ({
     <motion.div
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="text-gray-700 cursor-pointer relative group"
+      className="card-luxury relative group cursor-pointer flex flex-col h-full bg-[#FFFDF7] border border-[#D8CDB8] rounded-2xl overflow-hidden"
     >
       <Link
         to={`/product/${productId}`}
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        className="flex flex-col h-full"
       >
-        <div className="overflow-hidden relative aspect-[3/4] bg-gray-50 rounded-sm">
+        <div className="overflow-hidden relative aspect-[3/4] bg-[#F5F1E8] rounded-t-2xl">
           {/* 🔖 Discount Badge */}
           {hasDiscount && (
-            <div className="absolute top-3 left-3 z-20 discount-badge">
+            <div className="absolute top-3 left-3 z-20 discount-badge shadow-md">
               -{discountPercentage}%
             </div>
           )}
@@ -97,43 +98,44 @@ const ProductItem = ({
                 {imageArray.map((_, idx) => (
                   <div
                     key={idx}
-                    className={`h-1 flex-1 rounded-full transition-all duration-300 ${idx === currentImageIndex ? 'bg-black w-4' : 'bg-black/20'}`}
+                    className={`h-1 flex-1 rounded-full transition-all duration-300 ${idx === currentImageIndex ? 'bg-[#B89B62] w-4' : 'bg-[#FFFDF7]/60 backdrop-blur-sm'}`}
                   />
                 ))}
               </div>
             )}
           </div>
 
-          {/* Overly subtle zoom on hover (backup) */}
-          <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+          <div className="absolute inset-0 bg-[#29251F]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+        </div>
+
+        {/* 🏷️ Product Info - Enclosed padding */}
+        <div className="p-5 flex flex-col flex-grow justify-between bg-[#FFFDF7]">
+          <div>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-[#6B705C] mb-1 font-bold">R&S Essential</p>
+            <p className="text-sm font-bold text-[#29251F] group-hover:text-[#414635] transition-colors line-clamp-2 leading-snug">{name}</p>
+          </div>
+
+          {/* 💰 Price Display (Conditional) */}
+          {!hidePrice && (
+            <div className="mt-3 pt-3 border-t border-[#D8CDB8]/50">
+              {hasDiscount ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-[15px] font-bold text-[#29251F]">
+                    {currency}{effectivePrice}
+                  </span>
+                  <span className="text-xs line-through text-[#7A756C] font-medium">
+                    {currency}{originalPrice}
+                  </span>
+                </div>
+              ) : (
+                <p className="text-[15px] font-bold text-[#29251F]">
+                  {currency}{originalPrice}
+                </p>
+              )}
+            </div>
+          )}
         </div>
       </Link>
-
-      {/* 🏷️ Product Info */}
-      <div className="pt-4 px-1">
-        <p className="text-xs uppercase tracking-widest text-gray-400 mb-1">New Arrival</p>
-        <p className="text-sm font-semibold text-gray-900 group-hover:text-black transition-colors line-clamp-1">{name}</p>
-
-        {/* 💰 Price Display (Conditional) */}
-        {!hidePrice && (
-          <div className="mt-2">
-            {hasDiscount ? (
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-black">
-                  {currency}{effectivePrice}
-                </span>
-                <span className="text-xs line-through text-gray-400">
-                  {currency}{originalPrice}
-                </span>
-              </div>
-            ) : (
-              <p className="text-sm font-bold text-black">
-                {currency}{originalPrice}
-              </p>
-            )}
-          </div>
-        )}
-      </div>
     </motion.div>
   );
 };

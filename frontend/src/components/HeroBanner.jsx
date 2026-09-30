@@ -104,7 +104,7 @@ const HeroBanner = () => {
   console.log('Hero Banner - Slides Data:', slidesData);
 
   return (
-    <div className="w-full h-[65vh] md:h-[85vh] relative overflow-hidden bg-black">
+    <div className="w-full h-[65vh] md:h-[85vh] relative overflow-hidden bg-[#6B705C]">
       <Swiper
         key={slidesData.length}
         modules={[Autoplay, Pagination, Navigation]}
@@ -130,8 +130,8 @@ const HeroBanner = () => {
           if (item.separator) {
             return (
               <SwiperSlide key={index} className="w-full h-full overflow-hidden">
-                <div className="w-full h-full bg-gradient-to-br from-gray-900 via-black to-gray-900 flex items-center justify-center relative">
-                  <div className="absolute inset-0 bg-black/30"></div>
+                <div className="w-full h-full bg-[#6B705C] flex items-center justify-center relative">
+                  <div className="absolute inset-0 bg-[#414635]/40"></div>
                   <div className="relative z-10 text-center">
                     <motion.div
                       initial={{ opacity: 0, scale: 0.8 }}
@@ -139,11 +139,11 @@ const HeroBanner = () => {
                       transition={{ duration: 0.8 }}
                       className="flex flex-col items-center"
                     >
-                      <h2 className="text-5xl md:text-7xl font-black text-white tracking-tighter uppercase mb-6">
+                      <h2 className="text-5xl md:text-7xl font-serif-title font-bold text-[#F5F1E8] tracking-tight uppercase mb-6">
                         {item.displayType}
                       </h2>
-                      <div className="w-40 h-1 bg-white mx-auto shadow-2xl"></div>
-                      <p className="text-white/60 text-sm uppercase tracking-[0.3em] mt-6 font-bold">
+                      <div className="w-40 h-1 bg-[#B89B62] mx-auto shadow-2xl"></div>
+                      <p className="text-[#D8CDB8] text-sm uppercase tracking-[0.3em] mt-6 font-bold">
                         Curated Selections
                       </p>
                     </motion.div>
@@ -160,30 +160,30 @@ const HeroBanner = () => {
 
           return (
             <SwiperSlide key={index} className="w-full h-full overflow-hidden">
-              <div className="group relative w-full h-full cursor-pointer">
+              <div className="group relative w-full h-full cursor-pointer bg-[#6B705C]">
                 <img
                   src={imgUrl || assets.hero_banner_img}
                   alt={item.name}
-                  className="w-full h-full object-cover object-center scale-100 transition-transform duration-[12000ms] ease-out swiper-zoom-in"
+                  className="w-full h-full object-cover object-center scale-100 transition-transform duration-[12000ms] ease-out swiper-zoom-in opacity-85"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-80"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-[#29251F]/90 via-[#414635]/40 to-transparent"></div>
 
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white px-4">
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-[#F5F1E8] px-4">
                   <motion.div
                     variants={containerVariants}
                     initial="hidden"
                     animate="visible"
-                    className="flex flex-col items-center"
+                    className="flex flex-col items-center max-w-4xl"
                   >
-                    <motion.span variants={textVariants} className="text-sm uppercase tracking-[0.5em] mb-6 font-bold text-white/70">
+                    <motion.span variants={textVariants} className="text-xs md:text-sm uppercase tracking-[0.5em] mb-4 font-bold text-[#B89B62]">
                       {item.displayType} {item.subtitle ? `• ${item.subtitle}` : ''}
                     </motion.span>
-                    <motion.h2 variants={textVariants} className="text-5xl md:text-8xl font-black mb-12 tracking-tighter drop-shadow-2xl">
+                    <motion.h2 variants={textVariants} className="text-4xl md:text-7xl lg:text-8xl font-serif-title font-bold mb-8 tracking-tight drop-shadow-lg text-[#F5F1E8]">
                       {item.name}
                     </motion.h2>
                     <motion.div variants={textVariants}>
                       <Link to={finalLink}>
-                        <button className="btn-premium px-16 py-5 bg-white text-black font-black text-xs uppercase tracking-[0.3em] rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all">
+                        <button className="btn-primary-fashion px-12 py-4 shadow-2xl">
                           {item.displayType === 'Category' ? "Explore Category" : item.displayType === 'Collection' ? "See Collection" : "Discover Now"}
                         </button>
                       </Link>

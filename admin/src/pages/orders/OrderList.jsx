@@ -282,11 +282,11 @@ const OrderList = ({ token }) => {
               currentOrders.map((order) => {
                 const currentStatusInt = typeof order.status === 'string' ? STATUS_ENUM[order.status] : order.status;
 
-                // Define allowed transitions based on current status
+                // Define allowed transitions based on current status strictly matching OrderCommandService.cs
                 const getAllowedStatuses = (current) => {
                   switch (current) {
                     case STATUS_ENUM.PendingPayment: // 0
-                      return [STATUS_ENUM.Confirmed, STATUS_ENUM.PaymentExpired, STATUS_ENUM.CancelledByAdmin];
+                      return [STATUS_ENUM.Confirmed, STATUS_ENUM.PaymentExpired, STATUS_ENUM.CancelledByUser, STATUS_ENUM.CancelledByAdmin];
                     case STATUS_ENUM.Confirmed: // 1
                       return [STATUS_ENUM.Processing, STATUS_ENUM.CancelledByAdmin];
                     case STATUS_ENUM.Processing: // 2
@@ -296,8 +296,9 @@ const OrderList = ({ token }) => {
                     case STATUS_ENUM.Delivered: // 4
                       return [STATUS_ENUM.Complete, STATUS_ENUM.Returned, STATUS_ENUM.Refunded];
                     case STATUS_ENUM.PaymentExpired: // 8
-                      return [STATUS_ENUM.CancelledByAdmin];
+                      return [STATUS_ENUM.CancelledByUser, STATUS_ENUM.CancelledByAdmin];
                     default:
+                      // Terminal states (Complete, Returned, Refunded, CancelledByUser, CancelledByAdmin)
                       return [];
                   }
                 };

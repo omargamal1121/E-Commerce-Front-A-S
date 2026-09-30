@@ -10,6 +10,16 @@ import WishlistButton from "../components/WishlistButton";
 import MostWanted from "../components/MostWanted";
 import { FaChevronLeft, FaChevronRight, FaPlus, FaMinus, FaRulerCombined, FaTruck, FaShieldAlt, FaUndo, FaTimes } from "react-icons/fa";
 
+const OPTION_KEYS = [
+  { key: "size", label: "Size", isNumeric: false },
+  { key: "color", label: "Color", isNumeric: false, isColor: true },
+  { key: "chest", label: "Chest (cm)", isNumeric: true },
+  { key: "length", label: "Length (cm)", isNumeric: true },
+  { key: "waist", label: "Waist (cm)", isNumeric: true },
+  { key: "hip", label: "Hip (cm)", isNumeric: true },
+  { key: "sleeveLength", label: "Sleeve (cm)", isNumeric: true },
+];
+
 const Product = () => {
   const { t } = useTranslation();
   const { productId } = useParams();
@@ -23,10 +33,209 @@ const Product = () => {
   const [showSizeGuide, setShowSizeGuide] = useState(false);
 
   const [variants, setVariants] = useState([]);
-  const [selectedVariant, setSelectedVariant] = useState(null);
+  const [selections, setSelections] = useState({}); // Progressive filtering state: { optionKey: value | undefined }
   const [variantImages, setVariantImages] = useState({});
   const [localStock, setLocalStock] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [autoFilledKeys, setAutoFilledKeys] = useState({});
+
+  // Helper: Get value of an option key from a variant
+  const getOptValue = (v, key) => {
+    if (!v) return null;
+    if (key === "size") {
+      if (v.isFreeSize) return "Free Size";
+      const val = v.size || v.sizeLabel;
+      return val != null ? String(val).trim() : null;
+    }
+    if (key === "color") {
+      const val = v.color || v.colorHex || v.colorName;
+      return val != null ? String(val).trim() : null;
+    }
+    return v[key] != null ? String(v[key]).trim() : null;
+  };
+
+  // Helper: Get effective quantity
+  const getEffectiveQty = (variant) => {
+    if (!variant) return 0;
+    const localQty = localStock[variant.id] || 0;
+    return Math.max(0, (variant.quantity ?? 0) - localQty);
+  };
+
+  // Pure function 1: getMatching (in-stock variants matching ALL current non-null selections)
+  const getMatching = (allVariants, currentSelections) => {
+    if (!allVariants || allVariants.length === 0) return [];
+    return allVariants.filter(v => {
+      if (getEffectiveQty(v) <= 0) return false;
+      return OPTION_KEYS.every(opt => {
+        const selectedVal = currentSelections[opt.key];
+        if (!selectedVal) return true;
+        const vVal = getOptValue(v, opt.key);
+        return vVal === selectedVal;
+      });
+    });
+  };
+
+  // Pure function 2: getEnabledValues (distinct values for key K among variants matching all selections EXCEPT K)
+  const getEnabledValues = (allVariants, currentSelections, key) => {
+    if (!allVariants || allVariants.length === 0) return [];
+    const matchingExceptKey = allVariants.filter(v => {
+      if (getEffectiveQty(v) <= 0) return false;
+      return OPTION_KEYS.every(opt => {
+        if (opt.key === key) return true;
+        const selectedVal = currentSelections[opt.key];
+        if (!selectedVal) return true;
+        const vVal = getOptValue(v, opt.key);
+        return vVal === selectedVal;
+      });
+    });
+
+    const values = matchingExceptKey
+      .map(v => getOptValue(v, key))
+      .filter(Boolean);
+
+    return [...new Set(values)];
+  };
+
+  // Pure function 3: applyClick (returns new selections object and auto-filled keys)
+  const applyClick = (allVariants, currentSelections, clickedKey, clickedValue) => {
+    let nextSel = { ...currentSelections };
+
+    // 1. Toggle off if already selected
+    if (nextSel[clickedKey] === clickedValue) {
+      delete nextSel[clickedKey];
+    } else {
+      nextSel[clickedKey] = clickedValue;
+    }
+
+    // 2. Clear any previously selected value in another section if it cannot coexist with the new selection
+    OPTION_KEYS.forEach(opt => {
+      if (opt.key === clickedKey) return;
+      const curVal = nextSel[opt.key];
+      if (curVal && nextSel[clickedKey]) {
+        const isPossibleCombo = allVariants.some(v => {
+          if (getEffectiveQty(v) <= 0) return false;
+          return getOptValue(v, clickedKey) === nextSel[clickedKey] && getOptValue(v, opt.key) === curVal;
+        });
+        if (!isPossibleCombo) {
+          delete nextSel[opt.key];
+        }
+      }
+    });
+
+    // 3. Recompute matching in-stock variants
+    let matchingVars = getMatching(allVariants, nextSel);
+
+    const newlyAutoFilled = {};
+
+    // 4. If matching contains EXACTLY ONE variant -> auto-fill ALL other sections from that variant
+    if (matchingVars.length === 1) {
+      const targetVar = matchingVars[0];
+      OPTION_KEYS.forEach(opt => {
+        const vVal = getOptValue(targetVar, opt.key);
+        if (vVal) {
+          if (opt.key !== clickedKey && nextSel[opt.key] !== vVal) {
+            newlyAutoFilled[opt.key] = true;
+          }
+          nextSel[opt.key] = vVal;
+        }
+      });
+    } else if (matchingVars.length > 1) {
+      // 5. If matching contains MORE THAN ONE variant: auto-fill sections that have only 1 unique value among matching
+      OPTION_KEYS.forEach(opt => {
+        if (opt.key === clickedKey) return;
+        const uniqueVals = [...new Set(matchingVars.map(v => getOptValue(v, opt.key)).filter(Boolean))];
+        if (uniqueVals.length === 1) {
+          const singleVal = uniqueVals[0];
+          if (nextSel[opt.key] !== singleVal) {
+            newlyAutoFilled[opt.key] = true;
+            nextSel[opt.key] = singleVal;
+          }
+        }
+      });
+    }
+
+    return { nextSelections: nextSel, autoFilled: newlyAutoFilled };
+  };
+
+  // Derived memoized matching variants
+  const matchingVariants = React.useMemo(() => {
+    return getMatching(variants, selections);
+  }, [variants, selections, localStock]);
+
+  // Derived selectedVariant (exists ONLY when exactly one variant matches, or fallback if 1 variant exists)
+  const selectedVariant = React.useMemo(() => {
+    if (matchingVariants.length === 1) {
+      return matchingVariants[0];
+    }
+    if (variants.length === 1) {
+      return variants[0];
+    }
+    return null;
+  }, [matchingVariants, variants]);
+
+  // Derived sections to display (only if at least 2 distinct non-null values across variants)
+  const derivedSections = React.useMemo(() => {
+    const sections = [];
+
+    OPTION_KEYS.forEach(opt => {
+      let rawValues = variants.map(v => getOptValue(v, opt.key)).filter(Boolean);
+
+      let distinctVals = [];
+      if (opt.key === "size" || opt.key === "color") {
+        distinctVals = [...new Set(rawValues)];
+      } else if (opt.isNumeric) {
+        distinctVals = [...new Set(rawValues)].sort((a, b) => Number(a) - Number(b));
+      }
+
+      if (distinctVals.length >= 2) {
+        sections.push({ ...opt, options: distinctVals });
+      }
+    });
+
+    return sections;
+  }, [variants]);
+
+  // Handle single variant product auto-selection on load
+  useEffect(() => {
+    if (variants.length === 1) {
+      const v = variants[0];
+      const initialSel = {};
+      OPTION_KEYS.forEach(opt => {
+        const val = getOptValue(v, opt.key);
+        if (val) initialSel[opt.key] = val;
+      });
+      setSelections(initialSel);
+    }
+  }, [variants]);
+
+  // Reset quantity stepper to 1 when selected variant changes
+  useEffect(() => {
+    setQuantity(1);
+  }, [selectedVariant?.id]);
+
+  // Update gallery image when selected variant color changes
+  useEffect(() => {
+    if (selectedVariant?.color && variantImages[selectedVariant.color]?.[0]) {
+      setActiveImage(variantImages[selectedVariant.color][0].url || variantImages[selectedVariant.color][0]);
+    }
+  }, [selectedVariant?.id]);
+
+  // Handle chip click
+  const handleChipClick = (key, val) => {
+    const { nextSelections, autoFilled } = applyClick(variants, selections, key, val);
+    setSelections(nextSelections);
+
+    if (Object.keys(autoFilled).length > 0) {
+      setAutoFilledKeys(autoFilled);
+      setTimeout(() => setAutoFilledKeys({}), 800);
+    }
+  };
+
+  // Reset all selections
+  const handleResetSelections = () => {
+    setSelections({});
+    setAutoFilledKeys({});
+  };
 
   // Intersection observer for related products
   const { ref: relatedProductsRef, inView: isRelatedInView } = useInView({ threshold: 0.2, triggerOnce: true });
@@ -91,19 +300,22 @@ const Product = () => {
   }, [productId, backendUrl]);
 
   const handleAddToCart = async () => {
-    if (!size || !selectedVariant) {
+    if (!selectedVariant) {
       toast.warning(t("SELECT_SIZE_COLOR"));
       return;
     }
-    if (getCurrentStock(selectedVariant) < quantity) {
+
+    const targetSize = getOptValue(selectedVariant, "size") || "Free Size";
+    const targetColor = getOptValue(selectedVariant, "color") || "";
+
+    if (getEffectiveQty(selectedVariant) < quantity) {
       toast.error(t("OUT_OF_STOCK"));
       return;
     }
 
     setIsSubmitting(true);
     try {
-      // addToCart already shows success/error messages, no need to duplicate
-      await addToCart(productData._id || productData.id, size, selectedVariant.color, quantity);
+      await addToCart(productData._id || productData.id, targetSize, targetColor, quantity);
       updateLocalStock(selectedVariant.id, quantity);
     } finally {
       setIsSubmitting(false);
@@ -189,68 +401,142 @@ const Product = () => {
 
             <div className="h-px bg-gray-100 w-full"></div>
 
-            {/* Selection - Color */}
-            {colors.length > 0 && (
-              <div>
-                <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 mb-4">Color Palette</h4>
-                <div className="flex flex-wrap gap-4">
-                  {colors.map((c, i) => (
+            {/* Dynamic Multi-Section Progressive Option Selector */}
+            {derivedSections.length > 0 && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[#6B705C]">
+                    {Object.keys(selections).length > 0
+                      ? `${matchingVariants.length} variant${matchingVariants.length === 1 ? '' : 's'} match selection`
+                      : 'Select options to narrow variants'}
+                  </span>
+                  {Object.keys(selections).length > 0 && (
                     <button
-                      key={i}
-                      onClick={() => {
-                        const v = variants.find(v => v.color === c);
-                        setSelectedVariant(v);
-                        if (variantImages[c]?.[0]) setActiveImage(variantImages[c][0].url || variantImages[c][0]);
-                      }}
-                      className={`w-12 h-12 rounded-full border-2 transition-all p-1 ${selectedVariant?.color === c ? 'border-black' : 'border-transparent'}`}
-                      title={c}
+                      type="button"
+                      onClick={handleResetSelections}
+                      className="text-xs font-bold text-[#B89B62] underline hover:text-[#29251F] transition-colors"
                     >
-                      <div className="w-full h-full rounded-full shadow-inner" style={{ backgroundColor: c.startsWith('#') ? c : (/^[0-9A-Fa-f]{3,8}$/.test(c) ? `#${c}` : c.toLowerCase()) }} />
+                      Reset selection
                     </button>
-                  ))}
+                  )}
                 </div>
+
+                {derivedSections.map(sec => {
+                  const currentSelectedVal = selections[sec.key];
+                  const enabledVals = getEnabledValues(variants, selections, sec.key);
+                  const isAutoFilled = Boolean(autoFilledKeys[sec.key]);
+
+                  return (
+                    <div
+                      key={sec.key}
+                      role="radiogroup"
+                      aria-label={`Select ${sec.label}`}
+                      className={`transition-all duration-300 rounded-2xl p-2 ${isAutoFilled ? 'bg-[#B89B62]/15 ring-2 ring-[#B89B62] animate-pulse' : ''}`}
+                    >
+                      <div className="flex justify-between items-center mb-2.5">
+                        <h4 className="text-[10px] font-black uppercase tracking-[0.25em] text-[#6B705C]">
+                          {sec.label} {sec.unit ? `(${sec.unit})` : ''}
+                        </h4>
+                        {sec.key === 'size' && (
+                          <button type="button" onClick={() => setShowSizeGuide(true)} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-[#6B705C] hover:text-[#29251F]">
+                            <FaRulerCombined /> Size Map
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap gap-2.5">
+                        {sec.options.map(optVal => {
+                          const isSelected = currentSelectedVal === optVal;
+                          const isDisabled = !enabledVals.includes(optVal);
+
+                          if (sec.isColor || sec.key === "color") {
+                            return (
+                              <button
+                                key={optVal}
+                                type="button"
+                                role="radio"
+                                aria-checked={isSelected}
+                                aria-disabled={isDisabled}
+                                aria-label={optVal}
+                                onClick={() => handleChipClick(sec.key, optVal)}
+                                className={`w-9 h-9 rounded-full border-2 transition-all p-0.5 flex items-center justify-center relative ${isSelected ? 'border-[#414635] ring-2 ring-[#414635]/40 scale-110' : 'border-[#D8CDB8] hover:border-[#414635]'} ${isDisabled ? 'opacity-40 line-through' : ''}`}
+                                title={optVal}
+                              >
+                                <div className="w-full h-full rounded-full shadow-inner border border-black/10" style={{ backgroundColor: optVal }} />
+                              </button>
+                            );
+                          }
+
+                          return (
+                            <button
+                              key={optVal}
+                              type="button"
+                              role="radio"
+                              aria-checked={isSelected}
+                              aria-disabled={isDisabled}
+                              onClick={() => handleChipClick(sec.key, optVal)}
+                              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border flex items-baseline gap-1 focus:ring-2 focus:ring-[#414635] outline-none ${isSelected ? 'bg-[#414635] text-[#FFFDF7] border-[#414635] shadow-md' : 'bg-[#FFFDF7] text-[#29251F] border-[#D8CDB8] hover:border-[#414635]'} ${isDisabled ? 'opacity-40 line-through' : ''}`}
+                            >
+                              <span>{optVal}</span>
+                              {sec.unit && <span className={`text-[9px] font-normal ${isSelected ? 'text-[#FFFDF7]/80' : 'text-[#7A756C]'}`}>{sec.unit}</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
-            {/* Selection - Size */}
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400">Select Proportions</h4>
-                <button onClick={() => setShowSizeGuide(true)} className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-black transition-colors">
-                  <FaRulerCombined /> Sizing Map
+            {/* Quantity Stepper & Add to Cart */}
+            <div className="space-y-4 pt-2">
+              {/* Availability Badge */}
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[#6B705C]">Availability</span>
+                {selectedVariant ? (
+                  getEffectiveQty(selectedVariant) <= 0 ? (
+                    <span className="px-3 py-1 bg-rose-50 text-rose-700 rounded-full text-xs font-bold border border-rose-200">Out of stock</span>
+                  ) : getEffectiveQty(selectedVariant) <= 5 ? (
+                    <span className="px-3 py-1 bg-amber-50 text-amber-800 rounded-full text-xs font-bold border border-amber-200">Only {getEffectiveQty(selectedVariant)} left</span>
+                  ) : (
+                    <span className="px-3 py-1 bg-emerald-50 text-emerald-800 rounded-full text-xs font-bold border border-emerald-200">{getEffectiveQty(selectedVariant)} in stock</span>
+                  )
+                ) : (
+                  <span className="text-xs text-[#7A756C]">Select options to see availability</span>
+                )}
+              </div>
+
+              <div className="flex gap-4 items-center">
+                <div className="flex items-center bg-[#F5F1E8] border border-[#D8CDB8] rounded-full px-5 py-3 gap-5">
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    disabled={!selectedVariant || getEffectiveQty(selectedVariant) <= 0}
+                    className="text-[#6B705C] hover:text-[#29251F] transition-colors disabled:opacity-30"
+                  >
+                    <FaMinus size={10} />
+                  </button>
+                  <span className="font-bold text-base w-6 text-center text-[#29251F]">{quantity}</span>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity(Math.min(getEffectiveQty(selectedVariant) || 1, quantity + 1))}
+                    disabled={!selectedVariant || quantity >= getEffectiveQty(selectedVariant)}
+                    className="text-[#6B705C] hover:text-[#29251F] transition-colors disabled:opacity-30"
+                  >
+                    <FaPlus size={10} />
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  disabled={isSubmitting || !selectedVariant || getEffectiveQty(selectedVariant) <= 0}
+                  className="flex-1 btn-primary-fashion py-4 rounded-full text-xs font-bold tracking-[0.2em] shadow-xl disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? 'Authenticating...' : (!selectedVariant) ? 'SELECT OPTIONS' : (getEffectiveQty(selectedVariant) <= 0) ? 'OUT OF STOCK' : 'ADD TO PRIVATE COLLECTION'}
                 </button>
               </div>
-              <div className="grid grid-cols-4 gap-3">
-                {availableSizes.map((s, i) => {
-                  const isAvailable = variants.some(v => v.size === s && v.color === selectedVariant?.color);
-                  return (
-                    <button
-                      key={i}
-                      disabled={!isAvailable}
-                      onClick={() => setSize(s)}
-                      className={`py-4 rounded-2xl text-xs font-black transition-all border-2 ${size === s ? 'bg-black text-white border-black shadow-xl' : 'bg-white text-black border-gray-100 hover:border-black'} disabled:opacity-20 disabled:cursor-not-allowed`}
-                    >
-                      {s}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Quantity & Actions */}
-            <div className="flex gap-4">
-              <div className="flex items-center bg-gray-50 rounded-full px-6 py-2 gap-6">
-                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="text-gray-400 hover:text-black transition-colors"><FaMinus size={10} /></button>
-                <span className="font-black text-lg w-6 text-center">{quantity}</span>
-                <button onClick={() => setQuantity(quantity + 1)} className="text-gray-400 hover:text-black transition-colors"><FaPlus size={10} /></button>
-              </div>
-              <button
-                onClick={handleAddToCart}
-                disabled={isSubmitting}
-                className="flex-1 bg-black text-white py-5 rounded-[2rem] font-black uppercase text-xs tracking-[0.2em] shadow-2xl hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
-              >
-                {isSubmitting ? 'Authenticating...' : 'Add To Private Collection'}
-              </button>
             </div>
 
             {/* Variant Measurements */}

@@ -91,6 +91,23 @@ const ProductVariant = ({ token }) => {
 
   const handleAddVariant = async (e) => {
     e.preventDefault();
+
+    // Require at least one specification attribute
+    const hasSpec = Boolean(
+      color ||
+      size ||
+      waist !== "" ||
+      length !== "" ||
+      chest !== "" ||
+      hip !== "" ||
+      sleeveLength !== ""
+    );
+
+    if (!hasSpec) {
+      toast.error(t('specifyAtLeastOneAttribute') || "Please provide at least one specification attribute (Color, Size, Waist, Length, Chest, Hip, Sleeve Length, or Free Size).");
+      return;
+    }
+
     setLoading(true);
     try {
       const payload = {
@@ -293,7 +310,7 @@ const ProductVariant = ({ token }) => {
 
                 <div className="flex flex-col gap-2">
                   <label className="text-[9px] font-bold uppercase text-gray-500 tracking-widest ml-1">{t('size')}</label>
-                  
+
                   {/* Preset Size Buttons */}
                   <div className="flex flex-wrap gap-2 mb-2">
                     {['S', 'M', 'L', 'XL', 'XXL'].map(s => (
@@ -349,11 +366,17 @@ const ProductVariant = ({ token }) => {
                     <div className="flex flex-col">
                       <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">{t('color')}</span>
                       <div className="flex items-center gap-3">
-                        <div
-                          className="w-4 h-4 rounded-full border border-gray-200 shadow-sm"
-                          style={{ backgroundColor: v.color || 'transparent' }}
-                        />
-                        <span className="text-xl font-black text-gray-900 uppercase tracking-tight">{getColorName(v.color)}</span>
+                        {v.color ? (
+                          <div
+                            className="w-4 h-4 rounded-full border border-gray-200 shadow-sm"
+                            style={{ backgroundColor: v.color }}
+                          />
+                        ) : (
+                          <span className="text-gray-400 text-xs font-bold">—</span>
+                        )}
+                        <span className="text-xl font-black text-gray-900 uppercase tracking-tight">
+                          {v.color ? getColorName(v.color) : (t('noColor') || "No Color")}
+                        </span>
                         {v.isFreeSize && (
                           <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-blue-100 text-blue-700">
                             {t('freeSize') || 'Free Size'}

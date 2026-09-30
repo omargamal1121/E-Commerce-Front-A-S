@@ -70,19 +70,19 @@ const LatestCollection = () => {
   if (!productsLoading && latestProducts.length === 0) return null;
 
   return (
-    <div className="my-24 px-4 sm:px-[5vw]">
+    <div className="py-20 px-6 sm:px-[5vw] bg-[#F5F1E8] rounded-3xl my-12 border border-[#D8CDB8]/40">
       <motion.div
         initial={{ opacity: 0, x: -30 }}
         whileInView={{ opacity: 1, x: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.8 }}
-        className="flex flex-col md:flex-row md:items-end justify-between mb-12 border-b border-gray-100 pb-10"
+        className="flex flex-col md:flex-row md:items-end justify-between mb-12 border-b border-[#D8CDB8] pb-10"
       >
         <div className="relative">
           <Title text1={t('LATEST')} text2={t('PRODUCTS')} />
-          <div className="absolute -top-6 -left-6 text-9xl font-black text-gray-50/50 -z-10 select-none">NEW</div>
+          <div className="absolute -top-6 -left-4 text-7xl font-serif-title font-bold text-[#6B705C]/10 -z-10 select-none">NEW</div>
         </div>
-        <p className="max-w-md text-gray-500 text-sm md:text-base mt-4 md:mt-0 font-light italic">
+        <p className="max-w-md text-[#7A756C] text-xs md:text-sm mt-4 md:mt-0 font-medium italic">
           "Elegance is the only beauty that never fades." — Discover our newest designs.
         </p>
       </motion.div>
@@ -95,7 +95,7 @@ const LatestCollection = () => {
         className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-x-6 gap-y-12"
       >
         {latestProducts.map((item, index) => (
-          <motion.div key={index} variants={itemVariants} className="card-luxury relative group">
+          <motion.div key={index} variants={itemVariants} className="relative group">
             <ProductItem
               id={item._id}
               image={item.image}
@@ -105,7 +105,6 @@ const LatestCollection = () => {
               discountPrecentage={item.discountPrecentage}
               discountName={item.discountName}
             />
-            <div className="absolute -inset-1 bg-gradient-to-r from-gray-200 to-gray-50 rounded-lg opacity-0 group-hover:opacity-10 transition-opacity -z-10 bg-luxury"></div>
           </motion.div>
         ))}
       </motion.div>

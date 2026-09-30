@@ -63,6 +63,52 @@ const PrivateRoute = ({ children }) => {
   return children;
 };
 
+// Component to handle global scroll animations
+const ScrollAnimation = () => {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    const observerOptions = {
+      root: null,
+      rootMargin: "0px",
+      threshold: 0.1,
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add("is-visible");
+          // Optional: unobserve after showing once
+          // observer.unobserve(entry.target);
+        }
+      });
+    }, observerOptions);
+
+    // Give React a moment to render the new page
+    const timeoutId = setTimeout(() => {
+      // Find elements we want to animate (cards, sections, big headings)
+      const elementsToAnimate = document.querySelectorAll(
+        '.card-luxury, section, .hero-section, .collection-item'
+      );
+      
+      elementsToAnimate.forEach((el) => {
+        // Only add if it doesn't already have it
+        if (!el.classList.contains("fade-in-section")) {
+          el.classList.add("fade-in-section");
+        }
+        observer.observe(el);
+      });
+    }, 100);
+
+    return () => {
+      observer.disconnect();
+      clearTimeout(timeoutId);
+    };
+  }, [pathname]);
+
+  return null;
+};
+
 const OrdersRoute = () => {
   const { token } = useContext(ShopContext);
   const guestToken = getGuestToken();
@@ -104,6 +150,7 @@ const App = () => {
       <>
         <div>
           <ScrollToTop />
+          <ScrollAnimation />
           <ToastContainer />
           <Routes>
             <Route path="/orders" element={<Orders />} />
@@ -117,6 +164,7 @@ const App = () => {
   return (
     <div>
       <ScrollToTop />
+      <ScrollAnimation />
       <Navbar />
       <ToastContainer />
       <SearchBar />
