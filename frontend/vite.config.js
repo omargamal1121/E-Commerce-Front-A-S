@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://e-commerce-api-v1-2.onrender.com',
+        target: 'https://rands-api.runasp.net',
         changeOrigin: true,
         secure: true
       }

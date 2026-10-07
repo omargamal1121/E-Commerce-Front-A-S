@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 
 const ScrollToTopButton = () => {
   const [isVisible, setIsVisible] = useState(false);
-  const whatsappNumber = import.meta.env.VITE_WHATSAPP_NUMBER || "";
+  const whatsappNumber = import.meta.env.VITE_WHATSAPP_NUMBER || "201555522161";
   const whatsappMessage = encodeURIComponent("Hello! I need some help with my order.");
 
   useEffect(() => {

@@ -55,7 +55,8 @@ const AuthExample = () => {
     try {
       console.log("🧪 Testing refresh endpoint directly...");
       const currentToken = authService.getCurrentToken();
-      const response = await fetch("https://fashion-v1.runasp.net/api/Account/refresh-token", {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || "https://rands-api.runasp.net";
+      const response = await fetch(`${backendUrl}/api/Account/refresh-token`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${currentToken}`,
