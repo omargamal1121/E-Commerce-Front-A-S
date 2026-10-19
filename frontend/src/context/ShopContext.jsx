@@ -1,7 +1,6 @@
 import { createContext, useState, useEffect, useRef } from "react";
 // import { products } from "../assets/frontend_assets/assets";
-import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { fetchWithTokenRefresh, getAuthHeaders, safeParseJson } from "../utils/apiUtils";
 import wishlistService from "../services/wishlistService";
 import discountService from "../services/discountService";
@@ -63,6 +62,7 @@ const ShopContextProvider = (props) => {
     }
   };
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Resolve variant id by size from Fashion-main variants API (best-effort)
   const resolveVariantId = async (productId, sizeLabel) => {
@@ -514,14 +514,26 @@ const ShopContextProvider = (props) => {
   // Maintenance/Closed redirection if store contains 0 products
   useEffect(() => {
     if (productsLoaded && products.length === 0) {
-      const allowedPaths = ['/login', '/signup', '/orders', '/closed', '/error'];
-      const currentPath = window.location.pathname;
-      if (!allowedPaths.includes(currentPath)) {
+      const allowedPaths = [
+        '/login',
+        '/signup',
+        '/orders',
+        '/closed',
+        '/maintenance',
+        '/error',
+        '/policy',
+        '/contact'
+      ];
+      const currentPath = location.pathname.replace(/\/+$/, '') || '/';
+      const isAllowed = allowedPaths.some(
+        (path) => currentPath === path || currentPath.startsWith(path + '/')
+      );
+      if (!isAllowed) {
         console.warn("Products list is empty. Redirecting storefront to /closed.");
         navigate('/closed', { replace: true });
       }
     }
-  }, [products, productsLoaded, navigate]);
+  }, [products, productsLoaded, location.pathname, navigate]);
 
   // Initial data fetch
   useEffect(() => {

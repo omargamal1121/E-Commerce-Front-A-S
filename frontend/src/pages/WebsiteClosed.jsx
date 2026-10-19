@@ -1,5 +1,5 @@
 import React, { useContext, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { ShopContext } from "../context/ShopContext";
 import { motion } from "framer-motion";
 
@@ -60,11 +60,28 @@ const WebsiteClosed = () => {
           </button>
 
           <a
-            href="mailto:support@rands.com"
+            href="mailto:r.s.store.0012@gmail.com"
             className="w-full sm:w-auto border border-neutral-800 text-neutral-300 px-8 py-3 rounded-none font-medium hover:bg-white hover:text-black hover:border-white transition duration-300 uppercase text-xs tracking-widest text-center"
           >
             Contact Support
           </a>
+        </div>
+
+        {/* Quick Links to Policy & Contact Us */}
+        <div className="mt-8 flex items-center justify-center gap-6 text-xs text-neutral-400">
+          <Link
+            to="/policy"
+            className="hover:text-white transition duration-200 uppercase tracking-widest underline underline-offset-4"
+          >
+            Policy
+          </Link>
+          <span className="text-neutral-600">•</span>
+          <Link
+            to="/contact"
+            className="hover:text-white transition duration-200 uppercase tracking-widest underline underline-offset-4"
+          >
+            Contact Us
+          </Link>
         </div>
 
         {/* Footer Info */}
@@ -77,3 +94,4 @@ const WebsiteClosed = () => {
 };
 
 export default WebsiteClosed;
+
