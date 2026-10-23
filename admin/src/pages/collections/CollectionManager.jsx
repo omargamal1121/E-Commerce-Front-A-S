@@ -27,10 +27,10 @@ const CollectionManager = ({ token }) => {
   // search states for ViewCollection
   const [searchId, setSearchId] = useState(collectionId || "");
   const [searchActive, setSearchActive] = useState(
-    searchParams.get("isActive") || "true"
+    searchParams.get("isActive") || ""
   );
   const [searchDeleted, setSearchDeleted] = useState(
-    searchParams.get("includeDeleted") || "false"
+    searchParams.get("includeDeleted") || ""
   );
 
   useEffect(() => {

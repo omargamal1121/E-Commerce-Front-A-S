@@ -157,7 +157,7 @@ const ProductList = ({ token }) => {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("all");
-  const [deletedFilter, setDeletedFilter] = useState("not_deleted");
+  const [deletedFilter, setDeletedFilter] = useState("all");
   const [specialFilter, setSpecialFilter] = useState("all");
   const [stockFilter, setStockFilter] = useState("all");
   const [genderFilter, setGenderFilter] = useState("");

@@ -20,8 +20,8 @@ const SubCategoryManager = ({ token }) => {
 
   // For quick view
   const [viewId, setViewId] = useState("");
-  const [isActiveFilter, setIsActiveFilter] = useState("true");
-  const [includeDeletedFilter, setIncludeDeletedFilter] = useState("false");
+  const [isActiveFilter, setIsActiveFilter] = useState("");
+  const [includeDeletedFilter, setIncludeDeletedFilter] = useState("");
 
   const [parentCategoryId, setParentCategoryId] = useState("");
   const [subCategoryName, setSubCategoryName] = useState("");
@@ -39,6 +39,7 @@ const SubCategoryManager = ({ token }) => {
     try {
       const res = await axios.get(`${backendUrl}/api/categories`, {
         headers: { Authorization: `Bearer ${token}` },
+        params: { page: 1, pageSize: 200 },
       });
       const cats = res.data?.responseBody?.data || [];
       setCategories(cats);

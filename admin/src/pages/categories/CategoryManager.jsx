@@ -37,10 +37,10 @@ const CategoryManager = ({ token }) => {
   // search states for ViewCategory
   const [searchId, setSearchId] = useState(categoryId || "");
   const [searchActive, setSearchActive] = useState(
-    searchParams.get("isActive") || "true"
+    searchParams.get("isActive") || ""
   );
   const [searchDeleted, setSearchDeleted] = useState(
-    searchParams.get("includeDeleted") || "false"
+    searchParams.get("includeDeleted") || ""
   );
 
   useEffect(() => {
