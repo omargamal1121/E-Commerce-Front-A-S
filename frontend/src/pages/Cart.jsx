@@ -3,6 +3,7 @@ import { ShopContext } from "../context/ShopContext";
 import Title from "../components/Title";
 import { assets } from "../assets/frontend_assets/assets";
 import CartTotal from "../components/CartTotal";
+import ProductImage from "../components/common/ProductImage";
 import { motion } from "framer-motion";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -274,9 +275,11 @@ const Cart = () => {
               className="py-4 border-t border-[var(--border)] text-[var(--text)] grid grid-cols-1 sm:grid-cols-[3fr_1fr_0.5fr] md:grid-cols-[4fr_1.5fr_0.5fr] items-start sm:items-center gap-3 sm:gap-4"
             >
               <div className="flex items-start gap-3 sm:gap-6">
-                <img
+                <ProductImage
                   src={item.image || (productData.image && productData.image[0]) || ""}
                   alt={productData.name || "Product"}
+                  width={150}
+                  height={150}
                   className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded"
                 />
                 <div className="flex-1">

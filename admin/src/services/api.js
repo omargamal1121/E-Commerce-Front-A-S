@@ -498,7 +498,7 @@ const API = {
   },
 
   images: {
-    uploadMain: async (productId, imageFile, token) => {
+    uploadMain: async (productId, imageFile, token, onUploadProgress) => {
       const formData = new FormData();
       formData.append("Files", imageFile);
 
@@ -511,6 +511,7 @@ const API = {
               "Content-Type": "multipart/form-data",
               Authorization: `Bearer ${token}`,
             },
+            onUploadProgress,
           }
         );
         return res.data;
@@ -519,7 +520,7 @@ const API = {
       }
     },
 
-    uploadAdditional: async (productId, imageFiles, token) => {
+    uploadAdditional: async (productId, imageFiles, token, onUploadProgress) => {
       const formData = new FormData();
       imageFiles.forEach((file) => {
         formData.append("images", file);
@@ -534,6 +535,7 @@ const API = {
               "Content-Type": "multipart/form-data",
               Authorization: `Bearer ${token}`,
             },
+            onUploadProgress,
           }
         );
         return res.data;

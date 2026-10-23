@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { ShopContext } from "../context/ShopContext";
 import Title from "../components/Title";
+import ProductImage from "../components/common/ProductImage";
 import { placeGuestOrder, initiateGuestPayment } from "../services/guestCheckoutService";
 import axios from "axios";
 
@@ -433,9 +434,11 @@ const GuestCheckout = () => {
                   {cartLines.map((line, idx) => (
                     <div key={idx} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
                       {line.image ? (
-                        <img
+                        <ProductImage
                           src={line.image}
                           alt={line.name}
+                          width={150}
+                          height={150}
                           className="w-14 h-14 rounded-lg object-cover border border-[var(--border)] flex-shrink-0"
                         />
                       ) : (

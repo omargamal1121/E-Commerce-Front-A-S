@@ -7,6 +7,7 @@ import { toast } from 'react-toastify'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getGuestToken } from '../utils/guestSession'
+import ProductImage from '../components/common/ProductImage'
 
 const Orders = () => {
   const { backendUrl, token, currency, refreshToken } = useContext(ShopContext);
@@ -413,7 +414,13 @@ const Orders = () => {
               <div className='flex gap-4'>
                 {/* Thumbnail */}
                 <div className='relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 overflow-hidden rounded-xl'>
-                  <img className='w-full h-full object-cover transition-transform group-hover:scale-110 duration-500' src={item.image[0]} alt={item.name} />
+                  <ProductImage
+                    src={item.image[0]}
+                    alt={item.name}
+                    width={150}
+                    height={150}
+                    className='w-full h-full object-cover transition-transform group-hover:scale-110 duration-500'
+                  />
                 </div>
 
                 {/* Info */}
@@ -526,7 +533,13 @@ const Orders = () => {
                           <div className="space-y-3">
                             {selectedOrderDetails.items?.map((item, idx) => (
                               <div key={idx} className="flex gap-4 p-3 rounded-2xl border border-gray-100 bg-gray-50/30">
-                                <img className="w-20 h-20 object-cover rounded-xl shadow-sm" src={item.product?.mainImageUrl || '/api/placeholder/80/80'} alt="" />
+                                <ProductImage
+                                  className="w-20 h-20 object-cover rounded-xl shadow-sm"
+                                  src={item.product?.mainImageUrl}
+                                  alt={item.product?.name || "Order item"}
+                                  width={150}
+                                  height={150}
+                                />
                                 <div className="flex-1 flex flex-col justify-center">
                                   <h4 className="font-black text-sm leading-tight">{item.product?.name}</h4>
                                   <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-wider">{item.product?.productVariantForCartDto?.size} / {item.product?.productVariantForCartDto?.color}</p>

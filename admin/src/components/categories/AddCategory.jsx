@@ -4,6 +4,7 @@ import axios from "axios";
 import { backendUrl } from "../../App";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { validateImageFile, compressImage, compressImagesBatch } from "../../utils/uploadUtils";
 
 const AddCategory = ({
   token,
@@ -157,10 +158,11 @@ const AddCategory = ({
 
       if (!categoryId) throw new Error("Failed to get category ID");
 
-      // Upload Additional Images
+      // Upload Additional Images (compressed concurrently with max 3 at a time)
       if (images?.length > 0) {
+        const compressedGallery = await compressImagesBatch(images, null, 3);
         const imgForm = new FormData();
-        images.forEach((file) => imgForm.append("Images", file));
+        compressedGallery.forEach((file) => imgForm.append("Images", file));
         await axios.post(
           `${backendUrl}/api/categories/${categoryId}/images`,
           imgForm,
@@ -168,10 +170,16 @@ const AddCategory = ({
         );
       }
 
-      // Upload Main Image
+      // Upload Main Image (compressed to WebP 2000px)
       if (mainImage) {
+        const compressedMain = await compressImage(mainImage, {
+          maxWidthOrHeight: 2000,
+          initialQuality: 0.85,
+          fileType: "image/webp",
+          useWebWorker: true,
+        });
         const mainForm = new FormData();
-        mainForm.append("Image", mainImage);
+        mainForm.append("Image", compressedMain);
         await axios.post(
           `${backendUrl}/api/categories/${categoryId}/images/main`,
           mainForm,
@@ -273,8 +281,14 @@ const AddCategory = ({
                 <input
                   type="file"
                   className="hidden"
-                  onChange={(e) => setMainImage(e.target.files[0])}
-                  accept="image/*"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    const v = validateImageFile(f);
+                    if (!v.valid) { toast.error(v.error); return; }
+                    setMainImage(f);
+                  }}
+                  accept="image/jpeg,image/png,image/webp"
                 />
               </label>
               {(mainImage || oldMainImage) && (
@@ -344,8 +358,17 @@ const AddCategory = ({
                   type="file"
                   multiple
                   className="hidden"
-                  onChange={(e) => setImages([...images, ...Array.from(e.target.files)])}
-                  accept="image/*"
+                  onChange={(e) => {
+                    const newFiles = Array.from(e.target.files || []);
+                    const valid = [];
+                    for (const f of newFiles) {
+                      const v = validateImageFile(f);
+                      if (!v.valid) { toast.error(`${f.name}: ${v.error}`); }
+                      else { valid.push(f); }
+                    }
+                    if (valid.length) setImages(prev => [...prev, ...valid]);
+                  }}
+                  accept="image/jpeg,image/png,image/webp"
                 />
               </label>
             </div>

@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { ShopContext } from "../context/ShopContext";
 import { motion, AnimatePresence } from "framer-motion";
 import Title from "../components/Title";
+import ProductImage from "../components/common/ProductImage";
 import { FaChevronDown, FaTimes, FaFilter, FaThLarge, FaList } from "react-icons/fa";
 
 const CategoryPage = () => {
@@ -75,10 +76,13 @@ const CategoryPage = () => {
       {/* Dynamic Luxury Hero */}
       <section className="relative h-[40vh] md:h-[60vh] overflow-hidden flex items-center justify-center mt-16 group">
         <div className="absolute inset-0 z-0">
-          <img
+          <ProductImage
             src={category?.images?.[0]?.url || "https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?auto=format&fit=crop&q=80&w=2000"}
             className="w-full h-full object-cover scale-105 group-hover:scale-100 transition-transform duration-10000 ease-out"
-            alt={category?.name}
+            alt={category?.name || "Category banner"}
+            width={1600}
+            priority={true}
+            sizes="100vw"
           />
           <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"></div>
         </div>
@@ -131,10 +135,13 @@ const CategoryPage = () => {
               <Link to={`/subcategory/${sub.id}`} className="block relative">
                 <div className="aspect-[3/4] overflow-hidden rounded-3xl bg-gray-50 relative">
                   {sub.images?.[0] ? (
-                    <img
+                    <ProductImage
                       src={sub.images[0].url}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                       alt={sub.name}
+                      width={400}
+                      aspectRatio="3/4"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 300px"
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center font-black text-xs text-gray-300">NO VISUAL</div>

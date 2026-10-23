@@ -1,7 +1,13 @@
-import React, { useState, useContext, useRef } from "react";
+import React, { useState, useContext, useRef, useEffect } from "react";
 import { ShopContext } from "../context/ShopContext";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import {
+  validateImageFile,
+  compressImage,
+  createImagePreview,
+} from "../utils/uploadUtils";
 
 const UploadPhoto = () => {
   const { backendUrl, token } = useContext(ShopContext);
@@ -11,35 +17,53 @@ const UploadPhoto = () => {
   const [image, setImage] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [statusText, setStatusText] = useState("");
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const previewRevokeRef = useRef(null);
+
   // Redirect to login if not authenticated
-  React.useEffect(() => {
+  useEffect(() => {
     if (!token) {
       navigate("/login");
     }
   }, [token, navigate]);
 
+  // Clean up object URL on unmount to avoid memory leaks
+  useEffect(() => {
+    return () => {
+      if (previewRevokeRef.current) {
+        previewRevokeRef.current();
+      }
+    };
+  }, []);
+
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Check file type
-      if (!file.type.match("image.*")) {
-        setError("Please select an image file (JPEG, PNG, etc.)");
-        return;
-      }
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-      // Check file size (limit to 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setError("Image size should be less than 5MB");
-        return;
-      }
-
-      setImage(file);
-      setPreviewUrl(URL.createObjectURL(file));
-      setError("");
+    // Validate using centralized utility (formats + 5MB profile photo limit)
+    const validation = validateImageFile(file, { isProfile: true });
+    if (!validation.valid) {
+      setError(validation.error);
+      return;
     }
+
+    // Revoke old preview URL if exists
+    if (previewRevokeRef.current) {
+      previewRevokeRef.current();
+    }
+
+    const preview = createImagePreview(file);
+    previewRevokeRef.current = preview.revoke;
+
+    setImage(file);
+    setPreviewUrl(preview.url);
+    setError("");
+    setSuccess("");
+    setUploadProgress(0);
   };
 
   const handleSubmit = async (e) => {
@@ -53,49 +77,71 @@ const UploadPhoto = () => {
     setLoading(true);
     setError("");
     setSuccess("");
+    setUploadProgress(10);
+    setStatusText("Optimizing profile photo...");
 
     try {
-      const formData = new FormData();
-      formData.append("image", image);
-
-      const response = await fetch(`${backendUrl}/api/Account/upload-photo`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          // Don't set Content-Type here, it will be set automatically with the boundary
-        },
-        body: formData,
+      // 1. Client-side compression tailored for avatar dimensions (800x800 max)
+      const processedImage = await compressImage(image, {
+        maxWidthOrHeight: 800,
+        initialQuality: 0.85,
+        fileType: "image/webp",
+        useWebWorker: true,
       });
 
-      const data = await response.json();
+      setUploadProgress(35);
+      setStatusText("Uploading image...");
 
-      if (response.ok) {
-        setSuccess("Your profile photo has been updated successfully!");
+      const formData = new FormData();
+      formData.append("image", processedImage);
 
-        // تحديث user في localStorage
-        const storedUser = JSON.parse(localStorage.getItem("user"));
-        const updatedUser = { ...storedUser, image: data.imageUrl }; // backend لازم يرجع رابط الصورة
-        localStorage.setItem("user", JSON.stringify(updatedUser));
+      // 2. Upload via Axios with progress events
+      const response = await axios.patch(
+        `${backendUrl}/api/Account/upload-photo`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.total) {
+              const percent = Math.round(
+                35 + (progressEvent.loaded / progressEvent.total) * 60
+              );
+              setUploadProgress(Math.min(percent, 95));
+            }
+          },
+        }
+      );
 
-        // 👇 إعادة تحميل الصفحة عشان Profile.jsx يقرأ الصورة الجديدة
+      const data = response.data;
+      setUploadProgress(100);
+      setStatusText("Completed!");
+      setSuccess("Your profile photo has been updated successfully!");
+
+      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+      const updatedUser = { ...storedUser, image: data.imageUrl };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+
+      setTimeout(() => {
         window.location.reload();
-      } else {
-        setError(
-          data.responseBody?.message ||
-            data.message ||
-            "Failed to upload photo. Please try again."
-        );
-      }
+      }, 1000);
     } catch (err) {
       console.error("Upload photo error:", err);
-      setError("Network error. Please try again.");
+      const msg =
+        err?.response?.data?.responseBody?.message ||
+        err?.response?.data?.message ||
+        "Failed to upload photo. Please try again.";
+      setError(msg);
+      setUploadProgress(0);
     } finally {
       setLoading(false);
+      setStatusText("");
     }
   };
 
   const triggerFileInput = () => {
-    fileInputRef.current.click();
+    fileInputRef.current?.click();
   };
 
   return (
@@ -118,8 +164,9 @@ const UploadPhoto = () => {
         <hr className="border-none h-[1.5px] w-8 bg-gray-800" />
       </div>
       <p className="text-sm text-gray-600 w-full text-center">
-        Upload a new profile photo. Supported formats: JPEG, PNG. Max size: 5MB.
+        Supported formats: JPEG, PNG, WebP. Maximum size: 5MB.
       </p>
+
       {error && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -129,6 +176,7 @@ const UploadPhoto = () => {
           {error}
         </motion.div>
       )}
+
       {success && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -144,8 +192,9 @@ const UploadPhoto = () => {
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp"
         className="hidden"
+        aria-label="Upload profile photo"
       />
 
       {/* Image preview */}
@@ -153,9 +202,25 @@ const UploadPhoto = () => {
         <div className="w-full flex justify-center my-4">
           <img
             src={previewUrl}
-            alt="Preview"
-            className="w-40 h-40 object-cover rounded-full border-2 border-gray-300"
+            alt="Profile preview"
+            className="w-40 h-40 object-cover rounded-full border-2 border-gray-300 shadow-sm"
           />
+        </div>
+      )}
+
+      {/* Upload Progress Bar */}
+      {loading && (
+        <div className="w-full my-2">
+          <div className="flex justify-between text-xs font-semibold text-gray-600 mb-1">
+            <span>{statusText || "Processing..."}</span>
+            <span>{uploadProgress}%</span>
+          </div>
+          <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+            <div
+              className="bg-black h-2 transition-all duration-300 rounded-full"
+              style={{ width: `${uploadProgress}%` }}
+            />
+          </div>
         </div>
       )}
 
@@ -163,15 +228,21 @@ const UploadPhoto = () => {
       <button
         type="button"
         onClick={triggerFileInput}
-        className="w-full font-light py-2 px-8 border border-gray-400 text-gray-700 hover:bg-gray-100 transition-all duration-300 cursor-pointer"
+        disabled={loading}
+        className="w-full font-light py-2 px-8 border border-gray-400 text-gray-700 hover:bg-gray-100 transition-all duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-black rounded"
       >
         {previewUrl ? "Change Photo" : "Select Photo"}
       </button>
 
+      {/* Submit button */}
       <button
         type="submit"
         disabled={loading || !image}
-        className={`w-full font-light py-2 px-8 mt-4 border border-black transition-all duration-300 cursor-pointer ${loading || !image ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-black text-white hover:bg-white hover:text-black"}`}
+        className={`w-full font-light py-2 px-8 mt-4 border border-black transition-all duration-300 rounded ${
+          loading || !image
+            ? "bg-gray-300 text-gray-500 cursor-not-allowed border-gray-300"
+            : "bg-black text-white hover:bg-white hover:text-black cursor-pointer focus:ring-2 focus:ring-black"
+        }`}
       >
         {loading ? "Uploading..." : "Upload Photo"}
       </button>

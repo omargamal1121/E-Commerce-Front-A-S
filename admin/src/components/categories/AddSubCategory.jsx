@@ -3,6 +3,7 @@ import { toast } from "react-toastify";
 import axios from "axios";
 import { backendUrl } from "../../App";
 import { useTranslation } from "react-i18next";
+import { validateImageFile, compressImage, compressImagesBatch } from "../../utils/uploadUtils";
 
 const AddSubCategory = ({
   token,
@@ -81,8 +82,13 @@ const AddSubCategory = ({
 
   const handleAdditionalImagesChange = (e) => {
     const files = Array.from(e.target.files);
-    const newImgs = files.map(file => ({ file, url: URL.createObjectURL(file), isNew: true }));
-    setSubCategoryImages(prev => [...prev, ...newImgs]);
+    const validImgs = [];
+    for (const file of files) {
+      const v = validateImageFile(file);
+      if (!v.valid) { toast.error(`${file.name}: ${v.error}`); continue; }
+      validImgs.push({ file, url: URL.createObjectURL(file), isNew: true });
+    }
+    if (validImgs.length) setSubCategoryImages(prev => [...prev, ...validImgs]);
   };
 
   const handleSubmit = async (e) => {
@@ -131,8 +137,14 @@ const AddSubCategory = ({
 
       // Main Visual Asset (only if it's a File, not a URL string)
       if (subCategoryMainImage && typeof subCategoryMainImage !== "string") {
+        const compressedMain = await compressImage(subCategoryMainImage, {
+          maxWidthOrHeight: 2000,
+          initialQuality: 0.85,
+          fileType: "image/webp",
+          useWebWorker: true,
+        });
         const mainForm = new FormData();
-        mainForm.append("Image", subCategoryMainImage);
+        mainForm.append("Image", compressedMain);
         await axios.post(
           `${backendUrl}/api/subcategories/${newId}/images/main`,
           mainForm,
@@ -140,11 +152,12 @@ const AddSubCategory = ({
         );
       }
 
-      // Supplementary Gallery (only new ones)
+      // Supplementary Gallery (only new ones, compressed with max 3 concurrency)
       const newImages = subCategoryImages?.filter(img => img.isNew).map(img => img.file) || [];
       if (newImages.length > 0) {
+        const compressedGallery = await compressImagesBatch(newImages, null, 3);
         const addForm = new FormData();
-        newImages.forEach((file) => addForm.append("Images", file));
+        compressedGallery.forEach((file) => addForm.append("Images", file));
         await axios.post(
           `${backendUrl}/api/subcategories/${newId}/images`,
           addForm,
@@ -388,8 +401,14 @@ const AddSubCategory = ({
                 <input
                   type="file"
                   className="hidden"
-                  onChange={(e) => setSubCategoryMainImage(e.target.files[0])}
-                  accept="image/*"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    const v = validateImageFile(f);
+                    if (!v.valid) { toast.error(v.error); return; }
+                    setSubCategoryMainImage(f);
+                  }}
+                  accept="image/jpeg,image/png,image/webp"
                 />
               </label>
             </div>

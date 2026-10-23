@@ -7,6 +7,7 @@ import WishlistButton from "./WishlistButton";
 import discountService from "../services/discountService";
 import axios from "axios";
 import { motion } from "framer-motion";
+import ProductImage from "./common/ProductImage";
 
 const TypeProduct = () => {
   const { t } = useTranslation();
@@ -194,10 +195,13 @@ const TypeProduct = () => {
                 >
                   {/* Product image */}
                   {imgSrc ? (
-                    <img
+                    <ProductImage
                       src={imgSrc}
                       alt={product.name}
+                      width={400}
+                      aspectRatio="4/3"
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px"
                     />
                   ) : (
                     <div className="w-full aspect-[4/3] bg-neutral-800 flex items-center justify-center">
@@ -332,13 +336,13 @@ const TypeProduct = () => {
                       className="block relative group overflow-hidden bg-neutral-100 aspect-[4/3]"
                     >
                       {imgSrc ? (
-                        <img
+                        <ProductImage
                           src={imgSrc}
                           alt={collection.name}
+                          width={400}
+                          aspectRatio="4/3"
                           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                          onError={(e) => {
-                            e.target.style.display = "none";
-                          }}
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px"
                         />
                       ) : (
                         <div className="w-full h-full bg-neutral-200 flex items-center justify-center">

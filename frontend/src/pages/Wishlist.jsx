@@ -5,6 +5,7 @@ import { ShopContext } from '../context/ShopContext';
 import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import ProductItem from '../components/ProductItem';
+import ProductImage from '../components/common/ProductImage';
 import Title from '../components/Title';
 
 const Wishlist = () => {
@@ -201,11 +202,13 @@ const Wishlist = () => {
                 >
                   <div className="relative aspect-square overflow-hidden bg-gray-100">
                     <Link to={`/product/${product?.id}`}>
-                      <img
+                      <ProductImage
                         src={mainImage}
-                        alt={product?.name}
+                        alt={product?.name || "Wishlist product"}
+                        width={400}
+                        aspectRatio="1/1"
                         className="w-full h-full object-cover group-hover:scale-105 transition-all duration-300"
-                        onError={(e) => { e.target.src = 'https://via.placeholder.com/300x400?text=No+Image'; }}
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px"
                       />
                     </Link>
                     <button

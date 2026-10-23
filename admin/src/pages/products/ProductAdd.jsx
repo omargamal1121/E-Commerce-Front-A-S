@@ -4,6 +4,12 @@ import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import API from "../../services/api";
 import { useTranslation } from "react-i18next";
+import {
+  validateImageFile,
+  compressImage,
+  compressImagesBatch,
+  createImagePreview,
+} from "../../utils/uploadUtils";
 
 const ProductAdd = ({ token }) => {
   const { t } = useTranslation();
@@ -24,6 +30,18 @@ const ProductAdd = ({ token }) => {
 
   const [images, setImages] = useState({ main: null, additional: [] });
   const [previews, setPreviews] = useState({ main: null, additional: [] });
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState("");
+  const previewRevokesRef = useRef([]);
+
+  // Clean up object URLs on unmount
+  useEffect(() => {
+    return () => {
+      previewRevokesRef.current.forEach(revoke => {
+        try { revoke(); } catch {}
+      });
+    };
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -267,18 +285,45 @@ const ProductAdd = ({ token }) => {
   };
 
   const handleMainImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setImages(prev => ({ ...prev, main: file }));
-      setPreviews(prev => ({ ...prev, main: URL.createObjectURL(file) }));
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const validation = validateImageFile(file);
+    if (!validation.valid) {
+      toast.error(validation.error);
+      return;
     }
+
+    const preview = createImagePreview(file);
+    previewRevokesRef.current.push(preview.revoke);
+
+    setImages(prev => ({ ...prev, main: file }));
+    setPreviews(prev => ({ ...prev, main: preview.url }));
   };
 
   const handleAdditionalImagesChange = (e) => {
-    const files = Array.from(e.target.files);
-    setImages(prev => ({ ...prev, additional: [...prev.additional, ...files] }));
-    const newPreviews = files.map(file => ({ url: URL.createObjectURL(file), isNew: true }));
-    setPreviews(prev => ({ ...prev, additional: [...prev.additional, ...newPreviews] }));
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    const validFiles = [];
+    const newPreviews = [];
+
+    for (const file of files) {
+      const validation = validateImageFile(file);
+      if (!validation.valid) {
+        toast.error(`${file.name}: ${validation.error}`);
+        continue;
+      }
+      validFiles.push(file);
+      const preview = createImagePreview(file);
+      previewRevokesRef.current.push(preview.revoke);
+      newPreviews.push({ url: preview.url, isNew: true });
+    }
+
+    if (validFiles.length > 0) {
+      setImages(prev => ({ ...prev, additional: [...prev.additional, ...validFiles] }));
+      setPreviews(prev => ({ ...prev, additional: [...prev.additional, ...newPreviews] }));
+    }
   };
 
   const removeImage = async (imgId, isNew, idx) => {
@@ -312,6 +357,9 @@ const ProductAdd = ({ token }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setUploadProgress(10);
+    setUploadStatus("Saving product details...");
+
     try {
       const productPayload = { ...formData, subcategoryid: Number(formData.subcategoryid), gender: Number(formData.gender), price: Number(formData.price) };
 
@@ -323,11 +371,53 @@ const ProductAdd = ({ token }) => {
         productId = res.responseBody?.data?.id;
       }
 
-      if (productId && images.main) await API.images.uploadMain(productId, images.main, token);
-      if (productId && images.additional.length) await API.images.uploadAdditional(productId, images.additional, token);
+      // 1. Compress & upload main image if changed
+      if (productId && images.main) {
+        setUploadStatus("Optimizing main image...");
+        setUploadProgress(25);
+
+        const compressedMain = await compressImage(images.main, {
+          maxWidthOrHeight: 2000,
+          initialQuality: 0.85,
+          fileType: "image/webp",
+          useWebWorker: true,
+        });
+
+        setUploadStatus("Uploading main image...");
+        await API.images.uploadMain(productId, compressedMain, token, (progressEvent) => {
+          if (progressEvent.total) {
+            const p = Math.round(25 + (progressEvent.loaded / progressEvent.total) * 25);
+            setUploadProgress(Math.min(p, 50));
+          }
+        });
+      }
+
+      // 2. Compress & upload gallery images with limited concurrency (max 3 at a time)
+      if (productId && images.additional.length) {
+        setUploadStatus(`Optimizing gallery images (0/${images.additional.length})...`);
+        setUploadProgress(50);
+
+        const compressedAdditional = await compressImagesBatch(
+          images.additional,
+          (completed, total) => {
+            setUploadStatus(`Optimizing gallery images (${completed}/${total})...`);
+            setUploadProgress(50 + Math.round((completed / total) * 20));
+          },
+          3
+        );
+
+        setUploadStatus("Uploading gallery images...");
+        await API.images.uploadAdditional(productId, compressedAdditional, token, (progressEvent) => {
+          if (progressEvent.total) {
+            const p = Math.round(70 + (progressEvent.loaded / progressEvent.total) * 25);
+            setUploadProgress(Math.min(p, 95));
+          }
+        });
+      }
 
       // Handle collections - add to each selected collection
       if (productId && selectedCollections.length > 0) {
+        setUploadStatus("Associating with collections...");
         for (const collectionId of selectedCollections) {
           try {
             const formData = new FormData();
@@ -349,10 +439,11 @@ const ProductAdd = ({ token }) => {
         toast.success(t("addedToCollection"));
       }
 
+      setUploadProgress(100);
+      setUploadStatus("Success!");
       toast.success(editId ? t("productUpdated") : t("productCreated"));
       navigate("/products");
     } catch (err) {
-      // Extract the actual server message to give the admin useful feedback
       const serverMsg =
         err?.response?.data?.responseBody?.message ||
         err?.response?.data?.message ||
@@ -360,7 +451,11 @@ const ProductAdd = ({ token }) => {
         err?.message ||
         t("failedToSaveProduct");
       toast.error(serverMsg);
-    } finally { setLoading(false); }
+      setUploadProgress(0);
+    } finally {
+      setLoading(false);
+      setUploadStatus("");
+    }
   };
 
   return (
@@ -513,11 +608,25 @@ const ProductAdd = ({ token }) => {
           </div>
 
           <div className="flex flex-col gap-6">
+            {loading && (
+              <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl">
+                <div className="flex justify-between text-xs font-bold text-emerald-800 mb-1.5">
+                  <span>{uploadStatus || "Processing..."}</span>
+                  <span>{uploadProgress}%</span>
+                </div>
+                <div className="w-full bg-emerald-200/50 h-2 rounded-full overflow-hidden">
+                  <div
+                    className="bg-emerald-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[32px] text-sm font-black uppercase tracking-widest transition-all shadow-2xl shadow-emerald-900/20 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-4"
+              className="w-full py-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-[32px] text-sm font-black uppercase tracking-widest transition-all shadow-2xl shadow-emerald-900/20 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-4 cursor-pointer"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />

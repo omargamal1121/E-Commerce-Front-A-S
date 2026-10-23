@@ -2,6 +2,8 @@ import React, { useState, useContext, useEffect, useRef } from "react";
 import { ShopContext } from "../context/ShopContext";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
+import { validateImageFile, compressImage, createImagePreview } from "../utils/uploadUtils";
 
 const Profile = () => {
   const { token, backendUrl } = useContext(ShopContext);
@@ -17,6 +19,17 @@ const Profile = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const previewRevokeRef = useRef(null);
+
+  // Clean up object URL on unmount
+  useEffect(() => {
+    return () => {
+      if (previewRevokeRef.current) {
+        previewRevokeRef.current();
+      }
+    };
+  }, []);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -33,24 +46,27 @@ const Profile = () => {
   };
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Check file type
-      if (!file.type.match("image.*")) {
-        setError("Please select an image file (JPEG, PNG, etc.)");
-        return;
-      }
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-      // Check file size (limit to 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setError("Image size should be less than 5MB");
-        return;
-      }
-
-      setImage(file);
-      setPreviewUrl(URL.createObjectURL(file));
-      setError("");
+    const validation = validateImageFile(file, { isProfile: true });
+    if (!validation.valid) {
+      setError(validation.error);
+      return;
     }
+
+    if (previewRevokeRef.current) {
+      previewRevokeRef.current();
+    }
+
+    const preview = createImagePreview(file);
+    previewRevokeRef.current = preview.revoke;
+
+    setImage(file);
+    setPreviewUrl(preview.url);
+    setError("");
+    setSuccess("");
+    setUploadProgress(0);
   };
 
   const handleSubmit = async (e) => {
@@ -64,48 +80,57 @@ const Profile = () => {
     setLoading(true);
     setError("");
     setSuccess("");
+    setUploadProgress(20);
 
     try {
-      const formData = new FormData();
-      formData.append("image", image);
+      const compressed = await compressImage(image, {
+        maxWidthOrHeight: 800,
+        initialQuality: 0.85,
+        fileType: "image/webp",
+        useWebWorker: true,
+      });
 
-      const response = await fetch(`${backendUrl}/api/Account/upload-photo`, {
-        method: "PATCH",
+      setUploadProgress(40);
+
+      const formData = new FormData();
+      formData.append("image", compressed);
+
+      const res = await axios.patch(`${backendUrl}/api/Account/upload-photo`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-        body: formData,
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const percent = Math.round(
+              40 + (progressEvent.loaded / progressEvent.total) * 55
+            );
+            setUploadProgress(Math.min(percent, 95));
+          }
+        },
       });
 
-      const data = await response.json();
+      const data = res.data;
+      setUploadProgress(100);
+      setSuccess("Your profile photo has been updated successfully!");
 
-      if (response.ok) {
-        setSuccess("Your profile photo has been updated successfully!");
+      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+      const updatedUser = { ...storedUser, image: data.imageUrl };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
 
-        // تحديث user في localStorage
-        const storedUser = JSON.parse(localStorage.getItem("user"));
-        const updatedUser = { ...storedUser, image: data.imageUrl }; // backend لازم يرجع الرابط
-        localStorage.setItem("user", JSON.stringify(updatedUser));
-
-        // ⚡ تحديث الـ context (لو عندك setUser في ShopContext)
-        if (typeof setUser === "function") {
-          setUser(updatedUser);
-        }
-
-        // تحديث الـ preview عشان يظهر الصورة الجديدة فورًا
-        setPreviewUrl(data.imageUrl);
-
-        setImage(null);
-      } else {
-        setError(
-          data.responseBody?.message ||
-            data.message ||
-            "Failed to upload photo. Please try again."
-        );
+      if (typeof setUser === "function") {
+        setUser(updatedUser);
       }
+
+      setPreviewUrl(data.imageUrl);
+      setImage(null);
     } catch (err) {
       console.error("Upload photo error:", err);
-      setError("Network error. Please try again.");
+      const msg =
+        err?.response?.data?.responseBody?.message ||
+        err?.response?.data?.message ||
+        "Failed to upload photo. Please try again.";
+      setError(msg);
+      setUploadProgress(0);
     } finally {
       setLoading(false);
     }

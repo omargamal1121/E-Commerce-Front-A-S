@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import { assets } from "../assets/frontend_assets/assets";
 import { Link } from "react-router-dom";
 import Title from "./Title";
+import ProductImage from "./common/ProductImage";
 import { useTranslation } from "react-i18next";
 import { ShopContext } from "../context/ShopContext";
 
@@ -101,13 +102,12 @@ const TypeCollection = () => {
             className="block border border-gray-200 rounded-lg hover:shadow-lg transition-all"
           >
             <div className="overflow-hidden rounded-t-lg bg-gray-100 flex items-center justify-center h-60">
-              <img
+              <ProductImage
                 src={item.image}
                 alt={item.name}
+                width={400}
                 className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
-                onError={(e) => {
-                  e.target.src = assets.eniem; // Fallback image if category image fails to load
-                }}
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 300px"
               />
             </div>
             <div className="p-4">

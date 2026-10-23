@@ -8,6 +8,8 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import WishlistButton from "../components/WishlistButton";
 import MostWanted from "../components/MostWanted";
+import ProductImage from "../components/common/ProductImage";
+import { getImageUrl } from "../utils/imageUtils";
 import { FaChevronLeft, FaChevronRight, FaPlus, FaMinus, FaRulerCombined, FaTruck, FaShieldAlt, FaUndo, FaTimes } from "react-icons/fa";
 
 const OPTION_KEYS = [
@@ -353,20 +355,34 @@ const Product = () => {
                   onClick={() => setActiveImage(img.url || img)}
                   className={`aspect-[3/4] rounded-xl overflow-hidden cursor-pointer border-2 transition-all ${activeImage === (img.url || img) ? 'border-black' : 'border-transparent shadow-sm'}`}
                 >
-                  <img src={img.url || img} className="w-full h-full object-cover" />
+                  <ProductImage
+                    src={img.url || img}
+                    alt={`${productData.name} thumbnail ${i + 1}`}
+                    width={140}
+                    aspectRatio="3/4"
+                    className="w-full h-full object-cover"
+                    sizes="140px"
+                  />
                 </div>
               ))}
             </div>
 
             <div className="col-span-10 relative group bg-[var(--surface-raised)] rounded-3xl overflow-hidden shadow-2xl">
-              <motion.img
-                key={activeImage}
-                initial={{ opacity: 0, scale: 1.1 }}
-                animate={{ opacity: 1, scale: 1 }}
-                src={activeImage}
-                className="w-full h-auto object-cover aspect-[3/4] cursor-zoom-in"
+              <div
+                className="w-full h-full cursor-zoom-in"
                 onClick={() => setIsZoomOpen(true)}
-              />
+              >
+                <ProductImage
+                  key={activeImage}
+                  src={activeImage}
+                  alt={productData.name}
+                  width={1000}
+                  priority={true}
+                  aspectRatio="3/4"
+                  className="w-full h-auto object-cover aspect-[3/4]"
+                  sizes="(max-width: 1024px) 100vw, 800px"
+                />
+              </div>
               <div className="absolute top-6 right-6">
                 <WishlistButton productId={productData._id || productData.id} variant="floating" size="lg" />
               </div>
@@ -669,6 +685,40 @@ const Product = () => {
               </div>
               <button onClick={() => setShowSizeGuide(false)} className="w-full mt-8 py-5 bg-[var(--brand)] text-[var(--text)] rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-xl">Dismiss Gallery</button>
             </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* PRODUCT IMAGE ZOOM LIGHTBOX */}
+      <AnimatePresence>
+        {isZoomOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[250] flex items-center justify-center bg-black/90 backdrop-blur-md p-4 sm:p-8"
+            onClick={() => setIsZoomOpen(false)}
+          >
+            <button
+              type="button"
+              onClick={() => setIsZoomOpen(false)}
+              className="absolute top-6 right-6 text-white text-2xl p-3 rounded-full bg-white/10 hover:bg-white/20 transition-all z-10 cursor-pointer"
+              aria-label="Close zoom"
+            >
+              <FaTimes />
+            </button>
+
+            <div
+              className="relative max-w-5xl max-h-[90vh] overflow-hidden rounded-2xl flex items-center justify-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={getImageUrl(activeImage, { width: 1800, quality: 90 })}
+                alt={`${productData.name} zoomed view`}
+                className="max-h-[85vh] w-auto object-contain rounded-xl shadow-2xl cursor-zoom-out"
+                onClick={() => setIsZoomOpen(false)}
+              />
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

@@ -1,6 +1,7 @@
 import React, { useContext, useEffect, useState, useRef, useMemo } from "react";
 import { ShopContext } from "../context/ShopContext";
 import { assets } from "../assets/frontend_assets/assets";
+import ProductImage from "./common/ProductImage";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
@@ -210,13 +211,12 @@ const SearchBar = () => {
                 >
                   {/* Product Image */}
                   <div className="w-12 h-12 mr-3 flex-shrink-0">
-                    <img
-                      src={product.image?.[0] || assets.productImage}
+                    <ProductImage
+                      src={product.image?.[0]}
                       alt={product.name}
+                      width={100}
+                      height={100}
                       className="w-full h-full object-cover rounded"
-                      onError={(e) => {
-                        e.target.src = assets.productImage;
-                      }}
                     />
                   </div>
 

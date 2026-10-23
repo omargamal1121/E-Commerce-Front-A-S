@@ -3,6 +3,7 @@ import { toast } from "react-toastify";
 import axios from "axios";
 import { backendUrl } from "../../App";
 import { useTranslation } from "react-i18next";
+import { validateImageFile, compressImage, compressImagesBatch } from "../../utils/uploadUtils";
 
 const AddCollection = ({
   token,
@@ -144,10 +145,16 @@ const AddCollection = ({
 
       if (!collectionId) throw new Error("ID synchronization failed");
 
-      // Upload Main Image
+      // Upload Main Image (compressed to WebP 2000px)
       if (mainImage) {
+        const compressedMain = await compressImage(mainImage, {
+          maxWidthOrHeight: 2000,
+          initialQuality: 0.85,
+          fileType: "image/webp",
+          useWebWorker: true,
+        });
         const mainForm = new FormData();
-        mainForm.append("Image", mainImage);
+        mainForm.append("Image", compressedMain);
         await axios.put(
           `${backendUrl}/api/Collection/${collectionId}/main-image`,
           mainForm,
@@ -155,10 +162,11 @@ const AddCollection = ({
         );
       }
 
-      // Upload Supplementary Matrix
+      // Upload Supplementary Matrix (compressed concurrently with max 3 at a time)
       if (images.length > 0) {
+        const compressedGallery = await compressImagesBatch(images, null, 3);
         const addForm = new FormData();
-        images.forEach((file) => addForm.append("Images", file));
+        compressedGallery.forEach((file) => addForm.append("Images", file));
         await axios.post(
           `${backendUrl}/api/Collection/${collectionId}/images`,
           addForm,
@@ -256,8 +264,14 @@ const AddCollection = ({
                 <input
                   type="file"
                   className="hidden"
-                  onChange={(e) => setMainImage(e.target.files[0])}
-                  accept="image/*"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (!f) return;
+                    const v = validateImageFile(f);
+                    if (!v.valid) { toast.error(v.error); return; }
+                    setMainImage(f);
+                  }}
+                  accept="image/jpeg,image/png,image/webp"
                 />
               </label>
               {(mainImage || oldMainImage) && (
@@ -323,8 +337,17 @@ const AddCollection = ({
                   type="file"
                   multiple
                   className="hidden"
-                  onChange={(e) => setImages([...images, ...Array.from(e.target.files)])}
-                  accept="image/*"
+                  onChange={(e) => {
+                    const newFiles = Array.from(e.target.files || []);
+                    const valid = [];
+                    for (const f of newFiles) {
+                      const v = validateImageFile(f);
+                      if (!v.valid) { toast.error(`${f.name}: ${v.error}`); }
+                      else { valid.push(f); }
+                    }
+                    if (valid.length) setImages(prev => [...prev, ...valid]);
+                  }}
+                  accept="image/jpeg,image/png,image/webp"
                 />
               </label>
             </div>

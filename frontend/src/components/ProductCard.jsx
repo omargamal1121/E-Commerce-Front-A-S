@@ -2,6 +2,7 @@ import React, { useContext } from "react";
 import { Link } from "react-router-dom";
 import { ShopContext } from "../context/ShopContext";
 import WishlistButton from "./WishlistButton";
+import ProductImage from "./common/ProductImage";
 
 const ProductCard = ({ product }) => {
   const { currency, addToCart } = useContext(ShopContext);
@@ -56,10 +57,13 @@ const ProductCard = ({ product }) => {
       {/* Product image with hover effect */}
       <Link to={`/product/${product.id}`} className="block overflow-hidden rounded-t-xl bg-[var(--surface-raised)] flex-shrink-0">
         <div className="relative aspect-[3/4] overflow-hidden">
-          <img
+          <ProductImage
             src={mainImage}
             alt={product.name}
+            width={400}
+            aspectRatio="3/4"
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-104"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 400px"
           />
           <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
         </div>

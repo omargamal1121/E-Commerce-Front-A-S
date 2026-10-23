@@ -5,6 +5,7 @@ import axios from "axios";
 import API from "../../services/api";
 import { currency, backendUrl } from "../../App";
 import ConfirmModal from "../../components/modals/ConfirmModal";
+import ProductImage from "../../components/common/ProductImage";
 import { useTranslation } from "react-i18next";
 
 const ProductCard = React.memo(({ p, navigate, toggleStatus, handleRestore, handleDelete, handleRemoveDiscount, currency }) => {
@@ -16,14 +17,13 @@ const ProductCard = React.memo(({ p, navigate, toggleStatus, handleRestore, hand
     <div className="group relative bg-white rounded-[48px] border border-gray-100 p-4 hover:shadow-2xl hover:shadow-emerald-900/5 transition-all duration-500 hover:-translate-y-3">
       {/* Product Image */}
       <div className="relative aspect-[4/5] rounded-[38px] overflow-hidden bg-gray-50 mb-6">
-        <img
+        <ProductImage
           src={p.mainImageUrl}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
           alt={p.name}
-          loading="lazy"
-          onError={(e) => {
-            e.target.src = "https://placehold.co/400x500?text=No+Image";
-          }}
+          width={400}
+          aspectRatio="4/5"
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 400px"
         />
 
         {/* Status Overlay */}
