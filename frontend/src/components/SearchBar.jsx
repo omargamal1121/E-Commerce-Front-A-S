@@ -169,7 +169,7 @@ const SearchBar = () => {
     <div className="mt-[90px] mb-5 px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw]">
       <div className="text-center relative">
         <form onSubmit={handleSearchSubmit} className="relative inline-block w-3/4 sm:w-1/2">
-          <div className="inline-flex items-center justify-center border border-gray-400 px-5 py-2 mt-20 rounded w-full relative">
+          <div className="inline-flex items-center justify-center border border-[var(--border)] bg-[var(--surface)] text-[var(--text)] px-5 py-2 mt-20 rounded-xl w-full relative shadow-sm">
             <input
               ref={searchInputRef}
               value={search || ""}
@@ -177,7 +177,7 @@ const SearchBar = () => {
               onFocus={handleInputFocus}
               onBlur={handleInputBlur}
               onKeyDown={handleKeyDown}
-              className="flex-1 outline-none bg-inherit text-sm"
+              className="flex-1 outline-none bg-inherit text-sm text-[var(--text)] placeholder:text-[var(--text-muted)]"
               type="text"
               placeholder={t('SEARCH_PRODUCTS')}
               autoComplete="off"
@@ -186,13 +186,13 @@ const SearchBar = () => {
               <button
                 type="button"
                 onClick={handleClearSearch}
-                className="mr-2 text-gray-400 hover:text-gray-600 transition-colors"
+                className="mr-2 text-[var(--text-muted)] hover:text-[var(--text)] transition-colors"
               >
-                <img src={assets.cross_icon} className="w-3" alt="Clear" />
+                <img src={assets.cross_icon} className="w-3 nav-icon" alt="Clear" />
               </button>
             )}
-            <button type="submit">
-              <img src={assets.search_icon} className="w-4" alt="Search" />
+            <button type="submit" className="focus:outline-none">
+              <img src={assets.search_icon} className="w-4 nav-icon" alt="Search" />
             </button>
           </div>
 
@@ -200,12 +200,12 @@ const SearchBar = () => {
           {showSuggestions && (
             <div
               ref={suggestionsRef}
-              className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-b-lg shadow-lg z-50 max-h-96 overflow-y-auto"
+              className="absolute top-full left-0 right-0 bg-[var(--surface)] border border-[var(--border)] rounded-b-2xl shadow-2xl z-50 max-h-96 overflow-y-auto"
             >
               {searchResults.map((product, index) => (
                 <div
                   key={product._id}
-                  className={`flex items-center p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors ${index === selectedIndex ? 'bg-gray-100' : ''
+                  className={`flex items-center p-3 hover:bg-[var(--surface-raised)] cursor-pointer border-b border-[var(--border)] last:border-b-0 transition-colors ${index === selectedIndex ? 'bg-[var(--surface-raised)]' : ''
                     }`}
                   onClick={() => handleProductSelect(product)}
                 >
@@ -221,25 +221,25 @@ const SearchBar = () => {
                   </div>
 
                   {/* Product Info */}
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-medium text-gray-900 truncate">
+                  <div className="flex-1 min-w-0 text-left">
+                    <h4 className="text-sm font-medium text-[var(--text)] truncate">
                       {product.name}
                     </h4>
-                    <p className="text-xs text-gray-500 truncate">
+                    <p className="text-xs text-[var(--text-muted)] truncate">
                       {product.category} {product.subCategory && `• ${product.subCategory}`}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
                       {product.finalPrice && product.finalPrice < product.price ? (
                         <>
-                          <span className="text-xs text-red-600 font-medium">
+                          <span className="text-xs text-[var(--danger)] font-medium">
                             {currency}{product.finalPrice}
                           </span>
-                          <span className="text-xs text-gray-400 line-through">
+                          <span className="text-xs text-[var(--text-muted)] line-through">
                             {currency}{product.price}
                           </span>
                         </>
                       ) : (
-                        <span className="text-xs text-gray-900 font-medium">
+                        <span className="text-xs text-[var(--text)] font-medium">
                           {currency}{product.price}
                         </span>
                       )}
@@ -250,11 +250,11 @@ const SearchBar = () => {
 
               {/* View All Results */}
               <div
-                className={`p-3 text-center border-t border-gray-200 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors ${selectedIndex === searchResults.length ? 'bg-gray-100' : ''
+                className={`p-3 text-center border-t border-[var(--border)] bg-[var(--surface-raised)] cursor-pointer hover:opacity-90 transition-opacity ${selectedIndex === searchResults.length ? 'bg-[var(--surface-raised)]' : ''
                   }`}
                 onClick={handleViewAllResults}
               >
-                <span className="text-sm text-[var(--brand)] font-medium">
+                <span className="text-sm text-[var(--accent)] font-bold">
                   {t('VIEW_ALL_RESULTS')} ({searchResults.length}+)
                 </span>
               </div>
@@ -263,12 +263,17 @@ const SearchBar = () => {
         </form>
 
         {/* Close Search Button */}
-        <img
+        <button
           onClick={() => setShowSearch(false)}
-          src={assets.cross_icon}
-          className="inline w-3 cursor-pointer ml-2"
-          alt="Close"
-        />
+          className="inline-flex items-center justify-center p-1.5 ml-2 text-[var(--text-muted)] hover:text-[var(--text)] focus:outline-none"
+          title="Close search"
+        >
+          <img
+            src={assets.cross_icon}
+            className="w-3.5 nav-icon"
+            alt="Close"
+          />
+        </button>
       </div>
     </div>
   ) : (

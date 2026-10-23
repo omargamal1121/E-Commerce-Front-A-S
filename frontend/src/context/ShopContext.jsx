@@ -6,9 +6,11 @@ import wishlistService from "../services/wishlistService";
 import discountService from "../services/discountService";
 import authService from "../services/authService";
 import { getGuestToken, saveGuestToken, removeGuestToken } from "../utils/guestSession";
+import { useTheme } from "./ThemeContext";
 export const ShopContext = createContext();
 
 const ShopContextProvider = (props) => {
+  const { theme, toggleTheme, setTheme } = useTheme();
   const currency = "EGP ";
   const delivery_fee = 10;
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
@@ -832,6 +834,9 @@ const ShopContextProvider = (props) => {
     setGuestCheckoutMode,
     updateGuestToken,
     clearGuestSession,
+    theme,
+    toggleTheme,
+    setTheme,
   };
 
   return (

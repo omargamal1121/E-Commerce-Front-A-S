@@ -33,14 +33,13 @@ const Contact = () => {
   };
 
   return (
-    <div className="mt-[80px] mb-5 px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw]">
+    <div className="pt-32 sm:pt-36 pb-16 px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw] bg-[var(--bg)] text-[var(--text)]">
       {/* Contact Title */}
       <motion.div
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.3 }}
-        variants={sectionVariants}
-        className='text-2xl text-center pt-10 border-t border-gray-200'>
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className='text-2xl text-center pb-8 border-b border-[var(--border)]'>
         <Title text1={t('CONTACT')} text2={t('US')} />
       </motion.div>
 

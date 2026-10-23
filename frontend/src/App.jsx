@@ -132,7 +132,7 @@ const PaymentRoute = () => {
 };
 
 const App = () => {
-  const { user } = useContext(ShopContext);
+  const { user, theme } = useContext(ShopContext);
   useEffect(() => {
     // Ensure interceptors are initialized (constructor already does this)
     // Optionally, you could test cookie availability here if needed
@@ -161,7 +161,7 @@ const App = () => {
             pauseOnFocusLoss
             draggable
             pauseOnHover
-            theme="dark"
+            theme={theme === "light" ? "light" : "dark"}
             style={{ marginTop: '80px' }}
           />
           <Routes>
@@ -188,7 +188,7 @@ const App = () => {
         pauseOnFocusLoss
         draggable
         pauseOnHover
-        theme="dark"
+        theme={theme === "light" ? "light" : "dark"}
         style={{ marginTop: '80px' }}
       />
       <SearchBar />

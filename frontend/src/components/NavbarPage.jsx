@@ -13,7 +13,9 @@ const NavbarPage = () => {
     setUser,
     setToken,
     setShowSearch,
-    getCartCount
+    getCartCount,
+    theme,
+    toggleTheme
   } = useContext(ShopContext);
   const guestToken = getGuestToken();
   const [visible, setvisible] = useState(false);
@@ -207,72 +209,100 @@ const NavbarPage = () => {
       </ul>
 
       <div className="flex-1 flex justify-center">
-        <Link to={"/"}>
+        <Link to={"/"} className="flex items-center justify-center">
           <img
             src={assets.logo}
-            className="w-20 opacity-100"
+            className="h-9 sm:h-11 md:h-12 w-auto max-h-12 object-contain opacity-100"
             alt="ImgLogo"
             style={{ pointerEvents: "auto" }}
           />
         </Link>
       </div>
 
-      <div className="flex items-center gap-6 flex-1 justify-end">
-        <img
+      <div className="flex items-center gap-4 sm:gap-6 flex-1 justify-end">
+        <button
           onClick={() => {
             setShowSearch(true);
             navigate("/collection");
           }}
-          src={assets.search_icon}
-          className="w-5 cursor-pointer"
-          alt=""
-        />
+          className="p-1 rounded-full hover:bg-[var(--surface-raised)] transition-colors focus:outline-none flex items-center justify-center"
+          aria-label="Search"
+        >
+          <img
+            src={assets.search_icon}
+            className="w-5 cursor-pointer nav-icon"
+            alt=""
+          />
+        </button>
+
+        {/* Theme Toggle Button */}
+        <button
+          onClick={toggleTheme}
+          className="w-8 h-8 rounded-full flex items-center justify-center text-[var(--text)] hover:text-[var(--accent)] hover:bg-[var(--surface-raised)] transition-all duration-300 focus:outline-none"
+          title={theme === "light" ? "Switch to Dark Mode" : "Switch to Light Mode"}
+          aria-label="Toggle Theme"
+        >
+          {theme === "light" ? (
+            <svg className="w-5 h-5 transition-transform duration-300 hover:-rotate-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+          ) : (
+            <svg className="w-5 h-5 transition-transform duration-300 hover:rotate-45" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          )}
+        </button>
 
         <div className="relative z-50" ref={profileRef}>
           {user ? (
             <>
-              <img
-                src={assets.profile_icon}
-                className="w-5 cursor-pointer"
-                alt=""
+              <button
                 onClick={() => setProfileMenuOpen((prev) => !prev)}
-              />
+                className="p-1 rounded-full hover:bg-[var(--surface-raised)] transition-colors flex items-center justify-center focus:outline-none"
+                aria-label="User Profile"
+              >
+                <img
+                  src={assets.profile_icon}
+                  className="w-5 cursor-pointer nav-icon"
+                  alt=""
+                />
+              </button>
 
               {profileMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white shadow-lg rounded-lg py-2 transition-all duration-200">
+                <div className="absolute right-0 mt-2 w-48 bg-[var(--surface)] shadow-2xl rounded-2xl py-2 transition-all duration-200 border border-[var(--border)]">
                   <Link
                     to="/profile"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    className="block px-4 py-2 text-sm text-[var(--text)] hover:bg-[var(--surface-raised)]"
                   >
                     My Profile
                   </Link>
                   <Link
                     to="/orders"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    className="block px-4 py-2 text-sm text-[var(--text)] hover:bg-[var(--surface-raised)]"
                   >
                     Orders
                   </Link>
                   <Link
                     to="/change-email"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    className="block px-4 py-2 text-sm text-[var(--text)] hover:bg-[var(--surface-raised)]"
                   >
                     Change Email
                   </Link>
                   <Link
                     to="/change-password"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    className="block px-4 py-2 text-sm text-[var(--text)] hover:bg-[var(--surface-raised)]"
                   >
                     Change Password
                   </Link>
                   <Link
                     to="/upload-photo"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    className="block px-4 py-2 text-sm text-[var(--text)] hover:bg-[var(--surface-raised)]"
                   >
                     Upload Photo
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    className="w-full text-left px-4 py-2 text-sm text-[var(--danger)] hover:bg-[var(--surface-raised)] font-semibold"
                   >
                     Logout
                   </button>
@@ -280,41 +310,46 @@ const NavbarPage = () => {
               )}
             </>
           ) : (
-            <Link to={guestToken ? "/orders" : "/login"}>
+            <Link to={guestToken ? "/orders" : "/login"} className="p-1 rounded-full hover:bg-[var(--surface-raised)] transition-colors flex items-center justify-center">
               <img
                 src={assets.profile_icon}
-                className="w-5 cursor-pointer"
+                className="w-5 cursor-pointer nav-icon"
                 alt=""
               />
             </Link>
           )}
         </div>
-        <Link to="/cart" className="relative">
-          <img src={assets.cart_icon} className="w-5 min-w-5" alt="" />
-          <p className="absolute right-[-5px] bottom-[-5px] w-4 text-center leading-4 bg-black text-white aspect-square rounded-full text-[8px]">
+        <Link to="/cart" className="relative p-1 rounded-full hover:bg-[var(--surface-raised)] transition-colors flex items-center justify-center">
+          <img src={assets.cart_icon} className="w-5 min-w-5 nav-icon" alt="" />
+          <p className="absolute right-[-2px] bottom-[-2px] w-4 text-center leading-4 bg-[var(--accent)] text-[#0A1512] font-black aspect-square rounded-full text-[8px] shadow-sm">
             {getCartCount()}
           </p>
         </Link>
-        <img
-          src={assets.menu_icon}
-          className="w-5 cursor-pointer sm:hidden"
-          alt=""
+        <button
           onClick={() => setvisible(true)}
-        />
+          className="p-1 rounded-full hover:bg-[var(--surface-raised)] transition-colors flex items-center justify-center sm:hidden focus:outline-none"
+          aria-label="Open menu"
+        >
+          <img
+            src={assets.menu_icon}
+            className="w-5 cursor-pointer nav-icon"
+            alt=""
+          />
+        </button>
 
       </div>
 
       {/* Sidebar menu for small screen */}
       <div
-        className={`absolute top-0 right-0 bottom-0 bg-white h-screen transition-all ${visible ? "w-full" : "w-0"}`}
+        className={`absolute top-0 right-0 bottom-0 bg-[var(--surface)] h-screen transition-all shadow-2xl border-l border-[var(--border)] z-50 ${visible ? "w-72" : "w-0 overflow-hidden"}`}
       >
-        <div className="flex flex-col text-gray-600">
+        <div className="flex flex-col text-[var(--text)]">
           <div
             onClick={() => setvisible(false)}
-            className="flex items-center gap-4 p-3 cursor-pointer"
+            className="flex items-center gap-4 p-4 border-b border-[var(--border)] cursor-pointer hover:bg-[var(--surface-raised)] transition-colors"
           >
-            <img src={assets.dropdown_icon} className="h-4 rotate-180" alt="" />
-            <p>Back</p>
+            <img src={assets.dropdown_icon} className="h-4 rotate-180 nav-icon" alt="" />
+            <p className="font-bold text-sm">Back</p>
           </div>
           <NavLink
             onClick={() => setvisible(false)}

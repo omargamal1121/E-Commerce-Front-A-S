@@ -364,8 +364,8 @@ const PlaceOrder = () => {
   }
 
   return (
-    <div className="mt-[80px] mb-5 px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw]">
-      <div className="flex flex-col sm:flex-row justify-between gap-4 pt-5 sm:pt-14 min-h-[80vh] overflow-hidden">
+    <div className="pt-32 sm:pt-36 pb-16 px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw] bg-[var(--bg)] text-[var(--text)]">
+      <div className="flex flex-col sm:flex-row justify-between gap-4 pt-2 min-h-[80vh] overflow-hidden">
         {/* Left - Address */}
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.3 }} variants={formVariants} className="flex flex-col gap-4 w-full sm:max-w-[480px]">
           <motion.div variants={sectionVariants} className="text-xl sm:text-2xl my-3">

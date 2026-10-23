@@ -19,13 +19,12 @@ const Policy = () => {
   };
 
   return (
-    <div className="mt-[80px] mb-16 px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw]">
+    <div className="pt-32 sm:pt-36 pb-20 px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw] bg-[var(--bg)] text-[var(--text)] min-h-screen">
       <motion.div
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.3 }}
-        variants={sectionVariants}
-        className="text-2xl text-center pt-10 border-t border-[var(--border)]"
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="text-2xl text-center pb-8 border-b border-[var(--border)]"
       >
         <Title text1="RETURN &amp;" text2="EXCHANGE POLICY" />
       </motion.div>
@@ -33,9 +32,9 @@ const Policy = () => {
       <motion.div
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, amount: 0.1 }}
+        viewport={{ once: true, amount: 0.05 }}
         variants={containerVariants}
-        className="max-w-4xl mx-auto mt-12 space-y-10 text-gray-700 leading-relaxed"
+        className="max-w-4xl mx-auto mt-10 space-y-10 text-[var(--text)] leading-relaxed"
       >
         <motion.p variants={itemVariants} className="text-base sm:text-lg">
           At <strong className="text-[var(--text)]">R&amp;S Fashion Wear</strong>, we want you to be satisfied with your purchase. You may request a return or exchange within <strong className="text-[var(--text-muted)]">14 days of receiving your order</strong>, subject to the conditions below.
@@ -147,7 +146,7 @@ const Policy = () => {
           </ul>
         </motion.section>
 
-        <motion.p variants={itemVariants} className="text-sm sm:text-base text-gray-500 italic border-t border-gray-200 pt-6">
+        <motion.p variants={itemVariants} className="text-sm sm:text-base text-[var(--text-muted)] italic border-t border-[var(--border)] pt-6">
           We reserve the right to reject return or exchange requests that do not meet the conditions stated above, subject to applicable laws and customer rights.
         </motion.p>
       </motion.div>

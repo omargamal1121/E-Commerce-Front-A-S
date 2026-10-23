@@ -75,15 +75,15 @@ const Orders = () => {
     const statusStr = typeof status === 'string' ? status.toLowerCase() : statusMap[status]?.toLowerCase() || '';
 
     if (statusStr.includes('delivered') || statusStr.includes('complete')) {
-      return 'bg-green-100 text-green-800 border-green-200';
+      return 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30';
     } else if (statusStr.includes('shipped')) {
-      return 'bg-[var(--brand)]/20 text-[var(--brand)] border-[var(--brand)]/30';
+      return 'bg-[var(--brand)]/20 text-[var(--brand-hover)] border-[var(--brand)]/40';
     } else if (statusStr.includes('cancelled') || statusStr.includes('failed') || statusStr.includes('expired')) {
-      return 'bg-red-100 text-red-800 border-red-200';
+      return 'bg-red-500/15 text-red-500 border-red-500/30';
     } else if (statusStr.includes('confirmed') || statusStr.includes('processing')) {
-      return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      return 'bg-amber-500/15 text-amber-500 border-amber-500/30';
     }
-    return 'bg-gray-100 text-gray-800 border-gray-200';
+    return 'bg-[var(--surface-raised)] text-[var(--text-muted)] border-[var(--border)]';
   };
 
   const getOrderProgressLevel = (status) => {
@@ -333,58 +333,58 @@ const Orders = () => {
   }, [orderData, sortOrder, statusFilter]);
 
   return (
-    <div className='min-h-screen pt-24 pb-20 px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw] bg-gray-50/30'>
+    <div className='min-h-screen pt-24 pb-20 px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw] bg-[var(--bg)] text-[var(--text)]'>
       <div className='mb-12'>
         <Title text1={'MY'} text2={'ORDERS'} />
       </div>
 
-      <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
+      <div className="bg-[var(--surface)] p-4 sm:p-6 rounded-2xl shadow-sm border border-[var(--border)] mb-8">
         <div className="flex flex-wrap gap-3 sm:gap-4">
           <div className="flex-1 min-w-[140px]">
-            <label className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-1.5 block">Status</label>
+            <label className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-bold mb-1.5 block">Status</label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-100 rounded-lg px-3 py-2.5 text-xs font-semibold focus:ring-2 focus:ring-black outline-none transition-all cursor-pointer"
+              className="w-full bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text)] rounded-xl px-3 py-2.5 text-xs font-semibold focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/30 outline-none transition-all cursor-pointer"
             >
               <option value="All">All Orders</option>
               {Object.entries(statusMap).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
             </select>
           </div>
           <div className="flex-1 min-w-[130px]">
-            <label className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-1.5 block">Sort By</label>
+            <label className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-bold mb-1.5 block">Sort By</label>
             <select
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-100 rounded-lg px-3 py-2.5 text-xs font-semibold focus:ring-2 focus:ring-black outline-none transition-all cursor-pointer"
+              className="w-full bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text)] rounded-xl px-3 py-2.5 text-xs font-semibold focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/30 outline-none transition-all cursor-pointer"
             >
               <option value="newest">Newest First</option>
               <option value="oldest">Oldest First</option>
             </select>
           </div>
           <div className="flex-1 min-w-[140px]">
-            <label className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-1.5 block">From</label>
+            <label className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-bold mb-1.5 block">From</label>
             <input
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-100 rounded-lg px-3 py-2.5 text-xs font-semibold focus:ring-2 focus:ring-black outline-none transition-all cursor-pointer"
+              className="w-full bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text)] rounded-xl px-3 py-2.5 text-xs font-semibold focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/30 outline-none transition-all cursor-pointer"
             />
           </div>
           <div className="flex-1 min-w-[140px]">
-            <label className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-1.5 block">To</label>
+            <label className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-bold mb-1.5 block">To</label>
             <input
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-100 rounded-lg px-3 py-2.5 text-xs font-semibold focus:ring-2 focus:ring-black outline-none transition-all cursor-pointer"
+              className="w-full bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text)] rounded-xl px-3 py-2.5 text-xs font-semibold focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/30 outline-none transition-all cursor-pointer"
             />
           </div>
           {(startDate || endDate) && (
             <div className="flex items-end">
               <button
                 onClick={() => { setStartDate(''); setEndDate(''); }}
-                className="bg-red-50 text-red-600 border border-red-200 rounded-lg px-4 py-2.5 text-xs font-bold hover:bg-red-100 transition-all cursor-pointer whitespace-nowrap"
+                className="bg-red-500/10 text-[var(--danger)] border border-red-500/20 rounded-xl px-4 py-2.5 text-xs font-bold hover:bg-red-500/20 transition-all cursor-pointer whitespace-nowrap"
               >
                 Clear Dates
               </button>
@@ -392,7 +392,7 @@ const Orders = () => {
           )}
         </div>
         <div className="mt-3 flex justify-end">
-          <span className="text-xs font-bold text-gray-900 bg-gray-100 px-3 py-1.5 rounded-full">
+          <span className="text-xs font-bold text-[var(--text)] bg-[var(--surface-raised)] border border-[var(--border)] px-3 py-1.5 rounded-full">
             {filteredOrders.length} {filteredOrders.length === 1 ? 'Order' : 'Orders'}
           </span>
         </div>
@@ -400,20 +400,20 @@ const Orders = () => {
 
       <div className="space-y-4">
         {loading ? (
-          <div className="py-20 text-center"><div className="animate-spin h-10 w-10 border-b-2 border-black mx-auto"></div></div>
+          <div className="py-20 text-center"><div className="animate-spin h-10 w-10 border-b-2 border-[var(--brand)] mx-auto"></div></div>
         ) : filteredOrders.length === 0 ? (
-          <div className="py-20 text-center border-2 border-dashed border-gray-200 rounded-2xl text-gray-400 font-medium">No matches found.</div>
+          <div className="py-20 text-center border-2 border-dashed border-[var(--border)] rounded-2xl text-[var(--text-muted)] font-medium">No matches found.</div>
         ) : (
           filteredOrders.map((item, index) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className='bg-white p-4 sm:p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all group'
+              className='bg-[var(--surface)] p-4 sm:p-5 rounded-2xl border border-[var(--border)] shadow-sm hover:shadow-md transition-all group'
             >
               <div className='flex gap-4'>
                 {/* Thumbnail */}
-                <div className='relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 overflow-hidden rounded-xl'>
+                <div className='relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface-raised)]'>
                   <ProductImage
                     src={item.image[0]}
                     alt={item.name}
@@ -426,20 +426,20 @@ const Orders = () => {
                 {/* Info */}
                 <div className='flex-1 min-w-0'>
                   <div className="flex flex-wrap items-center gap-1.5 mb-1">
-                    <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded font-black tracking-tighter">#{item.orderNumber}</span>
-                    <span className={`text-[10px] px-2 py-1 rounded-full font-bold border ${getStatusColorClass(item.status)}`}>{item.statusDisplay}</span>
+                    <span className="text-[10px] bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text)] px-2.5 py-0.5 rounded-full font-black tracking-tighter">#{item.orderNumber}</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${getStatusColorClass(item.status)}`}>{item.statusDisplay}</span>
                   </div>
-                  <h3 className='text-sm sm:text-base font-black text-gray-900 truncate'>{item.name}</h3>
-                  <div className='flex flex-wrap items-center gap-2 sm:gap-4 text-xs font-semibold text-gray-500 mt-1'>
-                    <p className='text-black font-black text-sm'>{currency}{item.price}</p>
+                  <h3 className='text-sm sm:text-base font-black text-[var(--text)] truncate'>{item.name}</h3>
+                  <div className='flex flex-wrap items-center gap-2 sm:gap-4 text-xs font-semibold text-[var(--text-muted)] mt-1'>
+                    <p className='text-[var(--accent)] font-black text-sm'>{currency}{item.price}</p>
                     <p>{item.quantity} {item.quantity === 1 ? 'item' : 'items'}</p>
                     <p className='hidden xs:block'>• {new Date(item.date).toLocaleDateString()}</p>
                   </div>
-                  <p className='text-[10px] text-gray-400 mt-0.5 sm:hidden'>{new Date(item.date).toLocaleDateString()}</p>
+                  <p className='text-[10px] text-[var(--text-muted)] mt-0.5 sm:hidden'>{new Date(item.date).toLocaleDateString()}</p>
                   <div className='flex flex-wrap items-center gap-1.5 mt-1.5'>
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Pay:</span>
-                    <span className="text-[10px] font-black text-gray-900">{item.paymentMethod}</span>
-                    <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase ${item.paymentStatus === 'Paid' || item.paymentStatus === 'Success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                    <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Pay:</span>
+                    <span className="text-[10px] font-black text-[var(--text)]">{item.paymentMethod}</span>
+                    <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase ${item.paymentStatus === 'Paid' || item.paymentStatus === 'Success' ? 'bg-emerald-500/15 text-emerald-500' : 'bg-red-500/15 text-red-500'}`}>
                       {item.paymentStatus}
                     </span>
                   </div>
@@ -447,17 +447,17 @@ const Orders = () => {
               </div>
 
               {/* Actions row — full width below on mobile */}
-              <div className='flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-gray-50'>
+              <div className='flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-[var(--border)]'>
                 <button
                   onClick={() => handleTrackOrder(item.orderNumber)}
-                  className='flex-1 sm:flex-none bg-black text-white px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow hover:opacity-80 transition-opacity'
+                  className='flex-1 sm:flex-none bg-[var(--brand)] hover:bg-[var(--brand-hover)] text-white px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow transition-colors'
                 >
                   Track Order
                 </button>
                 {isPendingPayment(item.status) && (
                   <button
                     onClick={() => navigate(`/payment/${item.orderNumber}`)}
-                    className='flex-1 sm:flex-none text-center text-[10px] font-black border border-black px-5 py-2 rounded-full hover:bg-black hover:text-white transition-all'
+                    className='flex-1 sm:flex-none text-center text-[10px] font-black border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-[#0A1512] px-5 py-2 rounded-full transition-all'
                   >
                     {item.paymentStatus === 'Failed' ? 'Pay Again' : 'Pay Now'}
                   </button>
@@ -465,7 +465,7 @@ const Orders = () => {
                 {item.canBeCancelled && (
                   <button
                     onClick={() => handleCancelOrder(item.id)}
-                    className='flex-1 sm:flex-none text-center text-[10px] font-black text-red-500 border border-red-200 px-5 py-2 rounded-full hover:bg-red-500 hover:text-white transition-all'
+                    className='flex-1 sm:flex-none text-center text-[10px] font-black text-[var(--danger)] border border-red-500/30 hover:bg-[var(--danger)] hover:text-white px-5 py-2 rounded-full transition-all'
                   >
                     Cancel
                   </button>
@@ -480,28 +480,28 @@ const Orders = () => {
       <AnimatePresence>
         {showModal && (
           <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowModal(false)} className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowModal(false)} className="absolute inset-0 bg-black/80 backdrop-blur-md" />
             <motion.div
               initial={{ opacity: 0, y: 60 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 60 }}
-              className="relative bg-white w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl flex flex-col"
+              className="relative bg-[var(--surface)] text-[var(--text)] w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl flex flex-col border border-[var(--border)]"
             >
               {modalLoading ? (
                 <div className="flex-1 flex flex-col items-center justify-center p-20">
-                  <div className="animate-spin h-12 w-12 border-b-2 border-black mb-4"></div>
-                  <p className="font-black tracking-widest uppercase text-xs">Fetching Vibe Details...</p>
+                  <div className="animate-spin h-12 w-12 border-b-2 border-[var(--brand)] mb-4"></div>
+                  <p className="font-black tracking-widest uppercase text-xs text-[var(--text-muted)]">Fetching Order Details...</p>
                 </div>
               ) : (
                 selectedOrderDetails && (
                   <>
                   {/* Header */}
-                  <div className="p-5 sm:p-8 border-b flex justify-between items-start gap-3 bg-gray-50/50">
+                  <div className="p-5 sm:p-8 border-b border-[var(--border)] flex justify-between items-start gap-3 bg-[var(--surface-raised)]/60">
                     <div className="min-w-0">
-                      <h2 className="text-xl sm:text-3xl font-black tracking-tighter truncate">ORDER #{selectedOrderDetails.orderNumber}</h2>
-                      <p className="text-gray-400 text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] mt-1">Placed on {new Date(selectedOrderDetails.createdAt).toLocaleDateString()}</p>
+                      <h2 className="text-xl sm:text-3xl font-black tracking-tighter truncate text-[var(--text)]">ORDER #{selectedOrderDetails.orderNumber}</h2>
+                      <p className="text-[var(--text-muted)] text-[10px] sm:text-xs font-bold uppercase tracking-[0.2em] mt-1">Placed on {new Date(selectedOrderDetails.createdAt).toLocaleDateString()}</p>
                     </div>
-                    <button onClick={() => setShowModal(false)} className="shrink-0 h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-white shadow-md flex items-center justify-center hover:scale-110 transition-transform">
+                    <button onClick={() => setShowModal(false)} className="shrink-0 h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-[var(--surface)] border border-[var(--border)] text-[var(--text)] shadow-md flex items-center justify-center hover:scale-110 transition-transform">
                       <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                   </div>
@@ -512,12 +512,12 @@ const Orders = () => {
                       <div className="relative flex justify-between items-start min-w-[360px] max-w-3xl mx-auto mb-2">
                         {getStepperSteps(selectedOrderDetails).map((step, i, arr) => (
                           <div key={i} className="flex flex-col items-center relative z-10 flex-1">
-                            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center text-lg sm:text-xl shadow-lg transition-all duration-500 ${step.error ? 'bg-[var(--danger)]' : step.neutral ? 'bg-[var(--brand)]' : step.active ? 'bg-[var(--text)]' : 'bg-[var(--surface-raised)] grayscale opacity-40'} ${step.active && !step.error && !step.neutral ? 'scale-110' : ''}`}>
+                            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center text-lg sm:text-xl shadow-lg transition-all duration-500 ${step.error ? 'bg-[var(--danger)] text-white' : step.neutral ? 'bg-[var(--brand)] text-white' : step.active ? 'bg-[var(--brand)] text-white' : 'bg-[var(--surface-raised)] text-[var(--text-muted)] border border-[var(--border)] opacity-50'} ${step.active && !step.error && !step.neutral ? 'scale-110 ring-2 ring-[var(--accent)]' : ''}`}>
                               {step.icon}
                             </div>
-                            <span className={`text-[8px] sm:text-[9px] font-black uppercase tracking-tighter mt-2 text-center transition-colors ${step.active ? 'text-black' : 'text-gray-300'}`}>{step.label}</span>
+                            <span className={`text-[8px] sm:text-[9px] font-black uppercase tracking-tighter mt-2 text-center transition-colors ${step.active ? 'text-[var(--text)]' : 'text-[var(--text-muted)]'}`}>{step.label}</span>
                             {i < arr.length - 1 && (
-                              <div className={`absolute top-5 sm:top-6 left-[60%] w-[calc(100%-2rem)] h-1 -z-10 transition-all duration-1000 ${step.active && arr[i + 1].active ? (arr[i+1].error ? 'bg-red-200' : 'bg-black') : 'bg-gray-100'}`} />
+                              <div className={`absolute top-5 sm:top-6 left-[60%] w-[calc(100%-2rem)] h-1 -z-10 transition-all duration-1000 ${step.active && arr[i + 1].active ? (arr[i+1].error ? 'bg-[var(--danger)]' : 'bg-[var(--brand)]') : 'bg-[var(--border)]'}`} />
                             )}
                           </div>
                         ))}
@@ -529,23 +529,23 @@ const Orders = () => {
                       <div className="lg:col-span-2 space-y-8">
                         {/* Products */}
                         <section>
-                          <h3 className="section-title-small mb-4">Items In Package</h3>
+                          <h3 className="section-title-small mb-4 text-[var(--text-muted)]">Items In Package</h3>
                           <div className="space-y-3">
                             {selectedOrderDetails.items?.map((item, idx) => (
-                              <div key={idx} className="flex gap-4 p-3 rounded-2xl border border-gray-100 bg-gray-50/30">
+                              <div key={idx} className="flex gap-4 p-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)]/40">
                                 <ProductImage
-                                  className="w-20 h-20 object-cover rounded-xl shadow-sm"
+                                  className="w-20 h-20 object-cover rounded-xl shadow-sm border border-[var(--border)]"
                                   src={item.product?.mainImageUrl}
                                   alt={item.product?.name || "Order item"}
                                   width={150}
                                   height={150}
                                 />
                                 <div className="flex-1 flex flex-col justify-center">
-                                  <h4 className="font-black text-sm leading-tight">{item.product?.name}</h4>
-                                  <p className="text-[10px] font-bold text-gray-400 mt-1 uppercase tracking-wider">{item.product?.productVariantForCartDto?.size} / {item.product?.productVariantForCartDto?.color}</p>
+                                  <h4 className="font-black text-sm leading-tight text-[var(--text)]">{item.product?.name}</h4>
+                                  <p className="text-[10px] font-bold text-[var(--text-muted)] mt-1 uppercase tracking-wider">{item.product?.productVariantForCartDto?.size} / {item.product?.productVariantForCartDto?.color}</p>
                                   <div className="flex justify-between items-end mt-2">
-                                    <p className="text-xs font-black">{currency}{item.unitPrice} <span className="text-gray-300 ml-1">x {item.quantity}</span></p>
-                                    <p className="text-xs font-black text-black">{currency}{item.totalPrice}</p>
+                                    <p className="text-xs font-semibold text-[var(--text-muted)]">{currency}{item.unitPrice} <span className="opacity-60 ml-1">x {item.quantity}</span></p>
+                                    <p className="text-xs font-black text-[var(--accent)]">{currency}{item.totalPrice}</p>
                                   </div>
                                 </div>
                               </div>
@@ -556,31 +556,31 @@ const Orders = () => {
                         {/* Payment History - MULTIPLE PAYMENTS */}
                         <section>
                           <div className="flex items-center justify-between mb-4">
-                            <h3 className="section-title-small">Payment Timeline</h3>
-                            <span className="text-[10px] bg-gray-100 px-3 py-1 rounded-full font-black uppercase">{selectedOrderDetails.payment?.length || 0} Attempts</span>
+                            <h3 className="section-title-small text-[var(--text-muted)]">Payment Timeline</h3>
+                            <span className="text-[10px] bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text)] px-3 py-1 rounded-full font-black uppercase">{selectedOrderDetails.payment?.length || 0} Attempts</span>
                           </div>
                           <div className="space-y-3">
                             {selectedOrderDetails.payment?.map((pay, idx) => (
-                              <div key={idx} className="flex items-center gap-4 p-4 rounded-2xl bg-white border border-gray-100 shadow-sm relative overflow-hidden group">
-                                <div className={`absolute left-0 top-0 bottom-0 w-1 ${pay.status === 'Paid' || pay.status === 'Success' ? 'bg-green-500' : 'bg-red-500'}`} />
-                                <div className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-lg">{pay.paymentMethod?.toLowerCase().includes('card') ? '💳' : '💵'}</div>
+                              <div key={idx} className="flex items-center gap-4 p-4 rounded-2xl bg-[var(--surface-raised)]/40 border border-[var(--border)] shadow-sm relative overflow-hidden group">
+                                <div className={`absolute left-0 top-0 bottom-0 w-1 ${pay.status === 'Paid' || pay.status === 'Success' ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                                <div className="w-10 h-10 rounded-full bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center text-lg">{pay.paymentMethod?.toLowerCase().includes('card') ? '💳' : '💵'}</div>
                                 <div className="flex-1">
                                   <div className="flex justify-between items-start">
-                                    <p className="font-black text-sm uppercase tracking-tighter">{pay.paymentMethod}</p>
-                                    <span className="text-[10px] font-black">{new Date(pay.paymentDate).toLocaleDateString()}</span>
+                                    <p className="font-black text-sm uppercase tracking-tighter text-[var(--text)]">{pay.paymentMethod}</p>
+                                    <span className="text-[10px] font-black text-[var(--text-muted)]">{new Date(pay.paymentDate).toLocaleDateString()}</span>
                                   </div>
                                   <div className="flex justify-between items-center mt-1">
-                                    <p className="text-xs font-bold text-gray-400">{pay.paymentProvider || 'In-House'}</p>
-                                    <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase ${pay.status === 'Paid' || pay.status === 'Success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>{pay.status}</span>
+                                    <p className="text-xs font-bold text-[var(--text-muted)]">{pay.paymentProvider || 'In-House'}</p>
+                                    <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase ${pay.status === 'Paid' || pay.status === 'Success' ? 'bg-emerald-500/15 text-emerald-500' : 'bg-red-500/15 text-red-500'}`}>{pay.status}</span>
                                   </div>
                                 </div>
                                 <div className="text-right ml-4">
-                                  <p className="text-sm font-black">{currency}{pay.amount}</p>
+                                  <p className="text-sm font-black text-[var(--accent)]">{currency}{pay.amount}</p>
                                 </div>
                               </div>
                             ))}
                             {(!selectedOrderDetails.payment || selectedOrderDetails.payment.length === 0) && (
-                              <div className="text-center py-6 text-xs font-bold text-gray-300 italic">No payment records found.</div>
+                              <div className="text-center py-6 text-xs font-bold text-[var(--text-muted)] italic">No payment records found.</div>
                             )}
                           </div>
                         </section>
@@ -588,30 +588,30 @@ const Orders = () => {
 
                       {/* Right Column: Address & Bill */}
                       <div className="space-y-6">
-                        <div className="p-6 rounded-3xl bg-black text-white shadow-xl">
-                          <h3 className="text-xs font-black uppercase tracking-[0.3em] mb-4 text-white/50">Shipping Details</h3>
-                          <p className="font-black text-lg mb-1">{selectedOrderDetails.customer?.fullName}</p>
-                          <p className="text-xs text-white/60 mb-4">{selectedOrderDetails.customer?.email}</p>
-                          <div className="space-y-2 text-xs font-medium text-white/80 border-t border-white/10 pt-4">
-                            <p className="flex justify-between"><span>Phone:</span> <span className="font-black">{selectedOrderDetails.customer?.phoneNumber}</span></p>
-                            <p className="leading-relaxed"><span className="block text-white/40 mb-1">Address:</span> {selectedOrderDetails.customer?.customerAddress?.fullAddress}</p>
+                        <div className="p-6 rounded-3xl bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text)] shadow-xl">
+                          <h3 className="text-xs font-black uppercase tracking-[0.3em] mb-4 text-[var(--text-muted)]">Shipping Details</h3>
+                          <p className="font-black text-lg mb-1 text-[var(--text)]">{selectedOrderDetails.customer?.fullName}</p>
+                          <p className="text-xs text-[var(--text-muted)] mb-4">{selectedOrderDetails.customer?.email}</p>
+                          <div className="space-y-2 text-xs font-medium text-[var(--text-muted)] border-t border-[var(--border)] pt-4">
+                            <p className="flex justify-between"><span>Phone:</span> <span className="font-black text-[var(--text)]">{selectedOrderDetails.customer?.phoneNumber}</span></p>
+                            <p className="leading-relaxed"><span className="block text-[var(--text-muted)] opacity-70 mb-1">Address:</span> <span className="text-[var(--text)]">{selectedOrderDetails.customer?.customerAddress?.fullAddress}</span></p>
                           </div>
                         </div>
 
-                        <div className="p-6 rounded-3xl border border-gray-100 bg-gray-50/50">
-                          <h3 className="text-xs font-black uppercase tracking-[0.3em] mb-4 text-gray-400">Bill Summary</h3>
+                        <div className="p-6 rounded-3xl border border-[var(--border)] bg-[var(--surface-raised)]/40 text-[var(--text)]">
+                          <h3 className="text-xs font-black uppercase tracking-[0.3em] mb-4 text-[var(--text-muted)]">Bill Summary</h3>
                           <div className="space-y-3 text-xs">
-                            <div className="flex justify-between text-gray-500 font-bold"><span>Subtotal</span> <span>{currency}{selectedOrderDetails.subtotal}</span></div>
-                            <div className="flex justify-between text-gray-500 font-bold"><span>Tax</span> <span>{currency}{selectedOrderDetails.taxAmount || 0}</span></div>
-                            <div className="flex justify-between text-gray-500 font-bold"><span>Shipping</span> <span>{currency}{selectedOrderDetails.shippingCost || 0}</span></div>
-                            {selectedOrderDetails.discountAmount > 0 && <div className="flex justify-between text-green-600 font-black"><span>Discount</span> <span>-{currency}{selectedOrderDetails.discountAmount}</span></div>}
-                            <div className="flex justify-between items-center text-lg font-black border-t border-gray-200 pt-3 mt-3"><span>TOTAL</span> <span className="text-black">{currency}{selectedOrderDetails.total}</span></div>
+                            <div className="flex justify-between text-[var(--text-muted)] font-bold"><span>Subtotal</span> <span className="text-[var(--text)]">{currency}{selectedOrderDetails.subtotal}</span></div>
+                            <div className="flex justify-between text-[var(--text-muted)] font-bold"><span>Tax</span> <span className="text-[var(--text)]">{currency}{selectedOrderDetails.taxAmount || 0}</span></div>
+                            <div className="flex justify-between text-[var(--text-muted)] font-bold"><span>Shipping</span> <span className="text-[var(--text)]">{currency}{selectedOrderDetails.shippingCost || 0}</span></div>
+                            {selectedOrderDetails.discountAmount > 0 && <div className="flex justify-between text-emerald-500 font-black"><span>Discount</span> <span>-{currency}{selectedOrderDetails.discountAmount}</span></div>}
+                            <div className="flex justify-between items-center text-lg font-black border-t border-[var(--border)] pt-3 mt-3"><span>TOTAL</span> <span className="text-[var(--accent)]">{currency}{selectedOrderDetails.total}</span></div>
                           </div>
                         </div>
 
                         {selectedOrderDetails.notes && (
-                          <div className="p-4 rounded-2xl border-2 border-dashed border-gray-200 text-xs text-gray-400 italic">
-                            <p className="font-black uppercase tracking-widest text-[9px] mb-1 not-italic">Admin Notes:</p>
+                          <div className="p-4 rounded-2xl border-2 border-dashed border-[var(--border)] text-xs text-[var(--text-muted)] italic bg-[var(--surface-raised)]/20">
+                            <p className="font-black uppercase tracking-widest text-[9px] mb-1 not-italic text-[var(--text)]">Admin Notes:</p>
                             {selectedOrderDetails.notes}
                           </div>
                         )}
@@ -619,12 +619,12 @@ const Orders = () => {
                     </div>
                   </div>
 
-                  <div className="p-4 sm:p-6 border-t flex flex-wrap justify-between items-center gap-3 bg-gray-50/30">
+                  <div className="p-4 sm:p-6 border-t border-[var(--border)] flex flex-wrap justify-between items-center gap-3 bg-[var(--surface-raised)]/40">
                     <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                      <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">Order is Live</span>
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Order is Live</span>
                     </div>
-                    <button onClick={() => setShowModal(false)} className="flex-1 sm:flex-none text-center px-8 py-3 bg-black text-white font-black uppercase text-[10px] tracking-widest rounded-full hover:scale-105 active:scale-95 transition-all shadow-xl">Close</button>
+                    <button onClick={() => setShowModal(false)} className="flex-1 sm:flex-none text-center px-8 py-3 bg-[var(--brand)] hover:bg-[var(--brand-hover)] text-white font-black uppercase text-[10px] tracking-widest rounded-full hover:scale-105 active:scale-95 transition-all shadow-xl">Close</button>
                   </div>
                 </>
               )
@@ -635,10 +635,10 @@ const Orders = () => {
     </AnimatePresence>
 
       <style>{`
-        .section-title-small { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.3em; color: #999; }
+        .section-title-small { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.3em; color: var(--text-muted); }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #eee; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
       `}</style>
     </div>
   )

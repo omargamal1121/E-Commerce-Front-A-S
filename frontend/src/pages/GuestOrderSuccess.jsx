@@ -67,14 +67,14 @@ const GuestOrderSuccess = () => {
 
   if (loading) {
     return (
-      <div className="mt-[80px] min-h-[80vh] flex items-center justify-center px-4 py-16">
-        <div className="animate-spin h-12 w- border-b-2 border-black"></div>
+      <div className="pt-32 sm:pt-36 min-h-[80vh] flex items-center justify-center px-4 py-16 bg-[var(--bg)] text-[var(--text)]">
+        <div className="animate-spin h-12 w-12 border-b-2 border-[var(--brand)]"></div>
       </div>
     );
   }
 
   return (
-    <div className="mt-[80px] min-h-[80vh] flex items-center justify-center px-4 py-16">
+    <div className="pt-32 sm:pt-36 min-h-[80vh] flex items-center justify-center px-4 py-16 bg-[var(--bg)] text-[var(--text)]">
       <motion.div
         initial="hidden"
         animate="visible"

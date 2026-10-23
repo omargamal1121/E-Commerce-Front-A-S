@@ -361,7 +361,7 @@ const Cart = () => {
                   title="Remove from cart"
                 >
                   <img
-                    className="w-5 sm:w-5"
+                    className="w-5 sm:w-5 nav-icon"
                     src={assets.bin_icon}
                     alt="Delete"
                   />
