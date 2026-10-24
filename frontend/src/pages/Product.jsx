@@ -40,6 +40,7 @@ const Product = () => {
   const [localStock, setLocalStock] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [autoFilledKeys, setAutoFilledKeys] = useState({});
+  const [outOfStockMessage, setOutOfStockMessage] = useState(false);
 
   // Helper: Get value of an option key from a variant
   const getOptValue = (v, key) => {
@@ -56,12 +57,15 @@ const Product = () => {
     return v[key] != null ? String(v[key]).trim() : null;
   };
 
-  // Helper: Get effective quantity
+  // Helper: Get effective quantity (accounts for locally added-to-cart qty)
   const getEffectiveQty = (variant) => {
     if (!variant) return 0;
     const localQty = localStock[variant.id] || 0;
     return Math.max(0, (variant.quantity ?? 0) - localQty);
   };
+
+  // Helper: Is a variant out of stock (raw quantity, not affected by localStock)
+  const isVariantOOS = (variant) => !variant || (variant.quantity ?? 0) === 0;
 
   // Pure function 1: getMatching (in-stock variants matching ALL current non-null selections)
   const getMatching = (allVariants, currentSelections) => {
@@ -222,16 +226,30 @@ const Product = () => {
     }
   }, [selectedVariant?.id]);
 
-  // Handle chip click
+  // Handle chip click — ignore clicks on OOS variants
   const handleChipClick = (key, val) => {
+    // Find the variant(s) for this value and check if ALL of them are OOS
+    const matchingForVal = variants.filter(v => getOptValue(v, key) === val);
+    if (matchingForVal.length > 0 && matchingForVal.every(isVariantOOS)) return;
+
     const { nextSelections, autoFilled } = applyClick(variants, selections, key, val);
     setSelections(nextSelections);
+    setOutOfStockMessage(false);
 
     if (Object.keys(autoFilled).length > 0) {
       setAutoFilledKeys(autoFilled);
       setTimeout(() => setAutoFilledKeys({}), 800);
     }
   };
+
+  // Show OOS message if selected variant becomes out of stock
+  useEffect(() => {
+    if (selectedVariant && isVariantOOS(selectedVariant)) {
+      setOutOfStockMessage(true);
+    } else {
+      setOutOfStockMessage(false);
+    }
+  }, [selectedVariant?.id, selectedVariant?.quantity]);
 
   // Reset all selections
   const handleResetSelections = () => {
@@ -379,7 +397,7 @@ const Product = () => {
                   width={1000}
                   priority={true}
                   aspectRatio="3/4"
-                  className="w-full h-auto object-cover aspect-[3/4]"
+                  className={`w-full h-auto object-cover aspect-[3/4] transition-opacity duration-300 ${(variants.length > 0 && variants.every(isVariantOOS)) || (productData.quantity === 0) ? 'opacity-60' : 'opacity-100'}`}
                   sizes="(max-width: 1024px) 100vw, 800px"
                 />
               </div>
@@ -391,6 +409,31 @@ const Product = () => {
               {productData.finalPrice < productData.price && (
                 <div className="absolute top-6 left-6 bg-[var(--brand)] text-[var(--text)] text-[10px] font-black py-2 px-6 rounded-full uppercase tracking-widest shadow-xl">
                   Exclusive Sale
+                </div>
+              )}
+
+              {/* SOLD OUT badge on detail page */}
+              {((variants.length > 0 && variants.every(isVariantOOS)) || (productData.quantity === 0)) && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: productData.finalPrice < productData.price ? '60px' : '24px',
+                    left: '24px',
+                    zIndex: 30,
+                    backgroundColor: 'rgba(0,0,0,0.72)',
+                    color: '#fff',
+                    fontSize: '13px',
+                    fontWeight: 900,
+                    letterSpacing: '0.18em',
+                    textTransform: 'uppercase',
+                    padding: '8px 20px',
+                    borderRadius: '9999px',
+                    pointerEvents: 'none',
+                    backdropFilter: 'blur(6px)',
+                    boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
+                  }}
+                >
+                  Sold Out
                 </div>
               )}
             </div>
@@ -463,39 +506,78 @@ const Product = () => {
                       <div className="flex flex-wrap gap-2.5">
                         {sec.options.map(optVal => {
                           const isSelected = currentSelectedVal === optVal;
-                          const isDisabled = !enabledVals.includes(optVal);
+                          // Disabled = not a valid combo given other selections (stock-aware)
+                          const isComboDisabled = !enabledVals.includes(optVal);
+                          // OOS = ALL variants for this value have quantity === 0
+                          const matchingForVal = variants.filter(v => getOptValue(v, sec.key) === optVal);
+                          const isOOS = matchingForVal.length > 0 && matchingForVal.every(isVariantOOS);
+                          const isDisabled = isComboDisabled || isOOS;
 
                           if (sec.isColor || sec.key === "color") {
                             return (
-                              <button
-                                key={optVal}
-                                type="button"
-                                role="radio"
-                                aria-checked={isSelected}
-                                aria-disabled={isDisabled}
-                                aria-label={optVal}
-                                onClick={() => handleChipClick(sec.key, optVal)}
-                                className={`w-9 h-9 rounded-full border-2 transition-all p-0.5 flex items-center justify-center relative ${isSelected ? 'border-[var(--text)] ring-2 ring-[var(--text)] ring-offset-2 ring-offset-[var(--bg)] scale-110' : 'border-[var(--border)] hover:border-[var(--text)]'} ${isDisabled ? 'opacity-40 line-through' : ''}`}
-                                title={optVal}
-                              >
-                                <div className="w-full h-full rounded-full shadow-inner border border-black/10" style={{ backgroundColor: optVal }} />
-                              </button>
+                              <div key={optVal} className="relative group/chip">
+                                <button
+                                  type="button"
+                                  role="radio"
+                                  aria-checked={isSelected}
+                                  aria-disabled={isDisabled}
+                                  aria-label={`${optVal}${isOOS ? ' (Out of stock)' : ''}`}
+                                  onClick={() => handleChipClick(sec.key, optVal)}
+                                  style={isDisabled ? { cursor: 'not-allowed' } : {}}
+                                  className={`w-9 h-9 rounded-full border-2 transition-all p-0.5 flex items-center justify-center relative
+                                    ${isSelected ? 'border-[var(--text)] ring-2 ring-[var(--text)] ring-offset-2 ring-offset-[var(--bg)] scale-110' : 'border-[var(--border)] hover:border-[var(--text)]'}
+                                    ${isDisabled ? 'opacity-40' : ''}`}
+                                  title={isOOS ? 'Out of stock' : optVal}
+                                >
+                                  <div className="w-full h-full rounded-full shadow-inner border border-black/10" style={{ backgroundColor: optVal }} />
+                                  {/* Diagonal cross for OOS color swatches */}
+                                  {isOOS && (
+                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                      <div style={{
+                                        position: 'absolute', top: '50%', left: '0', right: '0',
+                                        height: '2px', background: 'rgba(255,255,255,0.7)',
+                                        transform: 'translateY(-50%) rotate(-45deg)',
+                                        borderRadius: '2px'
+                                      }} />
+                                    </div>
+                                  )}
+                                </button>
+                                {/* Tooltip */}
+                                {isOOS && (
+                                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest whitespace-nowrap pointer-events-none opacity-0 group-hover/chip:opacity-100 transition-opacity duration-200"
+                                    style={{ background: 'rgba(0,0,0,0.75)', color: '#fff', zIndex: 50 }}>
+                                    Out of stock
+                                  </div>
+                                )}
+                              </div>
                             );
                           }
 
                           return (
-                            <button
-                              key={optVal}
-                              type="button"
-                              role="radio"
-                              aria-checked={isSelected}
-                              aria-disabled={isDisabled}
-                              onClick={() => handleChipClick(sec.key, optVal)}
-                              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border flex items-baseline gap-1 focus:ring-2 focus:ring-[var(--accent)] outline-none ${isSelected ? 'bg-[var(--brand)] text-[var(--text)] border-[var(--brand)] shadow-md' : 'bg-transparent text-[var(--text)] border-[var(--border)] hover:border-[var(--brand-hover)]'} ${isDisabled ? 'opacity-40 line-through' : ''}`}
-                            >
-                              <span>{optVal}</span>
-                              {sec.unit && <span className={`text-[9px] font-normal ${isSelected ? 'text-[var(--text)]/80' : 'text-[var(--text-muted)]'}`}>{sec.unit}</span>}
-                            </button>
+                            <div key={optVal} className="relative group/chip">
+                              <button
+                                type="button"
+                                role="radio"
+                                aria-checked={isSelected}
+                                aria-disabled={isDisabled}
+                                onClick={() => handleChipClick(sec.key, optVal)}
+                                style={isDisabled ? { cursor: 'not-allowed', textDecoration: isOOS ? 'line-through' : 'none' } : {}}
+                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border flex items-baseline gap-1 focus:ring-2 focus:ring-[var(--accent)] outline-none
+                                  ${isSelected ? 'bg-[var(--brand)] text-[var(--text)] border-[var(--brand)] shadow-md' : 'bg-transparent text-[var(--text)] border-[var(--border)] hover:border-[var(--brand-hover)]'}
+                                  ${isDisabled ? 'opacity-40' : ''}`}
+                                title={isOOS ? 'Out of stock' : undefined}
+                              >
+                                <span>{optVal}</span>
+                                {sec.unit && <span className={`text-[9px] font-normal ${isSelected ? 'text-[var(--text)]/80' : 'text-[var(--text-muted)]'}`}>{sec.unit}</span>}
+                              </button>
+                              {/* Tooltip */}
+                              {isOOS && (
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest whitespace-nowrap pointer-events-none opacity-0 group-hover/chip:opacity-100 transition-opacity duration-200"
+                                  style={{ background: 'rgba(0,0,0,0.75)', color: '#fff', zIndex: 50 }}>
+                                  Out of stock
+                                </div>
+                              )}
+                            </div>
                           );
                         })}
                       </div>
@@ -507,6 +589,24 @@ const Product = () => {
 
             {/* Quantity Stepper & Add to Cart */}
             <div className="space-y-4 pt-2">
+              {/* OOS selected variant inline message */}
+              {outOfStockMessage && (
+                <div
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: '12px',
+                    background: 'rgba(251,191,36,0.12)',
+                    border: '1px solid rgba(251,191,36,0.4)',
+                    color: '#b45309',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    letterSpacing: '0.02em',
+                  }}
+                >
+                  This option is currently out of stock. Please select another.
+                </div>
+              )}
+
               {/* Availability Badge */}
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-[var(--text-muted)]">Availability</span>
@@ -522,6 +622,43 @@ const Product = () => {
                   <span className="text-xs text-[var(--text-muted)]">Select options to see availability</span>
                 )}
               </div>
+
+              {/* Low stock warning */}
+              {selectedVariant && getEffectiveQty(selectedVariant) > 0 && getEffectiveQty(selectedVariant) <= 5 && (
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    color: '#d97706',
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  <span style={{ fontSize: '14px' }}>⚡</span>
+                  Only {getEffectiveQty(selectedVariant)} left in stock!
+                </div>
+              )}
+
+              {/* All variants OOS global message */}
+              {variants.length > 0 && variants.every(isVariantOOS) && (
+                <div
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: '12px',
+                    background: 'rgba(239,68,68,0.08)',
+                    border: '1px solid rgba(239,68,68,0.25)',
+                    color: '#dc2626',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  This product is currently sold out.
+                </div>
+              )}
 
               <div className="flex gap-4 items-center">
                 <div className="flex items-center bg-[var(--surface)] border border-[var(--border)] rounded-full px-5 py-3 gap-5">
@@ -547,10 +684,29 @@ const Product = () => {
                 <button
                   type="button"
                   onClick={handleAddToCart}
-                  disabled={isSubmitting || !selectedVariant || getEffectiveQty(selectedVariant) <= 0}
+                  disabled={
+                    isSubmitting ||
+                    (variants.length > 0 && variants.every(isVariantOOS)) ||
+                    !selectedVariant ||
+                    getEffectiveQty(selectedVariant) <= 0
+                  }
                   className="flex-1 btn-cta-fashion py-4 rounded-full text-xs font-bold tracking-[0.2em] shadow-xl disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={
+                    (variants.length > 0 && variants.every(isVariantOOS)) ||
+                    (selectedVariant && getEffectiveQty(selectedVariant) <= 0)
+                      ? { background: 'var(--surface-raised)', color: 'var(--text-muted)', boxShadow: 'none' }
+                      : {}
+                  }
                 >
-                  {isSubmitting ? 'Authenticating...' : (!selectedVariant) ? 'SELECT OPTIONS' : (getEffectiveQty(selectedVariant) <= 0) ? 'OUT OF STOCK' : 'ADD TO PRIVATE COLLECTION'}
+                  {isSubmitting
+                    ? 'Authenticating...'
+                    : variants.length > 0 && variants.every(isVariantOOS)
+                    ? 'OUT OF STOCK'
+                    : !selectedVariant
+                    ? 'SELECT OPTIONS'
+                    : getEffectiveQty(selectedVariant) <= 0
+                    ? 'OUT OF STOCK'
+                    : 'ADD TO PRIVATE COLLECTION'}
                 </button>
               </div>
             </div>

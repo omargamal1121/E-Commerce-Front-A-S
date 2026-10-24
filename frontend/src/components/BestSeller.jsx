@@ -101,6 +101,7 @@ const BestSeller = () => {
                 finalPrice={item.finalPrice}
                 discountPrecentage={item.discountPrecentage}
                 discountName={item.discountName}
+                quantity={item.quantity}
               />
             </motion.div>
           ))}

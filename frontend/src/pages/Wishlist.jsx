@@ -102,6 +102,7 @@ const Wishlist = () => {
                       finalPrice={finalP}
                       discountPrecentage={item.discountPrecentage || item.discountPercentage}
                       discountName={item.discountName}
+                      quantity={item.quantity}
                     />
                   );
                 })}

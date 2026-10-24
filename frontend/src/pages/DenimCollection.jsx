@@ -184,6 +184,7 @@ const DenimCollection = () => {
               image={product.image}
               discountPrecentage={product.discountPrecentage}
               discountName={product.discountName}
+              quantity={product.quantity}
             />
           ))
         ) : (

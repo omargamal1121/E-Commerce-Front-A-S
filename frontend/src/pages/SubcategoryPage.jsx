@@ -105,6 +105,7 @@ const SubcategoryPage = () => {
                 price={p.price}
                 finalPrice={p.finalPrice}
                 discountPrecentage={p.discountPrecentage}
+                quantity={p.quantity}
               />
             </motion.div>
           ))}
