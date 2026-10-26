@@ -8,6 +8,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import WishlistButton from "../components/WishlistButton";
 import MostWanted from "../components/MostWanted";
+import ProductItem from "../components/ProductItem";
 import ProductImage from "../components/common/ProductImage";
 import { getImageUrl } from "../utils/imageUtils";
 import { FaChevronLeft, FaChevronRight, FaPlus, FaMinus, FaRulerCombined, FaTruck, FaShieldAlt, FaUndo, FaTimes } from "react-icons/fa";
@@ -42,6 +43,8 @@ const Product = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [autoFilledKeys, setAutoFilledKeys] = useState({});
   const [outOfStockMessage, setOutOfStockMessage] = useState(false);
+  const [subcategoryProducts, setSubcategoryProducts] = useState([]);
+  const [loadingSubcategory, setLoadingSubcategory] = useState(false);
 
   // Helper: Get value of an option key from a variant
   const getOptValue = (v, key) => {
@@ -372,15 +375,80 @@ const Product = () => {
     }
   }
 
+  // Reset states on product navigation
+  useEffect(() => {
+    setSelections({});
+    setAutoFilledKeys({});
+    setQuantity(1);
+    setOutOfStockMessage(false);
+  }, [productId]);
+
   useEffect(() => {
     if (products.length > 0) {
-      const found = products.find(p => p._id === productId || p.id === productId);
+      const found = products.find(p => String(p._id) === String(productId) || String(p.id) === String(productId));
       if (found) {
-        setProductData(found);
-        setActiveImage(found.image?.[0] || found.mainImageUrl);
+        setProductData(prev => ({ ...found, ...(prev || {}) }));
+        setActiveImage(prev => prev || found.image?.[0] || found.mainImageUrl);
       }
     }
   }, [products, productId]);
+
+  // Fetch full product details directly from API to ensure subCategoryId and all metadata are present
+  useEffect(() => {
+    const fetchProductDetails = async () => {
+      if (!productId) return;
+      try {
+        const res = await axios.get(`${backendUrl}/api/Products/${productId}?isActive=true&includeDeleted=false`);
+        if (res.data?.responseBody?.data) {
+          const p = res.data.responseBody.data;
+          setProductData(prev => ({
+            ...(prev || {}),
+            ...p,
+            _id: String(p.id),
+            id: p.id,
+            subCategoryId: p.subCategoryId || p.categorySubcategoryId || prev?.subCategoryId,
+            categorySubcategoryId: p.categorySubcategoryId || p.subCategoryId || prev?.categorySubcategoryId,
+            subCategory: p.subCategoryName || p.subCategory?.name || prev?.subCategory,
+            category: p.categoryName || p.category?.name || prev?.category,
+            image: Array.isArray(p.images) && p.images.length > 0
+              ? p.images.map(img => img.url || img.imageUrl).filter(Boolean)
+              : prev?.image || (p.mainImageUrl ? [p.mainImageUrl] : []),
+          }));
+          if (p.images && p.images.length > 0) {
+            const mainImg = p.images.find(img => img.isMain)?.url || p.images[0]?.url;
+            if (mainImg) setActiveImage(mainImg);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching product details", err);
+      }
+    };
+    fetchProductDetails();
+  }, [productId, backendUrl]);
+
+  // Fetch products in the same subcategory
+  useEffect(() => {
+    const subId = productData?.subCategoryId || productData?.categorySubcategoryId;
+    if (!subId) return;
+
+    const fetchSubcategoryProducts = async () => {
+      try {
+        setLoadingSubcategory(true);
+        const res = await axios.get(`${backendUrl}/api/Products/subcategory/${subId}?page=1&pageSize=10`);
+        const list = res.data?.responseBody?.data || [];
+        // Filter out the current product being viewed
+        const filtered = list.filter(item => String(item.id || item._id) !== String(productId));
+        setSubcategoryProducts(filtered);
+      } catch (err) {
+        console.error("Error fetching subcategory products", err);
+        setSubcategoryProducts([]);
+      } finally {
+        setLoadingSubcategory(false);
+      }
+    };
+
+    fetchSubcategoryProducts();
+  }, [productData?.subCategoryId, productData?.categorySubcategoryId, productId, backendUrl]);
 
   useEffect(() => {
     const fetchVariants = async () => {
@@ -903,8 +971,52 @@ const Product = () => {
           </div>
         </div>
 
+        {/* PRODUCTS IN SAME SUBCATEGORY */}
+        {subcategoryProducts.length > 0 && (
+          <section className="mt-32 border-t border-[var(--border)] pt-20">
+            <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="w-8 h-[2px] bg-[var(--accent)]"></span>
+                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--accent)]">
+                    {productData?.subCategoryName || productData?.subCategory || "Curated Selection"}
+                  </span>
+                </div>
+                <h3 className="text-2xl sm:text-3xl md:text-4xl font-extrabold uppercase tracking-tight text-[var(--text)]">
+                  More In This Subcategory
+                </h3>
+              </div>
+              <p className="text-xs sm:text-sm text-[var(--text-muted)] max-w-md font-light">
+                Discover pieces with matching silhouettes and curated designs crafted for the same luxury aesthetic.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+              {subcategoryProducts.map((p, idx) => (
+                <motion.div
+                  key={p.id || idx}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: (idx % 4) * 0.08 }}
+                >
+                  <ProductItem
+                    id={p.id || p._id}
+                    image={p.images && p.images.length > 0 ? p.images.map(img => img.url || img) : [p.mainImageUrl]}
+                    name={p.name}
+                    price={p.price}
+                    finalPrice={p.finalPrice || p.price}
+                    discountPrecentage={p.discountPrecentage}
+                    quantity={p.availableQuantity || p.quantity}
+                  />
+                </motion.div>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* RELATED PRODUCTS */}
-        <section ref={relatedProductsRef} className="mt-40 border-t border-[var(--border)] pt-24">
+        <section ref={relatedProductsRef} className="mt-28 border-t border-[var(--border)] pt-20">
           {isRelatedInView && <MostWanted />}
         </section>
       </div>

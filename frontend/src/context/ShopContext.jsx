@@ -354,8 +354,11 @@ const ShopContextProvider = (props) => {
             : [],
         isActive: p.isActive,
         currency: currency,
+        id: p.id,
         category: p.categoryName || p.category?.name,
         subCategory: p.subCategoryName || p.subCategory?.name,
+        subCategoryId: p.subCategoryId || p.categorySubcategoryId || p.subCategory?.id,
+        categorySubcategoryId: p.categorySubcategoryId || p.subCategoryId || p.subCategory?.id,
         sizes: (p.variants || []).map((v) => v.size).filter(Boolean),
         isInWishlist: wishlistIds.includes(p.id),
       }));
@@ -401,8 +404,11 @@ const ShopContextProvider = (props) => {
                 : [],
             isActive: p.isActive,
             currency: currency,
+            id: p.id,
             category: p.categoryName || p.category?.name,
             subCategory: p.subCategoryName || p.subCategory?.name,
+            subCategoryId: p.subCategoryId || p.categorySubcategoryId || p.subCategory?.id,
+            categorySubcategoryId: p.categorySubcategoryId || p.subCategoryId || p.subCategory?.id,
             sizes: (p.variants || [])
               .map((v) => v.size)
               .filter(Boolean),
