@@ -31,16 +31,35 @@ const Navbar = () => {
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileRef = useRef(null);
 
+  // 🔹 إدارة قائمة الأقسام (Categories)
+  const [categoryMenuOpen, setCategoryMenuOpen] = useState(false);
+  const categoryTimeoutRef = useRef(null);
+  const categoryContainerRef = useRef(null);
+
+  const handleCategoryMouseEnter = () => {
+    if (categoryTimeoutRef.current) clearTimeout(categoryTimeoutRef.current);
+    setCategoryMenuOpen(true);
+  };
+
+  const handleCategoryMouseLeave = () => {
+    categoryTimeoutRef.current = setTimeout(() => {
+      setCategoryMenuOpen(false);
+    }, 200);
+  };
+
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 10);
     };
     window.addEventListener("scroll", handleScroll);
 
-    // 🔹 إغلاق القائمة عند الضغط برّه
+    // 🔹 إغلاق القوائم عند الضغط برّه
     const handleClickOutside = (event) => {
       if (profileRef.current && !profileRef.current.contains(event.target)) {
         setProfileMenuOpen(false);
+      }
+      if (categoryContainerRef.current && !categoryContainerRef.current.contains(event.target)) {
+        setCategoryMenuOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -48,6 +67,7 @@ const Navbar = () => {
     return () => {
       window.removeEventListener("scroll", handleScroll);
       document.removeEventListener("mousedown", handleClickOutside);
+      if (categoryTimeoutRef.current) clearTimeout(categoryTimeoutRef.current);
     };
   }, []);
 
@@ -148,67 +168,98 @@ const Navbar = () => {
             <span className="w-2/4 h-[2px] transition-all duration-300 bg-[var(--accent)] group-hover:w-full group-hover:bg-[var(--accent)] opacity-0 group-hover:opacity-100"></span>
           </NavLink>
 
-          <div className="relative group">
+          <div
+            ref={categoryContainerRef}
+            className="relative py-2 group"
+            onMouseEnter={handleCategoryMouseEnter}
+            onMouseLeave={handleCategoryMouseLeave}
+          >
             <NavLink
               to="/collection"
-              className="flex items-center gap-1 focus:outline-none uppercase tracking-widest hover:text-[var(--accent)] transition-colors"
+              onClick={() => setCategoryMenuOpen(false)}
+              className={({ isActive }) =>
+                `flex items-center gap-1 focus:outline-none uppercase tracking-widest hover:text-[var(--accent)] transition-colors ${
+                  isActive ? "text-[var(--accent)]" : ""
+                }`
+              }
             >
-              {t("CATEGORY")} <span className="ml-1 text-[10px]">&#9662;</span>
+              <span>{t("CATEGORY")}</span>
+              <span className={`ml-1 text-[10px] transition-transform duration-200 ${categoryMenuOpen ? "rotate-180" : ""}`}>&#9662;</span>
             </NavLink>
 
-            {/* Main Categories Dropdown */}
-            <div className="absolute left-1/2 -translate-x-1/2 mt-2 w-72 bg-[var(--surface)] shadow-2xl z-[100] hidden group-hover:block transition-all duration-300 border border-[var(--border)] rounded-b-2xl">
-              <ul className="flex flex-col py-3">
-                {Array.isArray(categories) && categories.length > 0 ? (
-                  categories.map((cat) => (
-                    <li
-                      key={cat.id}
-                      className="relative px-3 group/sub"
+            {/* Main Categories Dropdown - Seamless hover bridge via top-full pt-2 */}
+            <div
+              className={`absolute left-0 top-full pt-2 w-72 z-[100] transition-all duration-200 ${
+                categoryMenuOpen ? "block opacity-100" : "hidden group-hover:block"
+              }`}
+            >
+              <div className="bg-[var(--surface)] shadow-2xl border border-[var(--border)] rounded-2xl overflow-visible py-3">
+                <ul className="flex flex-col">
+                  {/* Top quick link to view all categories */}
+                  <li className="px-3 pb-2 mb-1 border-b border-[var(--border)]">
+                    <Link
+                      to="/collection"
+                      onClick={() => setCategoryMenuOpen(false)}
+                      className="flex items-center justify-between px-4 py-2.5 bg-[var(--surface-raised)] hover:bg-[var(--accent)] hover:text-black rounded-xl text-xs font-bold uppercase tracking-wider text-[var(--accent)] transition-all"
                     >
-                      <Link
-                        to={`/category/${cat.id}`}
-                        className="flex justify-between items-center px-4 py-3.5 hover:bg-[var(--surface-raised)] hover:text-[var(--text)] rounded-xl cursor-pointer text-[var(--text)] font-bold transition-all duration-200"
+                      <span>All Categories</span>
+                      <span className="text-xs">→</span>
+                    </Link>
+                  </li>
+
+                  {Array.isArray(categories) && categories.length > 0 ? (
+                    categories.map((cat) => (
+                      <li
+                        key={cat.id}
+                        className="relative px-3 group/sub"
                       >
-                        <span className="text-sm tracking-tight">{cat.name}</span>
+                        <Link
+                          to={`/category/${cat.id}`}
+                          onClick={() => setCategoryMenuOpen(false)}
+                          className="flex justify-between items-center px-4 py-3 hover:bg-[var(--surface-raised)] hover:text-[var(--accent)] rounded-xl cursor-pointer text-[var(--text)] font-semibold transition-all duration-200"
+                        >
+                          <span className="text-sm tracking-tight">{cat.name}</span>
+                          {Array.isArray(categorySubcategories[cat.id]) &&
+                            categorySubcategories[cat.id].length > 0 && (
+                              <span className="text-[10px] ml-2 font-black transition-transform group-hover/sub:translate-x-1 text-[var(--text-muted)]">❯</span>
+                            )}
+                        </Link>
+
+                        {/* Nested Subcategories Popout with seamless bridge */}
                         {Array.isArray(categorySubcategories[cat.id]) &&
                           categorySubcategories[cat.id].length > 0 && (
-                            <span className="text-[10px] ml-2 font-black transition-transform group-hover/sub:translate-x-1">❯</span>
-                          )}
-                      </Link>
-
-                      {/* Nested Subcategories Popout - Using Hidden/Block for Reliability */}
-                      {Array.isArray(categorySubcategories[cat.id]) &&
-                        categorySubcategories[cat.id].length > 0 && (
-                          <div
-                            className="absolute left-[calc(100%-10px)] top-0 pl-4 hidden group-hover/sub:block z-[110]"
-                          >
-                            <ul className="w-64 bg-[var(--surface-raised)] shadow-2xl border border-[var(--border)] rounded-2xl py-3 transform transition-all duration-300">
-                              <li className="px-5 py-2 border-b border-[var(--border)]/40 mb-2">
-                                <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none">
-                                  Explore {cat.name}
-                                </span>
-                              </li>
-                              {categorySubcategories[cat.id].map((sub) => (
-                                <li key={sub.id} className="px-3">
-                                  <Link
-                                    to={`/subcategory/${sub.id}`}
-                                    className="block px-4 py-2.5 hover:bg-[var(--surface)] hover:pl-6 rounded-xl cursor-pointer text-[var(--text)] text-xs font-bold transition-all duration-200"
-                                  >
-                                    {sub.name}
-                                  </Link>
+                            <div
+                              className="absolute left-full top-0 -ml-2 pl-2 hidden group-hover/sub:block z-[110]"
+                            >
+                              <ul className="w-64 bg-[var(--surface)] shadow-2xl border border-[var(--border)] rounded-2xl py-3 transform transition-all duration-300">
+                                <li className="px-5 py-2 border-b border-[var(--border)]/40 mb-2">
+                                  <span className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest leading-none">
+                                    Explore {cat.name}
+                                  </span>
                                 </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
+                                {categorySubcategories[cat.id].map((sub) => (
+                                  <li key={sub.id} className="px-3">
+                                    <Link
+                                      to={`/subcategory/${sub.id}`}
+                                      onClick={() => setCategoryMenuOpen(false)}
+                                      className="block px-4 py-2 hover:bg-[var(--surface-raised)] hover:text-[var(--accent)] rounded-xl cursor-pointer text-[var(--text)] text-xs font-medium transition-all duration-200"
+                                    >
+                                      {sub.name}
+                                    </Link>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                      </li>
+                    ))
+                  ) : (
+                    <li className="px-8 py-5 text-[var(--text-muted)] text-[10px] font-black uppercase tracking-widest text-center italic">
+                      Loading Categories...
                     </li>
-                  ))
-                ) : (
-                  <li className="px-8 py-5 text-[var(--text-muted)] text-[10px] font-black uppercase tracking-widest text-center italic">
-                    Loading Categories...
-                  </li>
-                )}
-              </ul>
+                  )}
+                </ul>
+              </div>
             </div>
           </div>
 

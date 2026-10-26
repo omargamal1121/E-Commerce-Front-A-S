@@ -51,37 +51,43 @@ const SubcategoryPage = () => {
     });
 
   if (loading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center">
-      <div className="w-12 h-12 border-4 border-gray-100 border-t-black rounded-full animate-spin"></div>
-      <p className="mt-4 text-xs font-black uppercase tracking-[0.3em] text-gray-400">Curating Products</p>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--bg)] text-[var(--text)]">
+      <div className="w-12 h-12 border-4 border-[var(--border)] border-t-[var(--accent)] rounded-full animate-spin"></div>
+      <p className="mt-4 text-xs font-black uppercase tracking-[0.3em] text-[var(--text-muted)]">Curating Products</p>
     </div>
   );
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-[var(--bg)] text-[var(--text)] min-h-screen">
       {/* Cinematic Header */}
-      <section className="bg-gray-50 pt-32 pb-20 px-4 md:px-12 border-b border-gray-100">
-        <div className="max-w-screen-2xl mx-auto flex flex-col md:flex-row justify-between items-end gap-8">
+      <section className="bg-[var(--surface)] pt-28 sm:pt-36 pb-12 sm:pb-16 px-4 md:px-12 border-b border-[var(--border)] transition-colors">
+        <div className="max-w-screen-2xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-end gap-6 sm:gap-8">
           <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }}>
-            <div className="flex items-center gap-3 text-[10px] font-black tracking-[0.3em] text-gray-400 uppercase mb-4">
-              <Link to="/" className="hover:text-black transition-colors">Home</Link>
+            <div className="flex items-center gap-2 sm:gap-3 text-[11px] font-bold tracking-[0.2em] text-[var(--text-muted)] uppercase mb-3">
+              <Link to="/" className="hover:text-[var(--accent)] transition-colors">Home</Link>
               <span>/</span>
-              <Link to="/collection" className="hover:text-black transition-colors">Shop</Link>
+              <Link to="/collection" className="hover:text-[var(--accent)] transition-colors">Shop</Link>
               <span>/</span>
-              <span className="text-black">{subcategory?.name}</span>
+              <span className="text-[var(--text)]">{subcategory?.name}</span>
             </div>
-            <h1 className="text-6xl md:text-8xl font-black tracking-tighter uppercase mb-4 leading-[0.8]">{subcategory?.name}</h1>
-            <p className="text-gray-400 font-medium italic max-w-xl">{subcategory?.description || "A masterfully curated selection of high-end fashion pieces for the discerning eye."}</p>
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight uppercase mb-3 text-[var(--text)] leading-tight">
+              {subcategory?.name}
+            </h1>
+            <p className="text-[var(--text-muted)] text-sm sm:text-base font-normal max-w-2xl leading-relaxed">
+              {subcategory?.description || "A masterfully curated selection of high-end fashion pieces for the discerning eye."}
+            </p>
           </motion.div>
 
-          <div className="flex flex-col items-end gap-4">
-            <span className="text-[10px] font-black bg-black text-white px-4 py-1 rounded-full uppercase tracking-widest">{products.length} Items Found</span>
+          <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-4">
+            <span className="text-[11px] font-bold bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text)] px-4 py-1.5 rounded-full uppercase tracking-wider">
+              {products.length} {products.length === 1 ? 'Item' : 'Items'} Found
+            </span>
             <button
               onClick={() => setShowFilterPanel(true)}
-              className="group flex items-center gap-4 bg-white border border-gray-200 px-8 py-4 rounded-full text-xs font-black uppercase tracking-widest hover:border-black transition-all shadow-sm hover:shadow-xl"
+              className="group flex items-center gap-3 bg-[var(--surface)] border border-[var(--border)] text-[var(--text)] px-6 py-3 rounded-full text-xs font-bold uppercase tracking-wider hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all shadow-sm cursor-pointer"
             >
-              <FaFilter className="group-hover:rotate-180 transition-transform duration-500" />
-              Open Filter Desk
+              <FaFilter className="group-hover:rotate-180 transition-transform duration-500 text-[var(--accent)]" />
+              <span>Filters</span>
             </button>
           </div>
         </div>
@@ -112,10 +118,36 @@ const SubcategoryPage = () => {
         </div>
 
         {sortedProducts.length === 0 && (
-          <div className="py-40 text-center rounded-[3rem] border-2 border-dashed border-gray-100">
-            <div className="mb-6 opacity-20"><FaSortAmountDown size={40} className="mx-auto" /></div>
-            <p className="text-xs font-black uppercase tracking-[0.4em] text-gray-300">Null Set Matching Criteria</p>
-            <button onClick={() => { setInStock(false); setPriceRange({ min: 0, max: 20000 }); }} className="mt-8 text-xs font-black underline hover:text-gray-500">Reset System</button>
+          <div className="py-24 sm:py-32 px-6 text-center rounded-3xl border border-[var(--border)] bg-[var(--surface)]/50 backdrop-blur-sm max-w-2xl mx-auto my-12">
+            <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-[var(--surface-raised)] border border-[var(--border)] flex items-center justify-center text-[var(--accent)]">
+              <FaFilter size={22} />
+            </div>
+            <h3 className="text-xl sm:text-2xl font-bold text-[var(--text)] mb-2">
+              No Products Found
+            </h3>
+            <p className="text-sm text-[var(--text-muted)] max-w-md mx-auto mb-8 leading-relaxed">
+              We couldn't find any products in this subcategory matching your selected filters. Try adjusting your filters or browse our full catalog.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              {(inStock || priceRange.max < 20000 || sortOption !== "featured") && (
+                <button
+                  onClick={() => {
+                    setInStock(false);
+                    setPriceRange({ min: 0, max: 20000 });
+                    setSortOption("featured");
+                  }}
+                  className="px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider bg-[var(--accent)] text-black hover:opacity-90 transition-all shadow-md cursor-pointer"
+                >
+                  Clear Filters
+                </button>
+              )}
+              <Link
+                to="/collection"
+                className="px-6 py-2.5 rounded-full text-xs font-bold uppercase tracking-wider bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text)] hover:border-[var(--accent)] hover:text-[var(--accent)] transition-all cursor-pointer"
+              >
+                Browse All Collections
+              </Link>
+            </div>
           </div>
         )}
       </main>
@@ -124,43 +156,47 @@ const SubcategoryPage = () => {
       <AnimatePresence>
         {showFilterPanel && (
           <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowFilterPanel(false)} className="fixed inset-0 bg-black/80 backdrop-blur-md z-[100]" />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowFilterPanel(false)} className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100]" />
             <motion.div
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
-              className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white z-[101] shadow-2xl p-12 flex flex-col"
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-[var(--surface)] text-[var(--text)] border-l border-[var(--border)] z-[101] shadow-2xl p-8 sm:p-12 flex flex-col"
             >
-              <div className="flex justify-between items-center mb-16">
+              <div className="flex justify-between items-center mb-10 pb-4 border-b border-[var(--border)]">
                 <div>
-                  <h2 className="text-4xl font-black tracking-tighter">FILTERS</h2>
-                  <div className="h-1 w-12 bg-black mt-2"></div>
+                  <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight uppercase text-[var(--text)]">FILTERS</h2>
+                  <div className="h-1 w-10 bg-[var(--accent)] mt-2 rounded-full"></div>
                 </div>
-                <button onClick={() => setShowFilterPanel(false)} className="h-12 w-12 rounded-full bg-gray-50 flex items-center justify-center hover:scale-110 transition-transform">
+                <button
+                  onClick={() => setShowFilterPanel(false)}
+                  className="h-10 w-10 rounded-full bg-[var(--surface-raised)] text-[var(--text)] flex items-center justify-center hover:text-[var(--accent)] hover:scale-105 transition-all cursor-pointer"
+                >
                   <FaTimes />
                 </button>
               </div>
 
-              <div className="space-y-12 flex-1 custom-scrollbar overflow-y-auto pr-4">
+              <div className="space-y-10 flex-1 custom-scrollbar overflow-y-auto pr-2">
                 {/* Stock Section */}
                 <section>
-                  <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 mb-6 font-bold">Inventory Status</h4>
-                  <label className="flex items-center justify-between cursor-pointer group">
-                    <span className="font-bold text-sm group-hover:tracking-widest transition-all">Available Only</span>
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] mb-4">Inventory Status</h4>
+                  <label className="flex items-center justify-between cursor-pointer p-4 rounded-xl bg-[var(--surface-raised)] border border-[var(--border)] hover:border-[var(--accent)] transition-all">
+                    <span className="font-semibold text-sm text-[var(--text)]">In Stock Only</span>
                     <input
                       type="checkbox"
                       checked={inStock}
                       onChange={() => setInStock(!inStock)}
-                      className="w-5 h-5 accent-black border-2 border-gray-200 rounded cursor-pointer"
+                      className="w-5 h-5 accent-[var(--accent)] rounded cursor-pointer"
                     />
                   </label>
                 </section>
 
                 {/* Price Section */}
                 <section>
-                  <div className="flex justify-between items-center mb-6">
-                    <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 font-bold">Price Ceiling</h4>
-                    <span className="text-sm font-black">{currency}{priceRange.max}</span>
+                  <div className="flex justify-between items-center mb-4">
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)]">Price Ceiling</h4>
+                    <span className="text-sm font-bold text-[var(--accent)]">{currency}{priceRange.max}</span>
                   </div>
                   <input
                     type="range"
@@ -169,9 +205,9 @@ const SubcategoryPage = () => {
                     step="500"
                     value={priceRange.max}
                     onChange={(e) => setPriceRange(prev => ({ ...prev, max: parseInt(e.target.value) }))}
-                    className="w-full h-1 bg-gray-100 appearance-none cursor-ew-resize accent-black"
+                    className="w-full h-1.5 bg-[var(--surface-raised)] rounded-lg appearance-none cursor-ew-resize accent-[var(--accent)]"
                   />
-                  <div className="flex justify-between mt-4 text-[10px] font-black text-gray-300 uppercase tracking-widest">
+                  <div className="flex justify-between mt-3 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
                     <span>{currency}0</span>
                     <span>{currency}20,000</span>
                   </div>
@@ -179,7 +215,7 @@ const SubcategoryPage = () => {
 
                 {/* Sort Section */}
                 <section>
-                  <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-gray-400 mb-6 font-bold">Visual Ordering</h4>
+                  <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-[var(--text-muted)] mb-4">Visual Ordering</h4>
                   <div className="grid grid-cols-1 gap-2">
                     {[
                       { id: 'featured', label: 'Curated Picks' },
@@ -191,7 +227,11 @@ const SubcategoryPage = () => {
                       <button
                         key={opt.id}
                         onClick={() => setSortOption(opt.id)}
-                        className={`text-left p-4 rounded-2xl text-xs font-bold transition-all ${sortOption === opt.id ? 'bg-black text-white shadow-lg' : 'bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-black'}`}
+                        className={`text-left p-3.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                          sortOption === opt.id
+                            ? 'bg-[var(--accent)] text-black shadow-md font-extrabold'
+                            : 'bg-[var(--surface-raised)] text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-raised)]/80'
+                        }`}
                       >
                         {opt.label}
                       </button>
@@ -200,12 +240,19 @@ const SubcategoryPage = () => {
                 </section>
               </div>
 
-              <div className="pt-8 border-t space-y-4">
-                <button onClick={() => setShowFilterPanel(false)} className="w-full py-5 bg-black text-white font-black uppercase text-xs tracking-widest rounded-[2rem] shadow-2xl hover:scale-[1.02] transition-transform">Confirm Refinement</button>
+              <div className="pt-6 border-t border-[var(--border)] space-y-3">
+                <button
+                  onClick={() => setShowFilterPanel(false)}
+                  className="w-full py-4 bg-[var(--accent)] text-black font-extrabold uppercase text-xs tracking-widest rounded-xl shadow-lg hover:opacity-90 transition-all cursor-pointer"
+                >
+                  Apply Filters
+                </button>
                 <button
                   onClick={() => { setInStock(false); setPriceRange({ min: 0, max: 20000 }); setSortOption('featured'); }}
-                  className="w-full text-xs font-black uppercase tracking-widest text-gray-300 hover:text-black"
-                >Reset All</button>
+                  className="w-full py-2.5 text-xs font-bold uppercase tracking-widest text-[var(--text-muted)] hover:text-[var(--text)] transition-colors cursor-pointer"
+                >
+                  Reset All
+                </button>
               </div>
             </motion.div>
           </>

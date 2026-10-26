@@ -34,7 +34,6 @@ const ProductCard = ({ product }) => {
       ? apiDiscountPercentage
       : calculatedDiscountPercentage;
   const hasDiscount = discountPercentage > 0;
-  const isSoldOut = (product.quantity ?? 0) === 0;
 
   return (
     <div className="card-luxury relative group cursor-pointer flex flex-col h-full">
@@ -63,34 +62,10 @@ const ProductCard = ({ product }) => {
             alt={product.name}
             width={400}
             aspectRatio="3/4"
-            className={`h-full w-full object-cover transition-all duration-300 group-hover:scale-104 ${isSoldOut ? 'opacity-60' : 'opacity-100'}`}
+            className="h-full w-full object-cover transition-all duration-300 group-hover:scale-104"
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 400px"
           />
           <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-
-          {/* SOLD OUT badge */}
-          {isSoldOut && (
-            <div
-              style={{
-                position: 'absolute',
-                top: '12px',
-                left: '12px',
-                zIndex: 30,
-                backgroundColor: 'rgba(0,0,0,0.65)',
-                color: '#fff',
-                fontSize: '10px',
-                fontWeight: 800,
-                letterSpacing: '0.15em',
-                textTransform: 'uppercase',
-                padding: '4px 10px',
-                borderRadius: '6px',
-                pointerEvents: 'none',
-                backdropFilter: 'blur(4px)',
-              }}
-            >
-              Sold Out
-            </div>
-          )}
         </div>
       </Link>
 

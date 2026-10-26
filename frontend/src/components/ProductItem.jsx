@@ -49,7 +49,6 @@ const ProductItem = ({
 
   const discountPercentage = apiDiscountPercentage > 0 ? apiDiscountPercentage : calculatedDiscountPercentage;
   const hasDiscount = discountPercentage > 0;
-  const isSoldOut = (quantity ?? 0) === 0;
 
   return (
     <motion.div
@@ -85,7 +84,7 @@ const ProductItem = ({
               <motion.img
                 key={currentImageIndex}
                 initial={{ opacity: 0.8, scale: 1.05 }}
-                animate={{ opacity: isSoldOut ? 0.6 : 1, scale: 1 }}
+                animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0.8, scale: 1.05 }}
                 transition={{ duration: 0.6, ease: "easeOut" }}
                 className="w-full h-full object-cover"
@@ -93,30 +92,6 @@ const ProductItem = ({
                 alt={name || "Product image"}
               />
             </AnimatePresence>
-
-            {/* SOLD OUT badge */}
-            {isSoldOut && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '12px',
-                  left: '12px',
-                  zIndex: 30,
-                  backgroundColor: 'rgba(0,0,0,0.65)',
-                  color: '#fff',
-                  fontSize: '10px',
-                  fontWeight: 800,
-                  letterSpacing: '0.15em',
-                  textTransform: 'uppercase',
-                  padding: '4px 10px',
-                  borderRadius: '6px',
-                  pointerEvents: 'none',
-                  backdropFilter: 'blur(4px)',
-                }}
-              >
-                Sold Out
-              </div>
-            )}
 
             {/* Progress dots for image cycling */}
             {hasMultipleImages && isHovered && (
