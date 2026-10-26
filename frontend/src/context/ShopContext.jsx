@@ -7,6 +7,7 @@ import discountService from "../services/discountService";
 import authService from "../services/authService";
 import { getGuestToken, saveGuestToken, removeGuestToken } from "../utils/guestSession";
 import { useTheme } from "./ThemeContext";
+import { toast } from "react-toastify";
 export const ShopContext = createContext();
 
 const ShopContextProvider = (props) => {
@@ -134,17 +135,11 @@ const ShopContextProvider = (props) => {
     }
   };
 
-  const addToCart = async (itemId, size, color, quantity = 1) => {
-    if (!size) {
-      toast.error("Please select a size");
-      return;
-    }
-    if (!color) {
-      toast.error("Please select a color");
-      return;
-    }
+  const addToCart = async (itemId, size, color, quantity = 1, variantId = null) => {
+    const effectiveSize = size || "Free Size";
+    const effectiveColor = color || "default";
 
-    const itemKey = `${size}_${color}`; // Create unique key for size+color combination
+    const itemKey = `${effectiveSize}_${effectiveColor}`; // Create unique key for size+color combination
 
     // Check if item with same ID, size, and color already exists in cart
     let itemExists = false;
@@ -171,7 +166,7 @@ const ShopContextProvider = (props) => {
     if (token) {
       try {
         console.log("Adding to cart with token:", token);
-        const productVariantId = await resolveVariantId(itemId, size);
+        const productVariantId = variantId || (await resolveVariantId(itemId, effectiveSize));
 
         if (!productVariantId) {
           toast.error(
@@ -204,9 +199,9 @@ const ShopContextProvider = (props) => {
         const data = await safeParseJson(response);
         console.log("Add to cart response:", data);
 
-        if (response.ok && data.responseBody) {
+        if (response.ok && (data?.responseBody || data?.isSuccess !== false)) {
           // Show success message only once
-          toast.success(data.responseBody.message || "Product added to cart");
+          toast.success(data?.responseBody?.message || data?.message || "Product added to cart");
           // Silently update cart without showing another message
           await fetchUserCart();
         } else {

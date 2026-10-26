@@ -35,6 +35,7 @@ const Product = () => {
   const [showSizeGuide, setShowSizeGuide] = useState(false);
 
   const [variants, setVariants] = useState([]);
+  const [variantsLoaded, setVariantsLoaded] = useState(false);
   const [selections, setSelections] = useState({}); // Progressive filtering state: { optionKey: value | undefined }
   const [variantImages, setVariantImages] = useState({});
   const [localStock, setLocalStock] = useState({});
@@ -47,31 +48,63 @@ const Product = () => {
     if (!v) return null;
     if (key === "size") {
       if (v.isFreeSize) return "Free Size";
-      const val = v.size || v.sizeLabel;
+      const val = v.size || v.sizeLabel || v.Size || v.SizeLabel;
       return val != null ? String(val).trim() : null;
     }
     if (key === "color") {
-      const val = v.color || v.colorHex || v.colorName;
+      const val = v.color || v.colorHex || v.colorName || v.Color || v.ColorHex || v.ColorName;
       return val != null ? String(val).trim() : null;
     }
-    return v[key] != null ? String(v[key]).trim() : null;
+    const val = v[key] ?? v[key.charAt(0).toUpperCase() + key.slice(1)];
+    return val != null ? String(val).trim() : null;
+  };
+
+  // Helper: Base stock for variant (defaults to 10 if backend omitted quantity property)
+  const getVariantBaseStock = (variant) => {
+    if (!variant) return 0;
+    if (typeof variant.quantity === 'number') return variant.quantity;
+    if (typeof variant.stock === 'number') return variant.stock;
+    if (typeof variant.availableQuantity === 'number') return variant.availableQuantity;
+    if (typeof variant.Quantity === 'number') return variant.Quantity;
+    if (typeof variant.Stock === 'number') return variant.Stock;
+    return 10;
   };
 
   // Helper: Get effective quantity (accounts for locally added-to-cart qty)
   const getEffectiveQty = (variant) => {
     if (!variant) return 0;
     const localQty = localStock[variant.id] || 0;
-    return Math.max(0, (variant.quantity ?? 0) - localQty);
+    return Math.max(0, getVariantBaseStock(variant) - localQty);
   };
 
   // Helper: Is a variant out of stock (raw quantity, not affected by localStock)
-  const isVariantOOS = (variant) => !variant || (variant.quantity ?? 0) === 0;
+  const isVariantOOS = (variant) => !variant || getVariantBaseStock(variant) <= 0;
 
-  // Pure function 1: getMatching (in-stock variants matching ALL current non-null selections)
+  // Check whether product has color variants
+  const hasColorVariants = React.useMemo(() => {
+    return Array.isArray(variants) && variants.some(v => Boolean(getOptValue(v, "color")));
+  }, [variants]);
+
+  // Check whether entire product is sold out (no variants, all variants OOS, or 0 stock)
+  const isProductSoldOut = React.useMemo(() => {
+    if (!productData) return false;
+    if (productData.isSoldOut === true || productData.quantity === 0 || productData.stock === 0) {
+      return true;
+    }
+    if (variantsLoaded) {
+      if (variants.length === 0) return true;
+      if (variants.every(isVariantOOS)) return true;
+    }
+    return false;
+  }, [productData, variantsLoaded, variants]);
+
+  // Pure function 1: getMatching (variants matching ALL current non-null selections)
   const getMatching = (allVariants, currentSelections) => {
     if (!allVariants || allVariants.length === 0) return [];
     return allVariants.filter(v => {
-      if (getEffectiveQty(v) <= 0) return false;
+      if (currentSelections.variantId) {
+        return v.id === currentSelections.variantId;
+      }
       return OPTION_KEYS.every(opt => {
         const selectedVal = currentSelections[opt.key];
         if (!selectedVal) return true;
@@ -85,7 +118,6 @@ const Product = () => {
   const getEnabledValues = (allVariants, currentSelections, key) => {
     if (!allVariants || allVariants.length === 0) return [];
     const matchingExceptKey = allVariants.filter(v => {
-      if (getEffectiveQty(v) <= 0) return false;
       return OPTION_KEYS.every(opt => {
         if (opt.key === key) return true;
         const selectedVal = currentSelections[opt.key];
@@ -119,7 +151,6 @@ const Product = () => {
       const curVal = nextSel[opt.key];
       if (curVal && nextSel[clickedKey]) {
         const isPossibleCombo = allVariants.some(v => {
-          if (getEffectiveQty(v) <= 0) return false;
           return getOptValue(v, clickedKey) === nextSel[clickedKey] && getOptValue(v, opt.key) === curVal;
         });
         if (!isPossibleCombo) {
@@ -128,7 +159,7 @@ const Product = () => {
       }
     });
 
-    // 3. Recompute matching in-stock variants
+    // 3. Recompute matching variants
     let matchingVars = getMatching(allVariants, nextSel);
 
     const newlyAutoFilled = {};
@@ -166,21 +197,12 @@ const Product = () => {
   // Derived memoized matching variants
   const matchingVariants = React.useMemo(() => {
     return getMatching(variants, selections);
-  }, [variants, selections, localStock]);
+  }, [variants, selections]);
 
-  // Derived selectedVariant (exists ONLY when exactly one variant matches, or fallback if 1 variant exists)
-  const selectedVariant = React.useMemo(() => {
-    if (matchingVariants.length === 1) {
-      return matchingVariants[0];
-    }
-    if (variants.length === 1) {
-      return variants[0];
-    }
-    return null;
-  }, [matchingVariants, variants]);
-
-  // Derived sections to display (only if at least 2 distinct non-null values across variants)
+  // Derived sections to display:
+  // When product has no color variant, any option (size, measurements) with >= 1 value is shown!
   const derivedSections = React.useMemo(() => {
+    if (!variants || variants.length === 0) return [];
     const sections = [];
 
     OPTION_KEYS.forEach(opt => {
@@ -191,18 +213,67 @@ const Product = () => {
         distinctVals = [...new Set(rawValues)];
       } else if (opt.isNumeric) {
         distinctVals = [...new Set(rawValues)].sort((a, b) => Number(a) - Number(b));
+      } else {
+        distinctVals = [...new Set(rawValues)];
       }
 
-      if (distinctVals.length >= 2) {
+      // If no color variant exists on product, display size and other options even if 1 value exists
+      const minRequired = (!hasColorVariants || opt.key === "size") ? 1 : 2;
+
+      if (distinctVals.length >= minRequired) {
         sections.push({ ...opt, options: distinctVals });
       }
     });
 
-    return sections;
-  }, [variants]);
+    // Fallback: If multiple variants exist but none of standard OPTION_KEYS differentiate them
+    if (sections.length === 0 && variants.length > 1) {
+      sections.push({
+        key: "variantId",
+        label: t("SELECT_OPTION") || "Select Option",
+        isVariantDirect: true,
+        options: variants.map((v, i) => ({
+          id: v.id,
+          label: v.name || v.title || v.sku || `Option ${i + 1}`,
+          variant: v
+        }))
+      });
+    }
 
-  // Handle single variant product auto-selection on load
+    return sections;
+  }, [variants, hasColorVariants, t]);
+
+  // Derived selectedVariant
+  const selectedVariant = React.useMemo(() => {
+    if (matchingVariants.length === 1) {
+      return matchingVariants[0];
+    }
+    if (variants.length === 1) {
+      return variants[0];
+    }
+    // Direct selection by variantId
+    if (selections.variantId) {
+      const match = variants.find(v => v.id === selections.variantId);
+      if (match) return match;
+    }
+    // If user has chosen selections, match variant that satisfies all chosen options
+    const activeKeys = Object.keys(selections).filter(k => selections[k]);
+    if (activeKeys.length > 0) {
+      const exactMatch = variants.find(v => {
+        return activeKeys.every(k => getOptValue(v, k) === selections[k]);
+      });
+      if (exactMatch) return exactMatch;
+    }
+    // If no option sections exist to choose from, default to first variant
+    if (variants.length > 0 && derivedSections.length === 0) {
+      return variants[0];
+    }
+    return null;
+  }, [matchingVariants, variants, selections, derivedSections]);
+
+  // Auto-select single choices on load or when variants change
   useEffect(() => {
+    if (!variants || variants.length === 0) return;
+
     if (variants.length === 1) {
       const v = variants[0];
       const initialSel = {};
@@ -211,7 +282,25 @@ const Product = () => {
         if (val) initialSel[opt.key] = val;
       });
       setSelections(initialSel);
+      return;
     }
+
+    // Auto-select options that have only 1 unique value across all variants
+    setSelections(prev => {
+      const nextSel = { ...prev };
+      let updated = false;
+
+      OPTION_KEYS.forEach(opt => {
+        const rawValues = variants.map(v => getOptValue(v, opt.key)).filter(Boolean);
+        const uniqueVals = [...new Set(rawValues)];
+        if (uniqueVals.length === 1 && !nextSel[opt.key]) {
+          nextSel[opt.key] = uniqueVals[0];
+          updated = true;
+        }
+      });
+
+      return updated ? nextSel : prev;
+    });
   }, [variants]);
 
   // Reset quantity stepper to 1 when selected variant changes
@@ -311,32 +400,45 @@ const Product = () => {
             imagesMap[color] = detail?.images || [];
           }
           setVariantImages(imagesMap);
+        } else {
+          setVariants([]);
         }
       } catch (err) {
         console.error("Error fetching variants", err);
+        setVariants([]);
+      } finally {
+        setVariantsLoaded(true);
       }
     };
+    setVariantsLoaded(false);
     fetchVariants();
   }, [productId, backendUrl]);
 
   const handleAddToCart = async () => {
-    if (!selectedVariant) {
-      toast.warning(t("SELECT_SIZE_COLOR"));
+    if (isProductSoldOut) {
+      toast.error(t("OUT_OF_STOCK") || "This product is currently sold out.");
       return;
     }
 
-    const targetSize = getOptValue(selectedVariant, "size") || "Free Size";
-    const targetColor = getOptValue(selectedVariant, "color") || "";
+    const targetVariant = selectedVariant || (variants.length === 1 ? variants[0] : null);
 
-    if (getEffectiveQty(selectedVariant) < quantity) {
+    if (!targetVariant) {
+      toast.warning(hasColorVariants ? t("SELECT_SIZE_COLOR") : (t("SELECT_SIZE") || "Please select an option"));
+      return;
+    }
+
+    const targetSize = getOptValue(targetVariant, "size") || "Free Size";
+    const targetColor = getOptValue(targetVariant, "color") || "default";
+
+    if (getEffectiveQty(targetVariant) < quantity) {
       toast.error(t("OUT_OF_STOCK"));
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await addToCart(productData._id || productData.id, targetSize, targetColor, quantity);
-      updateLocalStock(selectedVariant.id, quantity);
+      await addToCart(productData._id || productData.id, targetSize, targetColor, quantity, targetVariant.id);
+      updateLocalStock(targetVariant.id, quantity);
     } finally {
       setIsSubmitting(false);
     }
@@ -413,7 +515,7 @@ const Product = () => {
               )}
 
               {/* SOLD OUT badge on detail page */}
-              {((variants.length > 0 && variants.every(isVariantOOS)) || (productData.quantity === 0)) && (
+              {isProductSoldOut && (
                 <div
                   style={{
                     position: 'absolute',
@@ -481,6 +583,39 @@ const Product = () => {
                 </div>
 
                 {derivedSections.map(sec => {
+                  if (sec.isVariantDirect) {
+                    return (
+                      <div
+                        key={sec.key}
+                        className="transition-all duration-300 rounded-2xl p-3 bg-[var(--surface)] border border-[var(--border)]"
+                      >
+                        <h4 className="text-[10px] font-black uppercase tracking-[0.25em] text-[var(--text-muted)] mb-2.5">
+                          {sec.label}
+                        </h4>
+                        <div className="flex flex-wrap gap-2.5">
+                          {sec.options.map(item => {
+                            const isSelected = selectedVariant?.id === item.id || selections.variantId === item.id;
+                            const isOOS = isVariantOOS(item.variant);
+                            return (
+                              <button
+                                key={item.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelections({ variantId: item.id });
+                                }}
+                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border flex items-baseline gap-1 focus:ring-2 focus:ring-[var(--accent)] outline-none
+                                  ${isSelected ? 'bg-[var(--brand)] text-[var(--text)] border-[var(--brand)] shadow-md' : 'bg-transparent text-[var(--text)] border-[var(--border)] hover:border-[var(--brand-hover)]'}
+                                  ${isOOS ? 'opacity-40 line-through' : ''}`}
+                              >
+                                <span>{item.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  }
+
                   const currentSelectedVal = selections[sec.key];
                   const enabledVals = getEnabledValues(variants, selections, sec.key);
                   const isAutoFilled = Boolean(autoFilledKeys[sec.key]);
@@ -610,39 +745,21 @@ const Product = () => {
               {/* Availability Badge */}
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-[var(--text-muted)]">Availability</span>
-                {selectedVariant ? (
+                {isProductSoldOut ? (
+                  <span className="badge-danger">Sold Out</span>
+                ) : selectedVariant ? (
                   getEffectiveQty(selectedVariant) <= 0 ? (
                     <span className="badge-danger">Out of stock</span>
-                  ) : getEffectiveQty(selectedVariant) <= 5 ? (
-                    <span className="badge-danger">Only {getEffectiveQty(selectedVariant)} left</span>
                   ) : (
-                    <span className="badge-success">{getEffectiveQty(selectedVariant)} in stock</span>
+                    <span className="badge-success">In Stock</span>
                   )
                 ) : (
                   <span className="text-xs text-[var(--text-muted)]">Select options to see availability</span>
                 )}
               </div>
 
-              {/* Low stock warning */}
-              {selectedVariant && getEffectiveQty(selectedVariant) > 0 && getEffectiveQty(selectedVariant) <= 5 && (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    color: '#d97706',
-                    letterSpacing: '0.04em',
-                  }}
-                >
-                  <span style={{ fontSize: '14px' }}>⚡</span>
-                  Only {getEffectiveQty(selectedVariant)} left in stock!
-                </div>
-              )}
-
-              {/* All variants OOS global message */}
-              {variants.length > 0 && variants.every(isVariantOOS) && (
+              {/* Product sold out global message */}
+              {isProductSoldOut && (
                 <div
                   style={{
                     padding: '10px 14px',
@@ -665,7 +782,7 @@ const Product = () => {
                   <button
                     type="button"
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    disabled={!selectedVariant || getEffectiveQty(selectedVariant) <= 0}
+                    disabled={isProductSoldOut || !selectedVariant || getEffectiveQty(selectedVariant) <= 0}
                     className="text-[var(--text-muted)] hover:text-[var(--text)] transition-colors disabled:opacity-30"
                   >
                     <FaMinus size={10} />
@@ -674,7 +791,7 @@ const Product = () => {
                   <button
                     type="button"
                     onClick={() => setQuantity(Math.min(getEffectiveQty(selectedVariant) || 1, quantity + 1))}
-                    disabled={!selectedVariant || quantity >= getEffectiveQty(selectedVariant)}
+                    disabled={isProductSoldOut || !selectedVariant || quantity >= getEffectiveQty(selectedVariant)}
                     className="text-[var(--text-muted)] hover:text-[var(--text)] transition-colors disabled:opacity-30"
                   >
                     <FaPlus size={10} />
@@ -686,13 +803,13 @@ const Product = () => {
                   onClick={handleAddToCart}
                   disabled={
                     isSubmitting ||
-                    (variants.length > 0 && variants.every(isVariantOOS)) ||
+                    isProductSoldOut ||
                     !selectedVariant ||
                     getEffectiveQty(selectedVariant) <= 0
                   }
                   className="flex-1 btn-cta-fashion py-4 rounded-full text-xs font-bold tracking-[0.2em] shadow-xl disabled:opacity-40 disabled:cursor-not-allowed"
                   style={
-                    (variants.length > 0 && variants.every(isVariantOOS)) ||
+                    isProductSoldOut ||
                     (selectedVariant && getEffectiveQty(selectedVariant) <= 0)
                       ? { background: 'var(--surface-raised)', color: 'var(--text-muted)', boxShadow: 'none' }
                       : {}
@@ -700,7 +817,7 @@ const Product = () => {
                 >
                   {isSubmitting
                     ? 'Authenticating...'
-                    : variants.length > 0 && variants.every(isVariantOOS)
+                    : isProductSoldOut
                     ? 'OUT OF STOCK'
                     : !selectedVariant
                     ? 'SELECT OPTIONS'
