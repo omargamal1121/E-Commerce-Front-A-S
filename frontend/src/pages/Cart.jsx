@@ -32,6 +32,43 @@ const Cart = () => {
     }
   }, [token]);
 
+// Helper to check if a size or color value is valid and not null/empty/placeholder
+const isValidValue = (val) => {
+  if (!val) return false;
+  const str = String(val).trim().toLowerCase();
+  return (
+    str !== "" &&
+    str !== "null" &&
+    str !== "undefined" &&
+    str !== "unknown" &&
+    str !== "default" &&
+    str !== "none" &&
+    str !== "n/a"
+  );
+};
+
+// Helper to normalize/sanitize attributes from API or key
+const sanitizeAttribute = (val) => {
+  if (!isValidValue(val)) return null;
+  return String(val).trim();
+};
+
+// Helper to get safe CSS color
+const getColorStyle = (color) => {
+  if (!color) return "transparent";
+  const trimmed = String(color).trim();
+  if (trimmed.startsWith("#")) return trimmed;
+  if (/^[0-9A-Fa-f]{3,8}$/.test(trimmed)) return `#${trimmed}`;
+  return trimmed;
+};
+
+// Helper to check if color is a hex code
+const isHexColor = (color) => {
+  if (!color) return false;
+  const trimmed = String(color).trim();
+  return trimmed.startsWith("#") || /^[0-9A-Fa-f]{3,8}$/.test(trimmed);
+};
+
   useEffect(() => {
     // 🆕 Extract items correctly whether serverCart is an array or object
     const cartItemsList = Array.isArray(serverCart)
@@ -43,11 +80,16 @@ const Cart = () => {
       console.log("Using server cart data:", cartItemsList);
       const tempData = cartItemsList.map(item => {
         const product = item.product || {};
+        const rawSize = item.productVariant?.size ?? product.productVariantForCartDto?.size ?? item.size;
+        const rawColor = item.productVariant?.color ?? product.productVariantForCartDto?.color ?? item.color;
+        const size = sanitizeAttribute(rawSize);
+        const color = sanitizeAttribute(rawColor);
+
         return {
           _id: item.productId || product.id || null,
           quantity: item.quantity,
-          size: item.productVariant?.size || product.productVariantForCartDto?.size || item.size || 'Unknown',
-          color: item.productVariant?.color || product.productVariantForCartDto?.color || item.color || 'Unknown',
+          size: size,
+          color: color,
           variantId: item.productVariantId || item.productVariant?.id || product.productVariantForCartDto?.id, // Store variant ID for actions
           productData: product, // Store full product data
           price: item.currentPrice || product.finalPrice || product.price,
@@ -66,8 +108,8 @@ const Cart = () => {
           if (cartItems[items][item] > 0) {
             // Parse size and color from the item key (format: "size_color" or just "size")
             const parts = item.split('_');
-            const size = parts[0];
-            const color = parts[1] || 'Unknown'; // Default to 'Unknown' if no color
+            const size = sanitizeAttribute(parts[0]);
+            const color = sanitizeAttribute(parts[1]);
 
             // Look up productData from loaded products state if possible
             const productData = products.find(p => String(p._id) === String(items)) || {};
@@ -77,6 +119,7 @@ const Cart = () => {
               quantity: cartItems[items][item],
               size: size,
               color: color,
+              rawKey: item,
               productData: productData,
               price: productData.finalPrice || productData.price || 0,
               priceAtAddTime: productData.price || productData.finalPrice || 0,
@@ -138,12 +181,28 @@ const Cart = () => {
         if (next[productId]) {
           // Find the item key that matches the variantId
           if (itemToDelete) {
-            // Handle both old format (just size) and new format (size_color)
-            const itemKey = itemToDelete.color && itemToDelete.color !== 'Unknown'
-              ? `${itemToDelete.size}_${itemToDelete.color}`
-              : itemToDelete.size;
-            console.log("Deleting item key:", itemKey);
-            delete next[productId][itemKey];
+            if (itemToDelete.rawKey && next[productId][itemToDelete.rawKey] !== undefined) {
+              delete next[productId][itemToDelete.rawKey];
+            } else {
+              const effectiveSize = itemToDelete.size || "Free Size";
+              const candidateKeys = [
+                itemToDelete.color ? `${effectiveSize}_${itemToDelete.color}` : null,
+                `${effectiveSize}_default`,
+                effectiveSize,
+                itemToDelete.size && itemToDelete.color ? `${itemToDelete.size}_${itemToDelete.color}` : null,
+                itemToDelete.size,
+                "Free Size_default"
+              ].filter(Boolean);
+
+              const matchedKey = candidateKeys.find(k => next[productId][k] !== undefined)
+                || Object.keys(next[productId]).find(k => itemToDelete.size && k.startsWith(`${itemToDelete.size}_`))
+                || Object.keys(next[productId])[0];
+
+              if (matchedKey) {
+                console.log("Deleting item key:", matchedKey);
+                delete next[productId][matchedKey];
+              }
+            }
             if (Object.keys(next[productId]).length === 0) {
               delete next[productId];
             }
@@ -303,29 +362,33 @@ const Cart = () => {
                         </p>
                       )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="px-2 py-1 text-xs sm:text-sm border border-[var(--border)] bg-[var(--surface-raised)] rounded">
-                        Size: {item.size}
-                      </p>
-                      <div className="flex items-center gap-1 sm:gap-2">
-                        <span className="text-xs sm:text-sm">Color:</span>
-                        <div
-                          className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border border-[var(--border)] flex items-center justify-center"
-                          style={{
-                            backgroundColor: item.color && item.color !== 'Unknown'
-                              ? (item.color.startsWith('#') ? item.color : (/^[0-9A-Fa-f]{3,8}$/.test(item.color) ? `#${item.color}` : item.color.toLowerCase()))
-                              : '#000000',
-                            minWidth: '20px',
-                            minHeight: '20px'
-                          }}
-                          title={item.color || 'Unknown'}
-                        >
-                          {!item.color || item.color === 'Unknown' ? (
-                            <span className="text-xs text-[var(--text-muted)]">?</span>
-                          ) : null}
-                        </div>
+                    {(isValidValue(item.size) || isValidValue(item.color)) && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        {isValidValue(item.size) && (
+                          <div className="inline-flex items-center gap-1 px-2.5 py-1 text-xs sm:text-sm border border-[var(--border)] bg-[var(--surface-raised)] rounded-md">
+                            <span className="text-[var(--text-muted)]">Size:</span>
+                            <span className="font-semibold text-[var(--text)]">{item.size}</span>
+                          </div>
+                        )}
+                        {isValidValue(item.color) && (
+                          <div
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs sm:text-sm border border-[var(--border)] bg-[var(--surface-raised)] rounded-md"
+                            title={item.color}
+                          >
+                            <span className="text-[var(--text-muted)]">Color:</span>
+                            <span
+                              className="w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border border-black/20 dark:border-white/30 shadow-inner inline-block flex-shrink-0"
+                              style={{ backgroundColor: getColorStyle(item.color) }}
+                            />
+                            {!isHexColor(item.color) && (
+                              <span className="font-semibold capitalize text-[var(--text)]">
+                                {item.color}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -342,8 +405,8 @@ const Cart = () => {
                       ? handleDeleteItem(item._id, item.variantId || item.size)
                       : updataQuantity(
                         item._id,
-                        item.size,
-                        item.color !== 'Unknown' ? item.color : undefined,
+                        item.size || "Free Size",
+                        isValidValue(item.color) ? item.color : undefined,
                         Number(e.target.value)
                       )
                   }

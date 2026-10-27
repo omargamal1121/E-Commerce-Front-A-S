@@ -13,7 +13,7 @@ const ListCategory = ({
   const [categories, setCategories] = useState([]);
   const [search, setSearch] = useState("");
   const [isActive, setIsActive] = useState("");
-  const [isDeleted, setIsDeleted] = useState("");
+  const [isDeleted, setIsDeleted] = useState("false");
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
@@ -72,10 +72,12 @@ const ListCategory = ({
             normalizeUrl(cat.thumbnailUrl);
         }
 
+        const isCatDeleted = !!(cat.isDeleted || cat.deleted || cat.deletedAt);
         return {
           ...cat,
+          isDeleted: isCatDeleted,
           mainImage: imgUrl ? { url: imgUrl } : null,
-          wasDeleted: cat.isDeleted || false,
+          wasDeleted: isCatDeleted,
         };
       });
 
@@ -104,13 +106,8 @@ const ListCategory = ({
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      setCategories((prev) =>
-        prev.map((cat) =>
-          cat.id === id ? { ...cat, isDeleted: true, wasDeleted: true } : cat
-        )
-      );
-
       toast.success(t('categoryDeleted'));
+      fetchCategories();
     } catch {
       toast.error(t('deleteFailed'));
     } finally {

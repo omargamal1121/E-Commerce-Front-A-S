@@ -40,7 +40,7 @@ const CategoryManager = ({ token }) => {
     searchParams.get("isActive") || ""
   );
   const [searchDeleted, setSearchDeleted] = useState(
-    searchParams.get("includeDeleted") || ""
+    searchParams.get("includeDeleted") || "true"
   );
 
   useEffect(() => {
@@ -52,7 +52,7 @@ const CategoryManager = ({ token }) => {
 
   // Update search states when URL parameters change
   useEffect(() => {
-    if (categoryId && !hasInitializedFromUrl) {
+    if (categoryId) {
       setSearchId(categoryId);
 
       // Check if we're on the edit page
@@ -66,7 +66,7 @@ const CategoryManager = ({ token }) => {
         const fetchCategoryDetails = async () => {
           try {
             const res = await axios.get(
-              `${backendUrl}/api/categories/${categoryId}`,
+              `${backendUrl}/api/categories/${categoryId}?includeDeleted=true`,
               {
                 headers: { Authorization: `Bearer ${token}` },
               }
@@ -93,11 +93,7 @@ const CategoryManager = ({ token }) => {
         fetchCategoryDetails();
       } else if (location.pathname.includes("/view/")) {
         setActiveTab("category");
-      } else {
-        setActiveTab("list");
       }
-
-      setHasInitializedFromUrl(true);
     }
     const isActiveParam = searchParams.get("isActive");
     const includeDeletedParam = searchParams.get("includeDeleted");
@@ -112,7 +108,6 @@ const CategoryManager = ({ token }) => {
     categoryId,
     location.search,
     location.pathname,
-    hasInitializedFromUrl,
     token,
   ]);
 
@@ -140,15 +135,20 @@ const CategoryManager = ({ token }) => {
   // ✅ Handle View Category
   const handleViewCategory = (cat) => {
     setSearchId(cat.id);
+    const isCatDeleted = !!(cat.isDeleted || cat.deleted || cat.deletedAt || cat.wasDeleted);
     setSearchActive(cat.isActive ? "true" : "false");
-    setSearchDeleted(cat.isDeleted ? "true" : "false");
+    setSearchDeleted("true");
     setActiveTab("category");
-    navigate(`/category/view/${cat.id}`);
+    navigate(`/category/view/${cat.id}${isCatDeleted ? '?includeDeleted=true' : ''}`);
   };
 
   // ✅ When a subcategory is selected in ViewCategory, go to subcategory details page
-  const handleSelectIdFromView = (id) => {
-    navigate(`/subcategories/${id}`);
+  const handleSelectIdFromView = (subOrId) => {
+    const id = typeof subOrId === "object" ? subOrId.id : subOrId;
+    const isDeleted = typeof subOrId === "object"
+      ? !!(subOrId.deleted || subOrId.isDeleted || subOrId.deletedAt)
+      : false;
+    navigate(`/subcategories/${id}${isDeleted ? '?includeDeleted=true' : ''}`);
   };
 
   return (
@@ -307,8 +307,8 @@ const CategoryManager = ({ token }) => {
                     onChange={(e) => setSearchDeleted(e.target.value)}
                     className="p-2 text-xs font-bold bg-gray-50 border-none rounded-lg focus:ring-2 focus:ring-blue-100"
                   >
-                    <option value="">{t('trashExclude')}</option>
                     <option value="true">{t('trashInclude')}</option>
+                    <option value="false">{t('trashExclude')}</option>
                   </select>
                 </div>
               </div>
@@ -320,7 +320,7 @@ const CategoryManager = ({ token }) => {
                   searchActive === "true" ? true : searchActive === "false" ? false : null
                 }
                 includeDeleted={
-                  searchDeleted === "true" ? true : searchDeleted === "false" ? false : null
+                  searchDeleted === "false" ? false : true
                 }
                 onUpdateCategory={handleEditCategory}
                 onSelectId={handleSelectIdFromView}

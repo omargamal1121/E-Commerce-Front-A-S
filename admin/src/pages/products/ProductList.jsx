@@ -157,7 +157,7 @@ const ProductList = ({ token }) => {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("all");
-  const [deletedFilter, setDeletedFilter] = useState("all");
+  const [deletedFilter, setDeletedFilter] = useState("not_deleted");
   const [specialFilter, setSpecialFilter] = useState("all");
   const [stockFilter, setStockFilter] = useState("all");
   const [genderFilter, setGenderFilter] = useState("");
@@ -208,6 +208,7 @@ const ProductList = ({ token }) => {
         if (statusFilter === "active") specialParams.isActive = true;
         else if (statusFilter === "inactive") specialParams.isActive = false;
         if (deletedFilter === "deleted") specialParams.includeDeleted = true;
+        else if (deletedFilter === "not_deleted") specialParams.includeDeleted = false;
 
         const rawRes = await axios.get(`${backendUrl}/api/Products/${specialFilter}`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -234,6 +235,8 @@ const ProductList = ({ token }) => {
           filters.includeDeleted = null;
         } else if (deletedFilter === "deleted") {
           filters.includeDeleted = true;
+        } else if (deletedFilter === "not_deleted") {
+          filters.includeDeleted = false;
         }
 
         res = await API.products.list(filters, token);

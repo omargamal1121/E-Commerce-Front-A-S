@@ -245,8 +245,19 @@ const ShopContextProvider = (props) => {
   const updataQuantity = async (itemId, size, color, quantity) => {
     let cartData = structuredClone(cartItems);
     // Handle both old format (no color) and new format (with color)
-    const itemKey = color ? `${size}_${color}` : size;
-    cartData[itemId][itemKey] = quantity;
+    let itemKey = color ? `${size}_${color}` : size;
+    if (cartData[itemId] && cartData[itemId][itemKey] === undefined) {
+      if (cartData[itemId][`${size}_default`] !== undefined) {
+        itemKey = `${size}_default`;
+      } else if (!color && cartData[itemId][size] === undefined) {
+        // Fallback to any existing key matching the size
+        const matched = Object.keys(cartData[itemId]).find(k => k === size || k.startsWith(`${size}_`));
+        if (matched) itemKey = matched;
+      }
+    }
+    if (cartData[itemId]) {
+      cartData[itemId][itemKey] = quantity;
+    }
     setCartItems(cartData);
 
     // Update cart in backend if user is logged in

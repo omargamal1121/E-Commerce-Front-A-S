@@ -15,7 +15,7 @@ const ListSubCategory = ({
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [isActive, setIsActive] = useState("");
-  const [isDeleted, setIsDeleted] = useState("");
+  const [isDeleted, setIsDeleted] = useState("false");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [deleteId, setDeleteId] = useState(null);
@@ -113,10 +113,8 @@ const ListSubCategory = ({
       await axios.delete(`${backendUrl}/api/subcategories/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setSubCategories((prev) =>
-        prev.map((sc) => (sc.id === id ? { ...sc, deleted: true } : sc))
-      );
       toast.success(t('categoryDeleted'));
+      fetchSubCategories();
     } catch (error) {
       toast.error(t('deleteFailed'));
     } finally {
@@ -212,7 +210,7 @@ const ListSubCategory = ({
         ) : subcategories.length === 0 ? (
           <div className="col-span-full py-20 flex flex-col items-center justify-center text-gray-400">
             <p className="font-bold text-lg">No subcategories found.</p>
-            <button onClick={() => { setSearch(""); setIsActive(""); setIsDeleted(""); }} className="text-blue-600 text-xs font-black uppercase mt-2 tracking-widest">Clear Filters</button>
+            <button onClick={() => { setSearch(""); setIsActive(""); setIsDeleted("false"); }} className="text-blue-600 text-xs font-black uppercase mt-2 tracking-widest">Clear Filters</button>
           </div>
         ) : (
           subcategories.map((subCat) => (

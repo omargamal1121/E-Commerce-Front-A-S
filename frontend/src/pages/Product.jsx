@@ -878,7 +878,7 @@ const Product = () => {
                   className="flex-1 btn-cta-fashion py-4 rounded-full text-xs font-bold tracking-[0.2em] shadow-xl disabled:opacity-40 disabled:cursor-not-allowed"
                   style={
                     isProductSoldOut ||
-                    (selectedVariant && getEffectiveQty(selectedVariant) <= 0)
+                      (selectedVariant && getEffectiveQty(selectedVariant) <= 0)
                       ? { background: 'var(--surface-raised)', color: 'var(--text-muted)', boxShadow: 'none' }
                       : {}
                   }
@@ -886,12 +886,12 @@ const Product = () => {
                   {isSubmitting
                     ? 'Authenticating...'
                     : isProductSoldOut
-                    ? 'OUT OF STOCK'
-                    : !selectedVariant
-                    ? 'SELECT OPTIONS'
-                    : getEffectiveQty(selectedVariant) <= 0
-                    ? 'OUT OF STOCK'
-                    : 'ADD TO PRIVATE COLLECTION'}
+                      ? 'OUT OF STOCK'
+                      : !selectedVariant
+                        ? 'SELECT OPTIONS'
+                        : getEffectiveQty(selectedVariant) <= 0
+                          ? 'OUT OF STOCK'
+                          : 'ADD TO PRIVATE COLLECTION'}
                 </button>
               </div>
             </div>
