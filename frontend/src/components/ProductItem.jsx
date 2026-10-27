@@ -14,6 +14,7 @@ const ProductItem = ({
   finalPrice,
   discountPrecentage,
   quantity,
+  isInWishlist,
   hidePrice = false,
 }) => {
   const { currency } = useContext(ShopContext);
@@ -75,6 +76,7 @@ const ProductItem = ({
               productId={productId}
               size="small"
               variant="default"
+              isInWishlist={isInWishlist}
             />
           </div>
 

@@ -410,6 +410,7 @@ const Product = () => {
             categorySubcategoryId: p.categorySubcategoryId || p.subCategoryId || prev?.categorySubcategoryId,
             subCategory: p.subCategoryName || p.subCategory?.name || prev?.subCategory,
             category: p.categoryName || p.category?.name || prev?.category,
+            isInWishlist: Boolean(p?.IsLiked ?? p?.isLiked ?? prev?.isInWishlist ?? false),
             image: Array.isArray(p.images) && p.images.length > 0
               ? p.images.map(img => img.url || img.imageUrl).filter(Boolean)
               : prev?.image || (p.mainImageUrl ? [p.mainImageUrl] : []),
@@ -438,7 +439,11 @@ const Product = () => {
         const list = res.data?.responseBody?.data || [];
         // Filter out the current product being viewed
         const filtered = list.filter(item => String(item.id || item._id) !== String(productId));
-        setSubcategoryProducts(filtered);
+        const normalized = filtered.map((item) => ({
+          ...item,
+          isInWishlist: Boolean(item?.IsLiked ?? item?.isLiked ?? false),
+        }));
+        setSubcategoryProducts(normalized);
       } catch (err) {
         console.error("Error fetching subcategory products", err);
         setSubcategoryProducts([]);
@@ -572,7 +577,12 @@ const Product = () => {
                 />
               </div>
               <div className="absolute top-6 right-6">
-                <WishlistButton productId={productData._id || productData.id} variant="floating" size="lg" />
+                <WishlistButton
+                  productId={productData._id || productData.id}
+                  variant="floating"
+                  size="lg"
+                  isInWishlist={productData.isInWishlist ?? productData.IsLiked ?? productData.isLiked}
+                />
               </div>
 
               {/* Badges */}
@@ -1008,6 +1018,7 @@ const Product = () => {
                     finalPrice={p.finalPrice || p.price}
                     discountPrecentage={p.discountPrecentage}
                     quantity={p.availableQuantity || p.quantity}
+                    isInWishlist={p.isInWishlist ?? p.IsLiked ?? p.isLiked}
                   />
                 </motion.div>
               ))}

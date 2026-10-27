@@ -236,6 +236,7 @@ const TypeProduct = () => {
                         productId={productId}
                         size="small"
                         variant="filled"
+                        isInWishlist={product.isInWishlist ?? product.IsLiked ?? product.isLiked}
                       />
                     </div>
                   )}

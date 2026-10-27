@@ -349,7 +349,6 @@ const ShopContextProvider = (props) => {
       const list = data?.responseBody?.data || [];
 
       // 🧩 Transform response to match UI shape
-      const wishlistIds = wishlistItems.map((item) => item.productId);
       const transformed = list.map((p) => ({
         _id: String(p.id),
         name: p.name,
@@ -371,7 +370,7 @@ const ShopContextProvider = (props) => {
         subCategoryId: p.subCategoryId || p.categorySubcategoryId || p.subCategory?.id,
         categorySubcategoryId: p.categorySubcategoryId || p.subCategoryId || p.subCategory?.id,
         sizes: (p.variants || []).map((v) => v.size).filter(Boolean),
-        isInWishlist: wishlistIds.includes(p.id),
+        isInWishlist: Boolean(p?.IsLiked ?? p?.isLiked ?? false),
       }));
 
       setProducts(transformed);
@@ -390,7 +389,6 @@ const ShopContextProvider = (props) => {
         if (!searchResult.success) throw new Error(searchResult.error);
 
         const allProducts = searchResult.data;
-        const wishlistIds = wishlistItems.map((item) => item.productId);
 
         const transformed = allProducts.map((p) => {
           const originalPrice = p.price || 0;
@@ -423,7 +421,7 @@ const ShopContextProvider = (props) => {
             sizes: (p.variants || [])
               .map((v) => v.size)
               .filter(Boolean),
-            isInWishlist: wishlistIds.includes(p.id),
+            isInWishlist: Boolean(p?.IsLiked ?? p?.isLiked ?? false),
           };
         });
 
@@ -552,7 +550,7 @@ const ShopContextProvider = (props) => {
   // Initial data fetch
   useEffect(() => {
     getProducts();
-  }, []);
+  }, [token]);
 
   // Track whether this is the very first mount so we can distinguish
   // "no token on cold start" (guest visiting site) from "just logged out".
@@ -622,20 +620,33 @@ const ShopContextProvider = (props) => {
   const addToWishlist = async (productId) => {
     if (!token) {
       toast.error("Please log in to add items to your wishlist.");
-      return;
+      return false;
     }
 
+    setWishlistLoading(true);
     try {
       const result = await wishlistService.addToWishlist(productId, refreshToken);
       if (result.success) {
         toast.success("Item added to wishlist.");
         await fetchWishlist(); // Refresh wishlist
+        setProducts((prev) =>
+          prev.map((p) =>
+            String(p.id) === String(productId) || String(p._id) === String(productId)
+              ? { ...p, isInWishlist: true }
+              : p
+          )
+        );
+        return true;
       } else {
         toast.error(result.error || "Failed to add item to wishlist.");
+        return false;
       }
     } catch (error) {
       console.error("Error adding to wishlist:", error);
       toast.error("An error occurred. Please try again.");
+      return false;
+    } finally {
+      setWishlistLoading(false);
     }
   };
 
@@ -651,6 +662,13 @@ const ShopContextProvider = (props) => {
       if (result.success) {
         toast.success(result.message);
         await fetchWishlist();
+        setProducts((prev) =>
+          prev.map((p) =>
+            String(p.id) === String(productId) || String(p._id) === String(productId)
+              ? { ...p, isInWishlist: false }
+              : p
+          )
+        );
         return true;
       } else {
         toast.error(result.error);

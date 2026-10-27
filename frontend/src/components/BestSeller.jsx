@@ -102,6 +102,7 @@ const BestSeller = () => {
                 discountPrecentage={item.discountPrecentage}
                 discountName={item.discountName}
                 quantity={item.quantity}
+                isInWishlist={item.isInWishlist ?? item.IsLiked ?? item.isLiked}
               />
             </motion.div>
           ))}
