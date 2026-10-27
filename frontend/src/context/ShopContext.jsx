@@ -343,8 +343,11 @@ const ShopContextProvider = (props) => {
 
   const getProducts = async () => {
     try {
-      // 🟢 Try to get products directly from backend API
-      const res = await fetch(`${backendUrl}/api/Products?isActive=true&includeDeleted=false&page=1&pageSize=100`);
+      // 🟢 Try to get products directly from backend API with authentication
+      const headers = token ? getAuthHeaders() : {};
+      const res = await fetch(`${backendUrl}/api/Products?isActive=true&includeDeleted=false&page=1&pageSize=100`, {
+        headers
+      });
       const data = await safeParseJson(res);
       const list = data?.responseBody?.data || [];
 
@@ -708,6 +711,8 @@ const ShopContextProvider = (props) => {
       setWishlistLoading(false);
     }
   };
+
+
 
   const isInWishlist = async (productId) => {
     if (!token) return false;

@@ -103,6 +103,7 @@ const Wishlist = () => {
                       discountPrecentage={item.discountPrecentage || item.discountPercentage}
                       discountName={item.discountName}
                       quantity={item.quantity}
+                      isInWishlist={item.isInWishlist ?? item.IsLiked ?? item.isLiked}
                     />
                   );
                 })}
