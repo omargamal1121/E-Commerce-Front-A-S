@@ -50,7 +50,7 @@ const ProductCard = ({ product }) => {
           productId={product.id}
           size="small"
           variant="default"
-          isInWishlist={product.isInWishlist}
+          isInWishlist={product.isInWishlist ?? product.IsLiked ?? product.isLiked}
         />
       </div>
 

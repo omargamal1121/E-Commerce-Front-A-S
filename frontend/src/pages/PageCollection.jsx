@@ -191,6 +191,7 @@ const PageCollection = () => {
               discountPrecentage={product.discountPrecentage}
               discountName={product.discountName}
               quantity={product.quantity}
+              isInWishlist={product.isInWishlist ?? product.IsLiked ?? product.isLiked}
             />
           ))
         ) : (

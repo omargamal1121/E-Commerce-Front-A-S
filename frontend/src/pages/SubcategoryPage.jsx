@@ -112,6 +112,7 @@ const SubcategoryPage = () => {
                 finalPrice={p.finalPrice}
                 discountPrecentage={p.discountPrecentage}
                 quantity={p.quantity}
+                isInWishlist={p.isInWishlist ?? p.IsLiked ?? p.isLiked}
               />
             </motion.div>
           ))}

@@ -3,7 +3,7 @@ import { ShopContext } from "../context/ShopContext";
 import ProductItem from "../components/ProductItem";
 import { Link } from "react-router-dom";
 import TypeCollection from "../components/TypeCollection";
-import { AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 const DenimCollection = () => {
   const { products } = useContext(ShopContext);
@@ -185,6 +185,7 @@ const DenimCollection = () => {
               discountPrecentage={product.discountPrecentage}
               discountName={product.discountName}
               quantity={product.quantity}
+              isInWishlist={product.isInWishlist ?? product.IsLiked ?? product.isLiked}
             />
           ))
         ) : (

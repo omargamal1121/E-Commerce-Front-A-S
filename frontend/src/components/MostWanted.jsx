@@ -171,6 +171,7 @@ const MostWanted = () => {
                     const prodFinalPrice = item.finalPrice ?? item.product?.finalPrice ?? prodPrice;
                     const prodDiscount = item.discountPrecentage ?? item.discountPercentage ?? item.product?.discountPrecentage;
                     const prodQty = item.quantity ?? item.product?.quantity;
+                    const prodIsLiked = item.isInWishlist ?? item.IsLiked ?? item.isLiked ?? item.product?.isInWishlist ?? item.product?.IsLiked ?? item.product?.isLiked;
 
                     // Create unique key using both id and index to avoid duplicates
                     const uniqueKey = `${prodId || 'mw'}-${index}`;
@@ -186,6 +187,7 @@ const MostWanted = () => {
                                 discountPrecentage={prodDiscount}
                                 hidePrice={true}
                                 quantity={prodQty}
+                                isInWishlist={prodIsLiked}
                             />
                         </motion.div>
                     );
