@@ -299,33 +299,41 @@ const Navbar = () => {
         </div>
 
         {/* --- أيقونات يمين --- */}
-        <div className="flex items-center gap-4 sm:gap-6 flex-1 justify-end">
+        <div className="flex items-center gap-1 sm:gap-6 flex-1 justify-end">
           {/* البحث */}
           <button
             onClick={() => {
               setShowSearch(true);
               navigate("/collection");
             }}
-            className="p-1 rounded-full hover:bg-[var(--surface-raised)] transition-colors focus:outline-none flex items-center justify-center"
+            className="p-2 sm:p-1 rounded-full hover:bg-[var(--surface-raised)] transition-colors focus:outline-none flex items-center justify-center"
             title={t("SEARCH")}
             aria-label="Search"
           >
-            <img
-              src={assets.search_icon}
-              className="w-5 cursor-pointer nav-icon"
-              alt=""
-            />
+            <svg
+              className="w-5 h-5 sm:w-4 sm:h-4 text-[var(--text)] transition-colors"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
           </button>
 
           {/* Wishlist */}
           <Link
             to="/wishlist"
-            className="relative p-1 rounded-full hover:bg-[var(--surface-raised)] transition-colors flex items-center justify-center group/wish"
+            className="relative p-2 sm:p-1 rounded-full hover:bg-[var(--surface-raised)] transition-colors flex items-center justify-center group/wish"
             title={t("WISHLIST")}
             aria-label="Wishlist"
           >
             <svg
-              className="w-5 h-5 text-[var(--text)] group-hover/wish:text-[var(--accent)] transition-colors"
+              className="w-5 h-5 sm:w-4 sm:h-4 text-[var(--text)] group-hover/wish:text-[var(--accent)] transition-colors"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -347,16 +355,16 @@ const Navbar = () => {
           {/* Theme Toggle Button (Light / Dark Mode) */}
           <button
             onClick={toggleTheme}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-[var(--text)] hover:text-[var(--accent)] hover:bg-[var(--surface-raised)] transition-all duration-300 focus:outline-none"
+            className="w-8 h-8 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[var(--text)] hover:text-[var(--accent)] hover:bg-[var(--surface-raised)] transition-all duration-300 focus:outline-none"
             title={theme === "light" ? "Switch to Dark Mode" : "Switch to Light Mode"}
             aria-label="Toggle Theme"
           >
             {theme === "light" ? (
-              <svg className="w-5 h-5 transition-transform duration-300 hover:-rotate-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-5 h-5 sm:w-4 sm:h-4 transition-transform duration-300 hover:-rotate-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
               </svg>
             ) : (
-              <svg className="w-5 h-5 transition-transform duration-300 hover:rotate-45" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-5 h-5 sm:w-4 sm:h-4 transition-transform duration-300 hover:rotate-45" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
             )}
@@ -368,14 +376,22 @@ const Navbar = () => {
               <>
                 <button
                   onClick={() => setProfileMenuOpen((prev) => !prev)}
-                  className="p-1 rounded-full hover:bg-[var(--surface-raised)] transition-colors flex items-center justify-center focus:outline-none"
+                  className="p-2 sm:p-1 rounded-full hover:bg-[var(--surface-raised)] transition-colors flex items-center justify-center focus:outline-none"
                   aria-label="User Profile"
                 >
-                  <img
-                    src={assets.profile_icon}
-                    className="w-5 cursor-pointer nav-icon"
-                    alt=""
-                  />
+                  <svg
+                    className="w-5 h-5 sm:w-4 sm:h-4 text-[var(--text)] transition-colors"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
+                  </svg>
                 </button>
 
                 {profileMenuOpen && (
@@ -423,15 +439,23 @@ const Navbar = () => {
             ) : (
               <Link
                 to="/login"
-                className="p-1 rounded-full hover:bg-[var(--surface-raised)] transition-colors flex items-center justify-center"
+                className="p-2 sm:p-1 rounded-full hover:bg-[var(--surface-raised)] transition-colors flex items-center justify-center"
                 title={t("LOGIN")}
                 aria-label="Login"
               >
-                <img
-                  src={assets.profile_icon}
-                  className="w-5 cursor-pointer nav-icon"
-                  alt=""
-                />
+                <svg
+                  className="w-5 h-5 sm:w-4 sm:h-4 text-[var(--text)] transition-colors"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
               </Link>
             )}
           </div>
@@ -439,11 +463,23 @@ const Navbar = () => {
           {/* عربة التسوق */}
           <Link
             to="/cart"
-            className="relative p-1 rounded-full hover:bg-[var(--surface-raised)] transition-colors flex items-center justify-center"
+            className="relative p-2 sm:p-1 rounded-full hover:bg-[var(--surface-raised)] transition-colors flex items-center justify-center"
             title={t("CART")}
             aria-label="Cart"
           >
-            <img src={assets.cart_icon} className="w-5 min-w-5 nav-icon" alt="" />
+            <svg
+              className="w-5 h-5 sm:w-4 sm:h-4 text-[var(--text)] transition-colors"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+              />
+            </svg>
             <p className="absolute right-[-2px] bottom-[-2px] w-4 text-center leading-4 bg-[var(--accent)] text-[#0A1512] font-black aspect-square rounded-full text-[8px] shadow-sm">
               {getCartCount()}
             </p>
@@ -452,14 +488,22 @@ const Navbar = () => {
           {/* القائمة للموبايل */}
           <button
             onClick={() => setvisible(true)}
-            className="p-1 rounded-full hover:bg-[var(--surface-raised)] transition-colors flex items-center justify-center sm:hidden focus:outline-none"
+            className="p-2 sm:p-1 rounded-full hover:bg-[var(--surface-raised)] transition-colors flex items-center justify-center sm:hidden focus:outline-none"
             aria-label="Open menu"
           >
-            <img
-              src={assets.menu_icon}
-              className="w-5 cursor-pointer nav-icon"
-              alt=""
-            />
+            <svg
+              className="w-5 h-5 text-[var(--text)] transition-colors"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </svg>
           </button>
         </div>
 

@@ -8,24 +8,24 @@ const Footer = () => {
   const navigate = useNavigate();
 
   return (
-    <footer className="bg-[var(--surface)] text-[var(--text)] border-t border-[var(--border)] pt-8 sm:pt-10 pb-6 sm:pb-8">
-      <div className="max-w-screen-2xl mx-auto px-6 sm:px-[3vw] lg:px-[4vw]">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-8 border-b border-[var(--border)]">
-          
+    <footer className="bg-[var(--surface)] text-[var(--text)] border-t border-[var(--border)] pt-4 sm:pt-5 pb-3 sm:pb-4">
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-[3vw] lg:px-[4vw]">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pb-4 border-b border-[var(--border)]">
+
           {/* Brand Column */}
-          <div className="flex flex-col gap-2.5">
-            <h3 className="text-xl font-serif-title font-bold tracking-tight text-[var(--text)]">
-              R&S <span className="text-[var(--accent)] text-xs font-sans uppercase tracking-[0.2em] block font-normal">Fashion Wear</span>
+          <div className="flex flex-col gap-2">
+            <h3 className="text-lg font-serif-title font-bold tracking-tight text-[var(--text)]">
+              R&S <span className="text-[var(--accent)] text-[10px] font-sans uppercase tracking-[0.2em] block font-normal">Fashion Wear</span>
             </h3>
-            <p className="text-xs text-[var(--text-muted)] leading-relaxed">
-              Curated everyday luxury apparel designed for the modern lifestyle. Quality craftsmanship meets contemporary elegance.
+            <p className="text-[11px] text-[var(--text-muted)] leading-relaxed">
+              Curated everyday luxury apparel designed for the modern lifestyle.
             </p>
           </div>
 
           {/* Quick Links */}
-          <div className="flex flex-col gap-2.5">
-            <p className="uppercase tracking-[0.2em] text-[10px] font-bold text-[var(--accent)]">Quick Links</p>
-            <ul className="space-y-1.5 text-xs text-[var(--text-muted)]">
+          <div className="flex flex-col gap-2">
+            <p className="uppercase tracking-[0.2em] text-[9px] font-bold text-[var(--accent)]">Quick Links</p>
+            <ul className="space-y-1 text-[11px] text-[var(--text-muted)]">
               <li><Link to="/" className="hover:text-[var(--text)] transition-colors">Home</Link></li>
               <li><Link to="/collection" className="hover:text-[var(--text)] transition-colors">Collections</Link></li>
               <li><Link to="/about" className="hover:text-[var(--text)] transition-colors">Our Story</Link></li>
@@ -41,9 +41,9 @@ const Footer = () => {
           </div>
 
           {/* Customer Service & Policies */}
-          <div className="flex flex-col gap-2.5">
-            <p className="uppercase tracking-[0.2em] text-[10px] font-bold text-[var(--accent)]">Customer Care</p>
-            <ul className="space-y-1.5 text-xs text-[var(--text-muted)]">
+          <div className="flex flex-col gap-2">
+            <p className="uppercase tracking-[0.2em] text-[9px] font-bold text-[var(--accent)]">Customer Care</p>
+            <ul className="space-y-1 text-[11px] text-[var(--text-muted)]">
               <li><Link to="/policy" className="hover:text-[var(--text)] transition-colors">Return &amp; Exchange Policy</Link></li>
               <li><Link to="/policy" className="hover:text-[var(--text)] transition-colors">Shipping & Delivery</Link></li>
               <li><Link to="/contact" className="hover:text-[var(--text)] transition-colors">Contact Support</Link></li>
@@ -51,9 +51,9 @@ const Footer = () => {
           </div>
 
           {/* Contact Details */}
-          <div className="flex flex-col gap-2.5">
-            <p className="uppercase tracking-[0.2em] text-[10px] font-bold text-[var(--accent)]">Get In Touch</p>
-            <div className="space-y-1.5 text-xs text-[var(--text-muted)]">
+          <div className="flex flex-col gap-2">
+            <p className="uppercase tracking-[0.2em] text-[9px] font-bold text-[var(--accent)]">Get In Touch</p>
+            <div className="space-y-1 text-[11px] text-[var(--text-muted)]">
               <p className="flex items-center gap-2">
                 <span className="text-[var(--accent)]">Phone:</span>
                 <a href="tel:01555522161" className="hover:text-[var(--text)] font-semibold">01555522161</a>
@@ -67,7 +67,7 @@ const Footer = () => {
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-6 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-[var(--text-muted)]/80">
+        <div className="pt-3 flex flex-col md:flex-row items-center justify-between gap-2 text-[11px] text-[var(--text-muted)]/80">
           <p>© {new Date().getFullYear()} R&S Fashion Wear. All rights reserved.</p>
           <p>
             Powered by{" "}

@@ -162,7 +162,7 @@ const App = () => {
             draggable
             pauseOnHover
             theme={theme === "light" ? "light" : "dark"}
-            style={{ marginTop: '80px' }}
+            style={{ marginTop: '80px', zIndex: 9999 }}
           />
           <Routes>
             <Route path="/orders" element={<Orders />} />
@@ -189,7 +189,7 @@ const App = () => {
         draggable
         pauseOnHover
         theme={theme === "light" ? "light" : "dark"}
-        style={{ marginTop: '80px' }}
+        style={{ marginTop: '80px', zIndex: 9999 }}
       />
       <SearchBar />
       <Routes>

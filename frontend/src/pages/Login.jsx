@@ -117,7 +117,7 @@ const Login = () => {
   return (
     <motion.form
       onSubmit={onSubmitHandler}
-      className="flex flex-col items-center w-[90%] sm:max-w-96 m-auto gap-4 text-gray-800 mt-40"
+      className="flex flex-col items-center w-[90%] sm:max-w-96 m-auto gap-4 text-gray-800 mt-16 sm:mt-40 mb-16"
       initial="hidden"
       animate="visible"
       variants={formVariants}
@@ -131,7 +131,7 @@ const Login = () => {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full p-3 bg-red-100 border border-red-400 text-red-700 rounded-md text-sm"
+          className="w-full p-3 bg-red-100 border border-red-400 text-red-700 rounded-md text-sm relative z-50"
         >
           {error}
         </motion.div>
@@ -141,7 +141,7 @@ const Login = () => {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="w-full p-3 bg-green-100 border border-green-400 text-green-700 rounded-md text-sm"
+          className="w-full p-3 bg-green-100 border border-green-400 text-green-700 rounded-md text-sm relative z-50"
         >
           {success}
         </motion.div>

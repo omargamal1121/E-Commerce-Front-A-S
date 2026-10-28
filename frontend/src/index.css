@@ -361,3 +361,19 @@ html.dark .card-luxury:hover {
   opacity: 0.8;
   transform: scale(1.08);
 }
+
+/* Global high z-index for success/error messages */
+.bg-green-100, .bg-red-100, .bg-blue-100,
+.bg-green-50, .bg-red-50, .bg-blue-50 {
+  position: relative;
+  z-index: 9999 !important;
+}
+
+/* Toast notifications z-index */
+.Toastify__toast-container {
+  z-index: 99999 !important;
+}
+
+.Toastify__toast {
+  z-index: 99999 !important;
+}
