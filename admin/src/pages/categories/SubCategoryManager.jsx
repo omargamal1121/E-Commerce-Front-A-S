@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { backendUrl } from "../../App";
@@ -14,6 +14,8 @@ const SubCategoryManager = ({ token }) => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("sub-list");
   const navigate = useNavigate();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
 
   // Categories are needed for AddSubCategory and ListSubCategory
   const [categories, setCategories] = useState([]);
@@ -56,6 +58,19 @@ const SubCategoryManager = ({ token }) => {
   useEffect(() => {
     if (token) fetchCategories();
   }, [token]);
+
+  // Handle URL parameter for viewing a specific subcategory
+  useEffect(() => {
+    const subCategoryId = searchParams.get("id");
+    const includeDeleted = searchParams.get("includeDeleted");
+    if (subCategoryId) {
+      setViewId(subCategoryId);
+      if (includeDeleted === "true") {
+        setIncludeDeletedFilter("true");
+      }
+      setActiveTab("view-sub");
+    }
+  }, [location.search]);
 
   // Handlers to reuse existing component logic
   const handleEditSubCategory = (subCat) => {

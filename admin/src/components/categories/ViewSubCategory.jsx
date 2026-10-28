@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+﻿import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import axios from "axios";
@@ -27,15 +27,8 @@ const ViewSubCategory = ({ token, subCategoryId, isActive = null, includeDeleted
 
     setLoading(true);
     try {
-      const params = {};
-      if (isActive !== null && isActive !== "" && typeof isActive !== "undefined") params.isActive = isActive;
-      // Ensure deleted subcategories can always be fetched by ID
-      params.includeDeleted = includeDeleted === false ? false : true;
-      params.isDeleted = includeDeleted === false ? false : true;
-
       const response = await axios.get(`${backendUrl}/api/subcategories/${subCategoryId}`, {
         headers: { Authorization: `Bearer ${token}` },
-        params,
       });
 
       if (response.status === 200) {

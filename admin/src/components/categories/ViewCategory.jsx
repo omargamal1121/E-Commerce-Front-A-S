@@ -23,17 +23,9 @@ const ViewCategory = ({ token, categoryId, isActive = null, includeDeleted = tru
 
     setLoading(true);
     try {
-      const params = {};
-      if (localIsActive !== null && localIsActive !== "" && typeof localIsActive !== "undefined") {
-        params.isActive = localIsActive;
-      }
-      // Always include deleted items by default when viewing by ID unless explicitly disabled
-      params.includeDeleted = localIncludeDeleted === false ? false : true;
-
       const response = await axios.get(`${backendUrl}/api/categories/${categoryId}`,
         {
           headers: { Authorization: `Bearer ${token}` },
-          params,
         }
       );
 

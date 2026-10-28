@@ -135,20 +135,19 @@ const CategoryManager = ({ token }) => {
   // ✅ Handle View Category
   const handleViewCategory = (cat) => {
     setSearchId(cat.id);
-    const isCatDeleted = !!(cat.isDeleted || cat.deleted || cat.deletedAt || cat.wasDeleted);
-    setSearchActive(cat.isActive ? "true" : "false");
-    setSearchDeleted("true");
+    setSearchActive(""); // No status filter
+    setSearchDeleted(""); // No deleted filter
     setActiveTab("category");
-    navigate(`/category/view/${cat.id}${isCatDeleted ? '?includeDeleted=true' : ''}`);
+    navigate(`/category/view/${cat.id}`);
   };
 
-  // ✅ When a subcategory is selected in ViewCategory, go to subcategory details page
+  // ✅ When a subcategory is selected in ViewCategory, go to subcategory manager page
   const handleSelectIdFromView = (subOrId) => {
     const id = typeof subOrId === "object" ? subOrId.id : subOrId;
     const isDeleted = typeof subOrId === "object"
       ? !!(subOrId.deleted || subOrId.isDeleted || subOrId.deletedAt)
       : false;
-    navigate(`/subcategories/${id}${isDeleted ? '?includeDeleted=true' : ''}`);
+    navigate(`/sub-category?id=${id}${isDeleted ? '&includeDeleted=true' : ''}`);
   };
 
   return (

@@ -104,11 +104,10 @@ const SubCategoryDetails = ({ token }) => {
   // Handle View SubCategory
   const handleViewSubCategory = (subCat) => {
     setSearchId(subCat.id);
-    const isDeletedFlag = !!(subCat.deleted || subCat.isDeleted || subCat.deletedAt);
-    setSearchActive(subCat.isActive ? "true" : "false");
-    setSearchDeleted("true");
+    setSearchActive(""); // No status filter
+    setSearchDeleted(""); // No deleted filter
     setActiveTab("view");
-    navigate(`/subcategories/${subCat.id}${isDeletedFlag ? '?includeDeleted=true' : ''}`);
+    navigate(`/subcategories/${subCat.id}`);
   };
 
   return (
