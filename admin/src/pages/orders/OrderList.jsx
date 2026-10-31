@@ -256,6 +256,7 @@ const OrderList = ({ token }) => {
               <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-gray-400">Order Details</th>
               <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-gray-400">Customer</th>
               <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-gray-400">Status</th>
+              <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-gray-400">Payment</th>
               <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-gray-400">Total Amount</th>
               <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-gray-400 text-right">Actions</th>
             </tr>
@@ -264,12 +265,12 @@ const OrderList = ({ token }) => {
             {loading ? (
               [1, 2, 3, 4, 5].map(i => (
                 <tr key={i} className="animate-pulse">
-                  <td colSpan="5" className="px-8 py-6"><div className="h-12 bg-gray-50 rounded-2xl w-full" /></td>
+                  <td colSpan="6" className="px-8 py-6"><div className="h-12 bg-gray-50 rounded-2xl w-full" /></td>
                 </tr>
               ))
             ) : currentOrders.length === 0 ? (
               <tr>
-                <td colSpan="5" className="px-8 py-20 text-center">
+                <td colSpan="6" className="px-8 py-20 text-center">
                   <div className="flex flex-col items-center gap-4 text-gray-300">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4a2 2 0 012-2m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
@@ -304,6 +305,9 @@ const OrderList = ({ token }) => {
                 };
 
                 const allowedStatuses = new Set([currentStatusInt, ...getAllowedStatuses(currentStatusInt)]);
+                const snapshotImg = order.imageurl || order.imageUrl;
+                const isPaid = ['paid', 'success', 'completed', '1'].includes(String(order.paymentStatus || '').toLowerCase());
+                const isFailed = ['failed', 'expired'].includes(String(order.paymentStatus || '').toLowerCase());
 
                 return (
                   <tr 
@@ -312,15 +316,27 @@ const OrderList = ({ token }) => {
                     className="hover:bg-gray-50/50 transition-colors group cursor-pointer"
                   >
                     <td className="px-8 py-6">
-                      <div className="flex flex-col gap-1">
-                        <span className="font-black text-gray-900 text-lg tracking-tight group-hover:text-blue-600 transition-colors">#{order.orderNumber}</span>
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{new Date(order.createdAt).toLocaleString()}</span>
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-gray-50 border border-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                          <img
+                            src={snapshotImg || "https://placehold.co/80x80?text=Order"}
+                            alt=""
+                            onError={(e) => { e.currentTarget.src = "https://placehold.co/80x80?text=Order"; }}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-black text-gray-900 text-base tracking-tight group-hover:text-blue-600 transition-colors">#{order.orderNumber}</span>
+                          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{new Date(order.createdAt).toLocaleDateString()}</span>
+                          {order.itemCount !== undefined && order.itemCount !== null && (
+                            <span className="text-[10px] font-bold text-gray-400">{order.itemCount} {order.itemCount === 1 ? 'item' : 'items'}</span>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td className="px-8 py-6">
                       <div className="flex flex-col gap-1">
                         <span className="font-bold text-gray-700">{order.customerName || "Anonymous Customer"}</span>
-                        {/* customerId Removed as per new response structure */}
                       </div>
                     </td>
                     <td className="px-8 py-6">
@@ -359,6 +375,20 @@ const OrderList = ({ token }) => {
                             )}
                           </button>
                         </div>
+                      </div>
+                    </td>
+                    <td className="px-8 py-6">
+                      <div className="flex flex-col gap-1 items-start">
+                        <span className="text-xs font-black text-gray-800 uppercase tracking-tight">{order.paymentMethod || 'N/A'}</span>
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                          isPaid
+                            ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
+                            : isFailed
+                            ? 'bg-rose-50 text-rose-600 border border-rose-100'
+                            : 'bg-amber-50 text-amber-600 border border-amber-100'
+                        }`}>
+                          {order.paymentStatus || 'Pending'}
+                        </span>
                       </div>
                     </td>
                     <td className="px-8 py-6">

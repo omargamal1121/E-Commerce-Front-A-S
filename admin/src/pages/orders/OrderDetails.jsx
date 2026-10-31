@@ -13,9 +13,6 @@ const OrderDetails = ({ token, isAdmin = false }) => {
   const [loading, setLoading] = useState(true);
   const [showMarkPaidModal, setShowMarkPaidModal] = useState(false);
   const [markingPaid, setMarkingPaid] = useState(false);
-  const [showPaymentLinkModal, setShowPaymentLinkModal] = useState(false);
-  const [paymentLink, setPaymentLink] = useState("");
-  const [creatingPayment, setCreatingPayment] = useState(false);
 
   const fetchOrderDetails = async () => {
     try {
@@ -81,65 +78,6 @@ const OrderDetails = ({ token, isAdmin = false }) => {
     }
   };
 
-  const handleCreatePayment = async () => {
-    setCreatingPayment(true);
-    try {
-      // Use the same payment flow as frontend
-      const paymentPayload = {
-        orderNumber: order.orderNumber,
-        paymentDetails: {
-          walletPhoneNumber: "",
-          paymentMethod: firstPayment?.paymentMethodId || 2, // Default to Visa if not specified
-          currency: "EGP",
-          notes: "Payment initiated by admin"
-        }
-      };
-
-      const response = await axios.post(
-        `${backendUrl}/api/Payment`,
-        paymentPayload,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json"
-          }
-        }
-      );
-
-      if (response.data.statuscode === 200) {
-        const pData = response.data.responseBody?.data;
-
-        if (pData?.isRedirectRequired && pData?.redirectUrl) {
-          // Show redirect URL in modal for admin to copy/share
-          const returnUrl = `${window.location.origin}/orders`;
-          const separator = pData.redirectUrl.includes('?') ? '&' : '?';
-          const redirectUrlWithReturn = `${pData.redirectUrl}${separator}return_url=${encodeURIComponent(returnUrl)}`;
-          
-          setPaymentLink(redirectUrlWithReturn);
-          setShowPaymentLinkModal(true);
-          toast.success("Payment link generated successfully");
-        } else {
-          toast.success("Payment processed successfully!");
-          fetchOrderDetails(); // Refresh order details
-        }
-      } else {
-        toast.error(response.data.responseBody?.message || "Payment failed");
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to create payment");
-    } finally {
-      setCreatingPayment(false);
-    }
-  };
-
-  const handleCopyPaymentLink = () => {
-    navigator.clipboard.writeText(paymentLink).then(() => {
-      toast.success("Payment link copied to clipboard");
-    }).catch(() => {
-      toast.error("Failed to copy payment link");
-    });
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -150,29 +88,16 @@ const OrderDetails = ({ token, isAdmin = false }) => {
 
   if (!order) return null;
 
-  // Payment is an array, get the first payment for COD detection
-  const payments = Array.isArray(order?.payment) ? order.payment : [];
+  // Payment returns the latest attempt
+  const payments = Array.isArray(order?.payment) 
+    ? order.payment 
+    : (order?.payment ? [order.payment] : []);
   const firstPayment = payments[0] || null;
   
-  console.log('OrderDetails Debug:', {
-    isAdmin,
-    firstPayment,
-    paymentMethod: firstPayment?.paymentMethod,
-    paymentMethodId: firstPayment?.paymentMethodId,
-    status: firstPayment?.status
-  });
-  
   const isCashOnDelivery = firstPayment?.paymentMethod === 'Cash On Delivery' || 
+                           firstPayment?.paymentMethod?.toLowerCase().includes('cash') ||
                            firstPayment?.paymentMethodId === 2; // Based on actual API response
-  const canMarkAsPaid = isAdmin && isCashOnDelivery && firstPayment?.status !== 'Paid';
-  const canCreatePayment = firstPayment?.status === 'Pending' || firstPayment?.status === 'Failed' || order.status === 'PendingPayment';
-  
-  console.log('COD Detection:', {
-    isCashOnDelivery,
-    canMarkAsPaid,
-    isAdmin,
-    paymentStatus: firstPayment?.status
-  });
+  const canMarkAsPaid = isAdmin && isCashOnDelivery && firstPayment?.status !== 'Paid' && firstPayment?.status !== 'Completed';
 
   const STATUS_LABELS = {
     "Pending": { label: "Pending", color: "bg-gray-100 text-gray-600 border-gray-200" },
@@ -219,15 +144,6 @@ const OrderDetails = ({ token, isAdmin = false }) => {
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 md:gap-4">
-          {canCreatePayment && (
-            <button 
-              onClick={handleCreatePayment}
-              disabled={creatingPayment}
-              className="px-6 py-2 md:px-8 md:py-3 bg-blue-600 text-white rounded-[22px] text-[9px] md:text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg active:scale-95 disabled:opacity-50"
-            >
-              {creatingPayment ? t('creating') : t('createPayment')}
-            </button>
-          )}
           {canMarkAsPaid && (
             <button 
               onClick={() => setShowMarkPaidModal(true)}
@@ -258,47 +174,76 @@ const OrderDetails = ({ token, isAdmin = false }) => {
         </div>
 
         <div className="flex flex-col gap-4 md:gap-6">
-          {order.items?.map((item, idx) => (
-            <div key={idx} className="group p-4 md:p-8 bg-gray-50 rounded-[16px] md:rounded-[24px] border border-gray-100 flex flex-col md:flex-row items-center gap-4 md:gap-8 transition-all hover:bg-white hover:shadow-xl hover:shadow-blue-900/5 hover:-translate-y-1">
-              <div className="w-24 h-24 md:w-32 md:h-32 bg-white rounded-[16px] md:rounded-[20px] overflow-hidden border border-gray-100 shadow-sm flex-shrink-0">
-                <img src={item.product?.mainImageUrl} alt={item.product?.name} className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700" />
-              </div>
-              
-              <div className="flex-1 flex flex-col gap-2 md:gap-3 text-center md:text-left">
-                <h4 className="text-base md:text-xl font-black text-gray-900 uppercase tracking-tight">{item.product?.name}</h4>
-                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 md:gap-3">
-                  {item.product?.productVariantForCartDto && (
-                    <>
+          {order.items?.map((item, idx) => {
+            const isAvailable = (item.isProductAvailable === undefined || item.isProductAvailable) && 
+                                (item.isVariantAvailable === undefined || item.isVariantAvailable);
+            const itemName = item.productName || item.product?.name || "Order Item";
+            const itemImage = item.imageUrl || item.product?.mainImageUrl || "https://placehold.co/150x150?text=No+Image";
+            const itemColor = item.color || item.product?.productVariantForCartDto?.color;
+            const itemSize = item.size || item.product?.productVariantForCartDto?.size;
+            const waist = item.product?.productVariantForCartDto?.waist;
+            const length = item.product?.productVariantForCartDto?.length;
+
+            return (
+              <div key={item.id || idx} className="group p-4 md:p-8 bg-gray-50 rounded-[16px] md:rounded-[24px] border border-gray-100 flex flex-col md:flex-row items-center gap-4 md:gap-8 transition-all hover:bg-white hover:shadow-xl hover:shadow-blue-900/5 hover:-translate-y-1">
+                <div className="w-24 h-24 md:w-32 md:h-32 bg-white rounded-[16px] md:rounded-[20px] overflow-hidden border border-gray-100 shadow-sm flex-shrink-0 flex items-center justify-center">
+                  <img 
+                    src={itemImage} 
+                    alt={itemName} 
+                    onError={(e) => { e.currentTarget.src = "https://placehold.co/150x150?text=No+Image"; }}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700" 
+                  />
+                </div>
+                
+                <div className="flex-1 flex flex-col gap-2 md:gap-3 text-center md:text-left">
+                  <div className="flex flex-col md:flex-row md:items-center gap-2">
+                    <h4 className="text-base md:text-xl font-black text-gray-900 uppercase tracking-tight">{itemName}</h4>
+                    {!isAvailable && (
+                      <span className="self-center md:self-auto px-2.5 py-1 bg-rose-50 border border-rose-200 rounded-full text-[8px] md:text-[9px] font-black uppercase tracking-widest text-rose-600">
+                        Item no longer available in store
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 md:gap-3">
+                    {itemColor && (
                       <span className="px-2 py-1 md:px-3 md:py-1 bg-white border border-gray-200 rounded-full text-[8px] md:text-[9px] font-black uppercase tracking-widest text-gray-500 flex items-center gap-2">
                         Color: 
-                        {item.product.productVariantForCartDto.color && item.product.productVariantForCartDto.color.startsWith('#') ? (
+                        {itemColor.startsWith('#') ? (
                           <span 
                             className="w-3 h-3 md:w-4 md:h-4 rounded-full border border-gray-300 shadow-sm"
-                            style={{ backgroundColor: item.product.productVariantForCartDto.color }}
-                            title={item.product.productVariantForCartDto.color}
+                            style={{ backgroundColor: itemColor }}
+                            title={itemColor}
                           />
                         ) : (
-                          <span>{item.product.productVariantForCartDto.color || 'N/A'}</span>
+                          <span>{itemColor}</span>
                         )}
                       </span>
-                      <span className="px-2 py-1 md:px-3 md:py-1 bg-white border border-gray-200 rounded-full text-[8px] md:text-[9px] font-black uppercase tracking-widest text-gray-500">Size: {item.product.productVariantForCartDto.size || 'N/A'}</span>
-                      {item.product.productVariantForCartDto.waist > 0 && (
-                        <span className="px-2 py-1 md:px-3 md:py-1 bg-white border border-gray-200 rounded-full text-[8px] md:text-[9px] font-black uppercase tracking-widest text-gray-500">Waist: {item.product.productVariantForCartDto.waist}</span>
-                      )}
-                      {item.product.productVariantForCartDto.length > 0 && (
-                        <span className="px-2 py-1 md:px-3 md:py-1 bg-white border border-gray-200 rounded-full text-[8px] md:text-[9px] font-black uppercase tracking-widest text-gray-500">Length: {item.product.productVariantForCartDto.length}</span>
-                      )}
-                    </>
-                  )}
+                    )}
+                    {itemSize && (
+                      <span className="px-2 py-1 md:px-3 md:py-1 bg-white border border-gray-200 rounded-full text-[8px] md:text-[9px] font-black uppercase tracking-widest text-gray-500">
+                        Size: {itemSize}
+                      </span>
+                    )}
+                    {waist > 0 && (
+                      <span className="px-2 py-1 md:px-3 md:py-1 bg-white border border-gray-200 rounded-full text-[8px] md:text-[9px] font-black uppercase tracking-widest text-gray-500">
+                        Waist: {waist}
+                      </span>
+                    )}
+                    {length > 0 && (
+                      <span className="px-2 py-1 md:px-3 md:py-1 bg-white border border-gray-200 rounded-full text-[8px] md:text-[9px] font-black uppercase tracking-widest text-gray-500">
+                        Length: {length}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-center md:items-end gap-1">
+                  <span className="text-xl md:text-2xl font-black text-gray-900">{currency} {(item.totalPrice ?? (item.unitPrice * item.quantity)).toFixed(2)}</span>
+                  <span className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest">Qty: {item.quantity} × {(item.unitPrice ?? 0).toFixed(2)}</span>
                 </div>
               </div>
-
-              <div className="flex flex-col items-center md:items-end gap-1">
-                <span className="text-xl md:text-2xl font-black text-gray-900">{currency} {item.totalPrice.toFixed(2)}</span>
-                <span className="text-[9px] md:text-[10px] font-bold text-gray-400 uppercase tracking-widest">Qty: {item.quantity} × {item.unitPrice.toFixed(2)}</span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -522,67 +467,6 @@ const OrderDetails = ({ token, isAdmin = false }) => {
                   className="flex-1 px-6 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-100 disabled:opacity-50"
                 >
                   {markingPaid ? t('processing') : t('confirmPayment')}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Payment Link Modal */}
-      {showPaymentLinkModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-200">
-          <div className="bg-white rounded-[32px] p-10 max-w-lg w-full mx-4 shadow-2xl animate-in zoom-in duration-200">
-            <div className="flex items-center justify-between mb-8">
-              <h3 className="text-2xl font-black text-gray-900 tracking-tighter uppercase">Payment Link Generated</h3>
-              <button 
-                onClick={() => setShowPaymentLinkModal(false)}
-                className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            
-            <div className="flex flex-col gap-6">
-              <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-3">
-                  Payment Link
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={paymentLink}
-                    readOnly
-                    className="w-full px-6 py-4 bg-gray-50 border border-gray-200 rounded-2xl text-sm font-medium pr-24"
-                  />
-                  <button
-                    onClick={handleCopyPaymentLink}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
-                  >
-                    Copy
-                  </button>
-                </div>
-                <p className="text-[9px] font-bold text-gray-400 mt-2">
-                  Share this link with the customer to complete payment
-                </p>
-              </div>
-              
-              <div className="flex gap-4">
-                <button
-                  onClick={() => setShowPaymentLinkModal(false)}
-                  className="flex-1 px-6 py-4 bg-gray-100 hover:bg-gray-200 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all"
-                >
-                  Close
-                </button>
-                <button
-                  onClick={() => {
-                    window.open(paymentLink, '_blank');
-                  }}
-                  className="flex-1 px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-100"
-                >
-                  Open Link
                 </button>
               </div>
             </div>

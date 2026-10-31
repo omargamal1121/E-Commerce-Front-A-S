@@ -96,31 +96,36 @@ const OrderTable = ({
               const orderId = order._id || order.id;
               const items = Array.isArray(order.items) ? order.items : [];
               const itemsCount =
-                (Array.isArray(items) ? items.length : 0) ||
+                order.itemCount ??
+                (Array.isArray(items) ? items.length : 0) ??
                 Number(order.itemsCount || order.totalItems || 0);
-              const customerName = order.address?.firstName
-                ? `${order.address?.firstName} ${order.address?.lastName || ""}`.trim()
-                : order.customerName || "Customer";
-              const phone = order.address?.phone || "";
+              const customerName = order.customerName ||
+                (order.address?.firstName
+                  ? `${order.address?.firstName} ${order.address?.lastName || ""}`.trim()
+                  : "Customer");
+              const phone = order.customer?.phoneNumber || order.address?.phone || "";
               const paymentMethod =
                 order.paymentMethod ||
                 order.paymentMethodName ||
-                order.payment?.methodName ||
-                order.payment?.name ||
+                order.payment?.[0]?.paymentMethod ||
+                order.payment?.paymentMethod ||
                 "N/A";
+              const paymentStatus = order.paymentStatus || order.payment?.[0]?.status || order.payment?.status || "N/A";
               const date = order.date || order.createdAt || new Date().toISOString();
               const amount = typeof order.amount === "number" ? order.amount : (order.total ?? 0);
               const status = order.status;
               const isNumericStatus = typeof status === "number";
+              const thumbnail = order.imageurl || order.imageUrl || assets.parcel_icon;
 
               return (
                 <tr key={index} className="hover:bg-gray-50">
                   <td className="py-3 px-4">
                     <div className="flex items-center">
                       <img
-                        className="w-10 h-10"
-                        src={assets.parcel_icon}
+                        className="w-10 h-10 object-cover rounded-lg"
+                        src={thumbnail}
                         alt=""
+                        onError={(e) => { e.currentTarget.src = assets.parcel_icon; }}
                       />
                       <div className="ml-3">
                         <div className="text-sm font-medium">
@@ -129,7 +134,7 @@ const OrderTable = ({
                         <div className="text-xs text-gray-500 truncate max-w-[200px]">
                           {items.length > 0 ? items.map((item, i) => (
                             <span key={i}>
-                              {item.name} x {item.quantity}
+                              {item.productName || item.name} x {item.quantity}
                               {i < items.length - 1 ? ", " : ""}
                             </span>
                           )) : (

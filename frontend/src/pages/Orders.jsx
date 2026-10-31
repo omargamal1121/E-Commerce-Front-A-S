@@ -222,6 +222,7 @@ const Orders = () => {
       const mappedOrders = ordersInResponse.map(order => {
         // Backend returns status as descriptive strings now (e.g. "PaymentExpired")
         const rawStatus = order.status;
+        const snapshotImage = order.imageurl || order.imageUrl || order.imageURL;
         
         return {
           id: order.id ?? order.orderId,
@@ -230,12 +231,12 @@ const Orders = () => {
           statusDisplay: order.status || getStatusDisplay(rawStatus),
           total: order.total ?? order.totalAmount ?? order.amount,
           date: order.createdAt ?? order.createdOn ?? order.date,
-          image: (order.imageurl || order.imageUrl || order.imageURL) ? [order.imageurl || order.imageUrl || order.imageURL] : ['/api/placeholder/80/80'],
+          image: snapshotImage ? [snapshotImage] : ['/api/placeholder/80/80'],
           name: `Order #${order.orderNumber ?? order.number ?? ''}`,
           price: order.total ?? order.totalAmount ?? order.amount,
           quantity: order.itemCount || 1, // Summary count
           paymentMethod: order.paymentMethod || 'N/A',
-          paymentStatus: order.paymentStatus || 'N/A',
+          paymentStatus: order.paymentStatus !== undefined && order.paymentStatus !== null ? String(order.paymentStatus) : 'N/A',
           canBeCancelled: order.canBeCancelled // Provided by new API
         };
       });
@@ -439,7 +440,13 @@ const Orders = () => {
                   <div className='flex flex-wrap items-center gap-1.5 mt-1.5'>
                     <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Pay:</span>
                     <span className="text-[10px] font-black text-[var(--text)]">{item.paymentMethod}</span>
-                    <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase ${item.paymentStatus === 'Paid' || item.paymentStatus === 'Success' ? 'bg-emerald-500/15 text-emerald-500' : 'bg-red-500/15 text-red-500'}`}>
+                    <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase ${
+                      ['paid', 'success', 'completed', '1'].includes(String(item.paymentStatus).toLowerCase())
+                        ? 'bg-emerald-500/15 text-emerald-500'
+                        : ['failed', 'expired'].includes(String(item.paymentStatus).toLowerCase())
+                        ? 'bg-red-500/15 text-red-500'
+                        : 'bg-amber-500/15 text-amber-500'
+                    }`}>
                       {item.paymentStatus}
                     </span>
                   </div>
@@ -527,62 +534,121 @@ const Orders = () => {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
                       {/* Left Column: Details */}
                       <div className="lg:col-span-2 space-y-8">
-                        {/* Products */}
+                        {/* Products with Snapshots */}
                         <section>
-                          <h3 className="section-title-small mb-4 text-[var(--text-muted)]">Items In Package</h3>
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="section-title-small text-[var(--text-muted)]">Items In Package</h3>
+                            <span className="text-[10px] bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text)] px-3 py-1 rounded-full font-black uppercase">
+                              {selectedOrderDetails.items?.length || 0} {selectedOrderDetails.items?.length === 1 ? 'Item' : 'Items'}
+                            </span>
+                          </div>
                           <div className="space-y-3">
-                            {selectedOrderDetails.items?.map((item, idx) => (
-                              <div key={idx} className="flex gap-4 p-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)]/40">
-                                <ProductImage
-                                  className="w-20 h-20 object-cover rounded-xl shadow-sm border border-[var(--border)]"
-                                  src={item.product?.mainImageUrl}
-                                  alt={item.product?.name || "Order item"}
-                                  width={150}
-                                  height={150}
-                                />
-                                <div className="flex-1 flex flex-col justify-center">
-                                  <h4 className="font-black text-sm leading-tight text-[var(--text)]">{item.product?.name}</h4>
-                                  <p className="text-[10px] font-bold text-[var(--text-muted)] mt-1 uppercase tracking-wider">{item.product?.productVariantForCartDto?.size} / {item.product?.productVariantForCartDto?.color}</p>
-                                  <div className="flex justify-between items-end mt-2">
-                                    <p className="text-xs font-semibold text-[var(--text-muted)]">{currency}{item.unitPrice} <span className="opacity-60 ml-1">x {item.quantity}</span></p>
-                                    <p className="text-xs font-black text-[var(--accent)]">{currency}{item.totalPrice}</p>
+                            {selectedOrderDetails.items?.map((item, idx) => {
+                              const isAvailable = (item.isProductAvailable === undefined || item.isProductAvailable) && 
+                                                  (item.isVariantAvailable === undefined || item.isVariantAvailable);
+                              const itemImage = item.imageUrl || item.product?.mainImageUrl || '/api/placeholder/150/150';
+                              const itemName = item.productName || item.product?.name || "Order Item";
+                              const itemColor = item.color || item.product?.productVariantForCartDto?.color;
+                              const itemSize = item.size || item.product?.productVariantForCartDto?.size;
+
+                              return (
+                                <div key={item.id || idx} className="flex gap-4 p-3.5 rounded-2xl border border-[var(--border)] bg-[var(--surface-raised)]/40 hover:border-[var(--brand)]/30 transition-all">
+                                  <div className="relative w-20 h-20 shrink-0 overflow-hidden rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+                                    <ProductImage
+                                      className="w-full h-full object-cover"
+                                      src={itemImage}
+                                      alt={itemName}
+                                      width={150}
+                                      height={150}
+                                    />
+                                  </div>
+                                  <div className="flex-1 min-w-0 flex flex-col justify-center">
+                                    <div className="flex flex-wrap items-center justify-between gap-1.5 mb-1">
+                                      <h4 className="font-black text-sm leading-tight text-[var(--text)] truncate">{itemName}</h4>
+                                      {!isAvailable && (
+                                        <span 
+                                          title="This item is no longer available in the store"
+                                          className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-red-500/15 text-red-500 border border-red-500/30 whitespace-nowrap"
+                                        >
+                                          Item no longer available
+                                        </span>
+                                      )}
+                                    </div>
+                                    {(itemSize || itemColor) && (
+                                      <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                                        {[itemSize && `Size: ${itemSize}`, itemColor && `Color: ${itemColor}`].filter(Boolean).join(' • ')}
+                                      </p>
+                                    )}
+                                    <div className="flex justify-between items-end mt-2">
+                                      <p className="text-xs font-semibold text-[var(--text-muted)]">
+                                        {currency}{item.unitPrice} <span className="opacity-60 ml-1">× {item.quantity}</span>
+                                      </p>
+                                      <p className="text-xs font-black text-[var(--accent)]">{currency}{item.totalPrice}</p>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </section>
 
-                        {/* Payment History - MULTIPLE PAYMENTS */}
+                        {/* Latest Payment Information */}
                         <section>
                           <div className="flex items-center justify-between mb-4">
-                            <h3 className="section-title-small text-[var(--text-muted)]">Payment Timeline</h3>
-                            <span className="text-[10px] bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text)] px-3 py-1 rounded-full font-black uppercase">{selectedOrderDetails.payment?.length || 0} Attempts</span>
+                            <h3 className="section-title-small text-[var(--text-muted)]">Payment Information</h3>
+                            <span className="text-[10px] bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text)] px-3 py-1 rounded-full font-black uppercase">
+                              Latest Attempt
+                            </span>
                           </div>
-                          <div className="space-y-3">
-                            {selectedOrderDetails.payment?.map((pay, idx) => (
-                              <div key={idx} className="flex items-center gap-4 p-4 rounded-2xl bg-[var(--surface-raised)]/40 border border-[var(--border)] shadow-sm relative overflow-hidden group">
-                                <div className={`absolute left-0 top-0 bottom-0 w-1 ${pay.status === 'Paid' || pay.status === 'Success' ? 'bg-emerald-500' : 'bg-red-500'}`} />
-                                <div className="w-10 h-10 rounded-full bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center text-lg">{pay.paymentMethod?.toLowerCase().includes('card') ? '💳' : '💵'}</div>
-                                <div className="flex-1">
+                          {(() => {
+                            const payments = Array.isArray(selectedOrderDetails.payment)
+                              ? selectedOrderDetails.payment
+                              : selectedOrderDetails.payment
+                              ? [selectedOrderDetails.payment]
+                              : [];
+                            const latestPay = payments[0] || null;
+
+                            if (!latestPay) {
+                              return (
+                                <div className="text-center py-6 text-xs font-bold text-[var(--text-muted)] italic bg-[var(--surface-raised)]/20 rounded-2xl border border-[var(--border)]">
+                                  No payment records found.
+                                </div>
+                              );
+                            }
+
+                            const isPaid = ['paid', 'success', 'completed'].includes(String(latestPay.status || '').toLowerCase());
+                            const isFailed = ['failed', 'expired'].includes(String(latestPay.status || '').toLowerCase());
+
+                            return (
+                              <div className="flex items-center gap-4 p-4 rounded-2xl bg-[var(--surface-raised)]/40 border border-[var(--border)] shadow-sm relative overflow-hidden group">
+                                <div className={`absolute left-0 top-0 bottom-0 w-1 ${isPaid ? 'bg-emerald-500' : isFailed ? 'bg-red-500' : 'bg-amber-500'}`} />
+                                <div className="w-10 h-10 rounded-full bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center text-lg shrink-0">
+                                  {latestPay.paymentMethod?.toLowerCase().includes('card') ? '💳' : '💵'}
+                                </div>
+                                <div className="flex-1 min-w-0">
                                   <div className="flex justify-between items-start">
-                                    <p className="font-black text-sm uppercase tracking-tighter text-[var(--text)]">{pay.paymentMethod}</p>
-                                    <span className="text-[10px] font-black text-[var(--text-muted)]">{new Date(pay.paymentDate).toLocaleDateString()}</span>
+                                    <p className="font-black text-sm uppercase tracking-tighter text-[var(--text)] truncate">{latestPay.paymentMethod || 'Payment'}</p>
+                                    <span className="text-[10px] font-black text-[var(--text-muted)] shrink-0 ml-2">
+                                      {latestPay.paymentDate || latestPay.createdAt ? new Date(latestPay.paymentDate || latestPay.createdAt).toLocaleDateString() : ''}
+                                    </span>
                                   </div>
                                   <div className="flex justify-between items-center mt-1">
-                                    <p className="text-xs font-bold text-[var(--text-muted)]">{pay.paymentProvider || 'In-House'}</p>
-                                    <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase ${pay.status === 'Paid' || pay.status === 'Success' ? 'bg-emerald-500/15 text-emerald-500' : 'bg-red-500/15 text-red-500'}`}>{pay.status}</span>
+                                    <p className="text-xs font-bold text-[var(--text-muted)] truncate">
+                                      {latestPay.providerOrderId ? `Ref: ${latestPay.providerOrderId}` : (latestPay.paymentProvider || 'In-House')}
+                                    </p>
+                                    <span className={`text-[9px] px-2 py-0.5 rounded-full font-black uppercase ${
+                                      isPaid ? 'bg-emerald-500/15 text-emerald-500' : isFailed ? 'bg-red-500/15 text-red-500' : 'bg-amber-500/15 text-amber-500'
+                                    }`}>
+                                      {latestPay.status || 'Pending'}
+                                    </span>
                                   </div>
                                 </div>
-                                <div className="text-right ml-4">
-                                  <p className="text-sm font-black text-[var(--accent)]">{currency}{pay.amount}</p>
+                                <div className="text-right ml-2 shrink-0">
+                                  <p className="text-sm font-black text-[var(--accent)]">{currency}{latestPay.amount ?? selectedOrderDetails.total}</p>
                                 </div>
                               </div>
-                            ))}
-                            {(!selectedOrderDetails.payment || selectedOrderDetails.payment.length === 0) && (
-                              <div className="text-center py-6 text-xs font-bold text-[var(--text-muted)] italic">No payment records found.</div>
-                            )}
-                          </div>
+                            );
+                          })()}
                         </section>
                       </div>
 
@@ -594,7 +660,19 @@ const Orders = () => {
                           <p className="text-xs text-[var(--text-muted)] mb-4">{selectedOrderDetails.customer?.email}</p>
                           <div className="space-y-2 text-xs font-medium text-[var(--text-muted)] border-t border-[var(--border)] pt-4">
                             <p className="flex justify-between"><span>Phone:</span> <span className="font-black text-[var(--text)]">{selectedOrderDetails.customer?.phoneNumber}</span></p>
-                            <p className="leading-relaxed"><span className="block text-[var(--text-muted)] opacity-70 mb-1">Address:</span> <span className="text-[var(--text)]">{selectedOrderDetails.customer?.customerAddress?.fullAddress}</span></p>
+                            <p className="leading-relaxed">
+                              <span className="block text-[var(--text-muted)] opacity-70 mb-1">Address:</span> 
+                              <span className="text-[var(--text)]">
+                                {selectedOrderDetails.customer?.customerAddress?.fullAddress || [
+                                  selectedOrderDetails.customer?.customerAddress?.streetAddress,
+                                  selectedOrderDetails.customer?.customerAddress?.apartmentSuite,
+                                  selectedOrderDetails.customer?.customerAddress?.city,
+                                  selectedOrderDetails.customer?.customerAddress?.state,
+                                  selectedOrderDetails.customer?.customerAddress?.country,
+                                  selectedOrderDetails.customer?.customerAddress?.postalCode && `ZIP: ${selectedOrderDetails.customer.customerAddress.postalCode}`
+                                ].filter(Boolean).join(', ') || 'Address not specified'}
+                              </span>
+                            </p>
                           </div>
                         </div>
 

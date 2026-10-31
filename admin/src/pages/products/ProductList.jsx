@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { toast } from "react-toastify";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
@@ -6,7 +6,28 @@ import API from "../../services/api";
 import { currency, backendUrl } from "../../App";
 import ConfirmModal from "../../components/modals/ConfirmModal";
 import ProductImage from "../../components/common/ProductImage";
+import AdvancedProductSearch from "../../components/products/AdvancedProductSearch";
 import { useTranslation } from "react-i18next";
+
+const EMPTY_ADVANCED_FILTERS = {
+  searchTerm: "",
+  subcategoryid: "",
+  gender: "",
+  fitType: "",
+  minPrice: "",
+  maxPrice: "",
+  inStock: "",
+  onSale: false,
+  sortBy: "",
+  sortDescending: false,
+  color: "",
+  minSize: "",
+  maxSize: "",
+  isActive: "",
+  includeDeleted: false,
+};
+
+const GENDER_LABELS = { "0": "Man", "1": "Woman", "2": "Kids", "3": "Unisex" };
 
 const ProductCard = React.memo(({ p, navigate, toggleStatus, handleRestore, handleDelete, handleRemoveDiscount, currency }) => {
   const discountPercent = Number(p.discountPrecentage ?? p.discountPercentage ?? p.discount?.discountPercent ?? 0);
@@ -85,7 +106,7 @@ const ProductCard = React.memo(({ p, navigate, toggleStatus, handleRestore, hand
 
         <div className="flex items-center justify-between border-t border-gray-100 pt-6">
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{currency === 'EGP' ? 'Price' : 'Price'}</span>
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Price</span>
             {hasDiscount && finalPrice !== p.price ? (
               <div className="flex items-baseline gap-2 flex-wrap">
                 <span className="text-2xl font-black text-emerald-600 tracking-tighter">{currency} {Number(finalPrice).toFixed(2)}</span>
@@ -163,9 +184,64 @@ const ProductList = ({ token }) => {
   const [genderFilter, setGenderFilter] = useState("");
   const [subcategoryFilter, setSubcategoryFilter] = useState(subcategoryIdFromUrl || "");
   const [subcategories, setSubcategories] = useState([]);
+
+  // Advanced search state
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState(EMPTY_ADVANCED_FILTERS);
+  // Committed filters — only sent to API on Apply click
+  const [committedFilters, setCommittedFilters] = useState(null);
+
   // Confirmation modal state
   const [confirmState, setConfirmState] = useState({ open: false, title: '', message: '', onConfirm: null, variant: 'danger', loading: false });
   const pageSize = 12;
+
+  // Count active advanced filters for badge
+  const activeFiltersCount = useMemo(() => {
+    if (!committedFilters) return 0;
+    let count = 0;
+    if (committedFilters.searchTerm) count++;
+    if (committedFilters.subcategoryid) count++;
+    if (committedFilters.gender !== "" && committedFilters.gender !== undefined && committedFilters.gender !== null) count++;
+    if (committedFilters.fitType) count++;
+    if (committedFilters.minPrice) count++;
+    if (committedFilters.maxPrice) count++;
+    if (committedFilters.inStock !== "" && committedFilters.inStock !== undefined && committedFilters.inStock !== null) count++;
+    if (committedFilters.onSale) count++;
+    if (committedFilters.sortBy) count++;
+    if (committedFilters.color) count++;
+    if (committedFilters.minSize) count++;
+    if (committedFilters.maxSize) count++;
+    if (committedFilters.isActive !== "" && committedFilters.isActive !== undefined && committedFilters.isActive !== null) count++;
+    if (committedFilters.includeDeleted) count++;
+    return count;
+  }, [committedFilters]);
+
+  // Build active filter chips for display
+  const activeFilterChips = useMemo(() => {
+    if (!committedFilters) return [];
+    const chips = [];
+    if (committedFilters.searchTerm) chips.push({ key: "searchTerm", label: `Search: "${committedFilters.searchTerm}"` });
+    if (committedFilters.subcategoryid) {
+      const sub = subcategories.find(s => String(s.id) === String(committedFilters.subcategoryid));
+      chips.push({ key: "subcategoryid", label: `Category: ${sub?.name || "#" + committedFilters.subcategoryid}` });
+    }
+    if (committedFilters.gender !== "" && committedFilters.gender !== undefined && committedFilters.gender !== null)
+      chips.push({ key: "gender", label: `Gender: ${GENDER_LABELS[String(committedFilters.gender)] || committedFilters.gender}` });
+    if (committedFilters.fitType) chips.push({ key: "fitType", label: `Fit: ${committedFilters.fitType}` });
+    if (committedFilters.minPrice) chips.push({ key: "minPrice", label: `Min Price: ${committedFilters.minPrice}` });
+    if (committedFilters.maxPrice) chips.push({ key: "maxPrice", label: `Max Price: ${committedFilters.maxPrice}` });
+    if (committedFilters.inStock === true) chips.push({ key: "inStock", label: "In Stock Only" });
+    else if (committedFilters.inStock === false) chips.push({ key: "inStock", label: "Out of Stock Only" });
+    if (committedFilters.onSale) chips.push({ key: "onSale", label: "On Sale" });
+    if (committedFilters.sortBy) chips.push({ key: "sortBy", label: `Sort: ${committedFilters.sortBy} ${committedFilters.sortDescending ? "DESC" : "ASC"}` });
+    if (committedFilters.color) chips.push({ key: "color", label: `Color: ${committedFilters.color}` });
+    if (committedFilters.minSize) chips.push({ key: "minSize", label: `Min Size: ${committedFilters.minSize}` });
+    if (committedFilters.maxSize) chips.push({ key: "maxSize", label: `Max Size: ${committedFilters.maxSize}` });
+    if (committedFilters.isActive === true) chips.push({ key: "isActive", label: "Active Only" });
+    else if (committedFilters.isActive === false) chips.push({ key: "isActive", label: "Inactive Only" });
+    if (committedFilters.includeDeleted) chips.push({ key: "includeDeleted", label: "Include Deleted" });
+    return chips;
+  }, [committedFilters, subcategories]);
 
   // Fetch subcategories for filter
   useEffect(() => {
@@ -192,9 +268,19 @@ const ProductList = ({ token }) => {
     setLoading(true);
     try {
       let res;
-      
-      // Select the correct endpoint based on URL params or special filters
-      if (collectionIdFromUrl) {
+
+      // Priority: Advanced search > Collection > Subcategory > Special > Default
+      if (committedFilters && activeFiltersCount > 0) {
+        res = await API.products.advancedSearch({
+          ...committedFilters,
+          page,
+          pageSize,
+          isActive: committedFilters.isActive !== "" ? committedFilters.isActive : undefined,
+          includeDeleted: committedFilters.includeDeleted || false,
+          inStock: committedFilters.inStock !== "" ? committedFilters.inStock : undefined,
+          gender: committedFilters.gender !== "" ? committedFilters.gender : undefined,
+        }, token);
+      } else if (collectionIdFromUrl) {
         res = (await axios.get(`${backendUrl}/api/Collection/${collectionIdFromUrl}/products`, {
           headers: { Authorization: `Bearer ${token}` }
         })).data;
@@ -214,7 +300,6 @@ const ProductList = ({ token }) => {
           headers: { Authorization: `Bearer ${token}` },
           params: specialParams
         });
-        // Handle both wrapped and unwrapped response shapes from specialty endpoints
         res = rawRes.data;
       } else {
         const filters = {
@@ -224,7 +309,7 @@ const ProductList = ({ token }) => {
           isActive: statusFilter === "active" ? true : statusFilter === "inactive" ? false : null,
         };
 
-        // Send inStock only when explicitly filtered (true or false) — omit when "all"
+        // Send inStock only when explicitly filtered (true or false) - omit when "all"
         if (stockFilter === "instock") filters.inStock = true;
         else if (stockFilter === "outofstock") filters.inStock = false;
 
@@ -245,7 +330,7 @@ const ProductList = ({ token }) => {
       // Support multiple response wrapper shapes from different endpoints
       const body = res?.responseBody ?? res;
       const data = body?.data || [];
-      const total = body?.totalCount ?? body?.total ?? 0;
+      const total = body?.totalCount ?? body?.total ?? parseInt(body?.message?.match(/\d+/)?.[0] || "0");
 
       const normalizeUrl = (raw) => {
         if (!raw || typeof raw !== "string") return null;
@@ -269,7 +354,7 @@ const ProductList = ({ token }) => {
       setProducts(normalizedData);
       setTotalCount(deletedFilter === "all" ? total : normalizedData.length);
     } catch (error) {
-      // 404 means no products found for the given filters — treat as empty, not an error
+      // 404 means no products found for the given filters - treat as empty, not an error
       if (error.response?.status === 404) {
         setProducts([]);
         setTotalCount(0);
@@ -279,7 +364,7 @@ const ProductList = ({ token }) => {
     } finally {
       setLoading(false);
     }
-  }, [token, debouncedSearch, page, statusFilter, deletedFilter, subcategoryFilter, collectionIdFromUrl, specialFilter, stockFilter, genderFilter]);
+  }, [token, debouncedSearch, page, statusFilter, deletedFilter, subcategoryFilter, collectionIdFromUrl, specialFilter, stockFilter, genderFilter, committedFilters, activeFiltersCount]);
 
   useEffect(() => {
     fetchProducts();
@@ -287,7 +372,7 @@ const ProductList = ({ token }) => {
 
   useEffect(() => {
     setPage(1);
-  }, [statusFilter, deletedFilter, debouncedSearch, specialFilter, stockFilter, genderFilter, subcategoryFilter]);
+  }, [statusFilter, deletedFilter, debouncedSearch, specialFilter, stockFilter, genderFilter, subcategoryFilter, committedFilters]);
 
   const toggleStatus = useCallback(async (product) => {
     try {
@@ -342,7 +427,6 @@ const ProductList = ({ token }) => {
     });
   }, [token, fetchProducts]);
 
-
   const handleRestore = useCallback(async (id) => {
     try {
       await API.products.restore(id, token);
@@ -355,6 +439,34 @@ const ProductList = ({ token }) => {
   useEffect(() => {
     if (subcategoryIdFromUrl) setSubcategoryFilter(subcategoryIdFromUrl);
   }, [subcategoryIdFromUrl]);
+
+  const handleApplyAdvanced = () => {
+    setCommittedFilters({ ...advancedFilters });
+    setPage(1);
+  };
+
+  const handleResetAdvanced = () => {
+    setAdvancedFilters(EMPTY_ADVANCED_FILTERS);
+    setCommittedFilters(null);
+    setPage(1);
+  };
+
+  const dismissChip = (key) => {
+    const reset = key === "sortBy"
+      ? { sortBy: "", sortDescending: false }
+      : key === "inStock"
+      ? { inStock: "" }
+      : key === "onSale"
+      ? { onSale: false }
+      : key === "includeDeleted"
+      ? { includeDeleted: false }
+      : { [key]: "" };
+
+    const updated = { ...committedFilters, ...reset };
+    setAdvancedFilters(updated);
+    setCommittedFilters(updated);
+    setPage(1);
+  };
 
   return (
     <div className="flex flex-col gap-10">
@@ -369,7 +481,7 @@ const ProductList = ({ token }) => {
         onConfirm={confirmState.onConfirm}
         onCancel={() => setConfirmState(s => ({ ...s, open: false }))}
       />
-      
+
       {/* Contextual Filter Indicator */}
       {(subcategoryFilter || collectionIdFromUrl) && (
         <div className="bg-emerald-50 border border-emerald-100 p-6 rounded-[32px] flex items-center justify-between animate-in slide-in-from-top-4 duration-500">
@@ -382,7 +494,7 @@ const ProductList = ({ token }) => {
               </span>
             </div>
           </div>
-          <button 
+          <button
             onClick={() => {
               setSubcategoryFilter("");
               navigate("/products");
@@ -393,6 +505,7 @@ const ProductList = ({ token }) => {
           </button>
         </div>
       )}
+
       <div className="flex flex-col gap-8">
         {/* Top Control Bar: Search & Master Action */}
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-6 bg-white p-8 rounded-[40px] border border-gray-100 shadow-sm">
@@ -408,7 +521,7 @@ const ProductList = ({ token }) => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
-          
+
           <button onClick={() => navigate('/add')} className="px-12 py-5 bg-gray-900 text-white rounded-[28px] text-xs font-black uppercase tracking-[0.2em] hover:bg-emerald-600 transition-all shadow-xl hover:scale-[1.02] active:scale-95 shrink-0">
             {t('publishNewAsset')}
           </button>
@@ -417,6 +530,23 @@ const ProductList = ({ token }) => {
         {/* Bottom Control Bar: Refined Filtering Matrix */}
         <div className="bg-white/80 backdrop-blur-md p-6 rounded-[40px] border border-gray-100 shadow-sm overflow-x-auto custom-scrollbar">
           <div className="flex items-center gap-6 min-w-max">
+            {/* Advanced Search Toggle Button — first in queue */}
+            <button
+              onClick={() => setShowAdvancedSearch(v => !v)}
+              className={`flex items-center gap-2.5 px-5 py-2.5 rounded-2xl border text-[10px] font-black uppercase tracking-widest transition-all ${
+                showAdvancedSearch || activeFiltersCount > 0
+                  ? "bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-900/10"
+                  : "bg-white text-gray-600 border-gray-200 hover:border-emerald-300 hover:text-emerald-600"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+              </svg>
+              Filters{activeFiltersCount > 0 ? ` (${activeFiltersCount})` : ""}
+            </button>
+
+            <div className="w-px h-8 bg-gray-100" />
+
             {/* Strategy Selectors */}
             <div className="flex bg-gray-100 p-1.5 rounded-[22px] border border-gray-200 shadow-inner">
               {[
@@ -471,6 +601,45 @@ const ProductList = ({ token }) => {
             </div>
           </div>
         </div>
+
+        {/* Advanced Search Panel */}
+        {showAdvancedSearch && (
+          <AdvancedProductSearch
+            filters={advancedFilters}
+            onChange={setAdvancedFilters}
+            onApply={handleApplyAdvanced}
+            onReset={handleResetAdvanced}
+            subcategories={subcategories}
+            activeFiltersCount={activeFiltersCount}
+            isOpen={showAdvancedSearch}
+            onToggle={() => setShowAdvancedSearch(v => !v)}
+          />
+        )}
+
+        {/* Active Filter Chips */}
+        {activeFilterChips.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 px-2">
+            <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 mr-1">Active Filters:</span>
+            {activeFilterChips.map(chip => (
+              <button
+                key={chip.key}
+                onClick={() => dismissChip(chip.key)}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all group"
+              >
+                {chip.label}
+                <svg className="w-3 h-3 opacity-60 group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            ))}
+            <button
+              onClick={handleResetAdvanced}
+              className="px-3 py-1.5 bg-rose-50 border border-rose-200 text-rose-600 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all"
+            >
+              Clear All
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">

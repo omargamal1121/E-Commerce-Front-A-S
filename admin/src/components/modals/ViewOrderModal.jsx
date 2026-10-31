@@ -14,13 +14,20 @@ const ViewOrderModal = ({ selectedOrder, setShowViewModal }) => {
   const orderStatus = selectedOrder.statusText || selectedOrder.statusDisplay || selectedOrder.status || "N/A";
 
   const items = (Array.isArray(selectedOrder.items) ? selectedOrder.items :
-    Array.isArray(selectedOrder.orderItems) ? selectedOrder.orderItems : []).map(it => ({
-      name: it.productName || it.name || "Manifest Item",
-      quantity: it.quantity || 1,
-      price: it.price || it.unitPrice || 0,
-      image: it.product?.mainImageUrl || it.itemImageUrl || it.image || "",
-      variant: it.size || it.color || (it.productVariantForCartDto ? `${it.productVariantForCartDto.color || ''} ${it.productVariantForCartDto.size || ''}` : "Default")
-    }));
+    Array.isArray(selectedOrder.orderItems) ? selectedOrder.orderItems : []).map(it => {
+      const isAvailable = (it.isProductAvailable === undefined || it.isProductAvailable) && 
+                          (it.isVariantAvailable === undefined || it.isVariantAvailable);
+      return {
+        name: it.productName || it.name || it.product?.name || "Manifest Item",
+        quantity: it.quantity || 1,
+        price: it.unitPrice ?? it.price ?? 0,
+        totalPrice: it.totalPrice ?? ((it.unitPrice ?? it.price ?? 0) * (it.quantity || 1)),
+        image: it.imageUrl || it.product?.mainImageUrl || it.itemImageUrl || it.image || "",
+        variant: [it.size && `Size: ${it.size}`, it.color && `Color: ${it.color}`].filter(Boolean).join(' • ') || 
+                 (it.productVariantForCartDto ? `${it.productVariantForCartDto.color || ''} ${it.productVariantForCartDto.size || ''}`.trim() : "Default"),
+        isAvailable
+      };
+    });
 
   const customer = selectedOrder.customer || {};
   const address = selectedOrder.customerAddress || selectedOrder.address || {};
@@ -143,7 +150,14 @@ const ViewOrderModal = ({ selectedOrder, setShowViewModal }) => {
                         )}
                       </div>
                       <div className="flex-1 flex flex-col gap-1">
-                        <span className="font-black text-gray-900 text-lg tracking-tight group-hover:text-blue-600 transition-colors uppercase">{item.name}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-black text-gray-900 text-lg tracking-tight group-hover:text-blue-600 transition-colors uppercase">{item.name}</span>
+                          {!item.isAvailable && (
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-rose-50 text-rose-600 border border-rose-200">
+                              Item no longer available
+                            </span>
+                          )}
+                        </div>
                         <div className="flex items-center gap-3">
                           <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{item.variant}</span>
                           <div className="w-1 h-1 bg-gray-200 rounded-full" />
@@ -227,10 +241,15 @@ const ViewOrderModal = ({ selectedOrder, setShowViewModal }) => {
                     <span className="text-[10px] font-bold text-gray-400 uppercase">Initialize Date</span>
                     <p className="text-xs font-black text-gray-900">{new Date(orderDate).toLocaleDateString()}</p>
                   </div>
-                  <div className="flex flex-col gap-1 text-right">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase">Protocol</span>
-                    <p className="text-xs font-black text-gray-900 uppercase">{selectedOrder.paymentMethodName || "CREDIT_DEFAULT"}</p>
-                  </div>
+                    <div className="flex flex-col gap-1 text-right">
+                      <span className="text-[10px] font-bold text-gray-400 uppercase">Protocol</span>
+                      <p className="text-xs font-black text-gray-900 uppercase">
+                        {(Array.isArray(selectedOrder.payment) ? selectedOrder.payment[0]?.paymentMethod : selectedOrder.payment?.paymentMethod) || 
+                         selectedOrder.paymentMethod || 
+                         selectedOrder.paymentMethodName || 
+                         "CREDIT_DEFAULT"}
+                      </p>
+                    </div>
                 </div>
               </div>
             </div>

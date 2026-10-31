@@ -154,6 +154,82 @@ const API = {
       }
     },
 
+    // Dedicated Advanced Product Search: POST /api/Products/advanced-search
+    advancedSearch: async ({ page = 1, pageSize = 10, isActive, includeDeleted, ...body }, token) => {
+      try {
+        const queryParams = new URLSearchParams();
+        queryParams.append("page", page);
+        queryParams.append("pageSize", pageSize);
+
+        if (isActive === true || isActive === false) {
+          queryParams.append("isActive", isActive);
+        }
+        if (includeDeleted === true || includeDeleted === false) {
+          queryParams.append("includeDeleted", includeDeleted);
+        }
+
+        const requestBody = {};
+        if (body.searchTerm && String(body.searchTerm).trim() !== "") {
+          requestBody.searchTerm = String(body.searchTerm).trim();
+        }
+        const subId = body.subcategoryid ?? body.subcategoryId;
+        if (subId && Number(subId) !== 0) {
+          requestBody.subcategoryid = Number(subId);
+        }
+        if (body.gender !== undefined && body.gender !== null && body.gender !== "" && Number(body.gender) !== -1) {
+          requestBody.gender = Number(body.gender);
+        }
+        if (body.fitType && String(body.fitType).trim() !== "") {
+          requestBody.fitType = String(body.fitType).trim();
+        }
+        if (body.minPrice && Number(body.minPrice) > 0) {
+          requestBody.minPrice = Number(body.minPrice);
+        }
+        if (body.maxPrice && Number(body.maxPrice) > 0) {
+          requestBody.maxPrice = Number(body.maxPrice);
+        }
+        if (body.inStock !== undefined && body.inStock !== null && body.inStock !== "") {
+          requestBody.inStock = Boolean(body.inStock);
+        }
+        if (body.onSale !== undefined && body.onSale !== null && body.onSale !== "") {
+          requestBody.onSale = Boolean(body.onSale);
+        }
+        if (body.sortBy && String(body.sortBy).trim() !== "") {
+          requestBody.sortBy = String(body.sortBy).trim();
+        }
+        if (body.sortDescending !== undefined && body.sortDescending !== null) {
+          requestBody.sortDescending = Boolean(body.sortDescending);
+        }
+        if (body.color && String(body.color).trim() !== "") {
+          requestBody.color = String(body.color).trim();
+        }
+        if (body.minSize && Number(body.minSize) > 0) {
+          requestBody.minSize = Number(body.minSize);
+        }
+        if (body.maxSize && Number(body.maxSize) > 0) {
+          requestBody.maxSize = Number(body.maxSize);
+        }
+
+        const url = `${backendUrl}/api/Products/advanced-search?${queryParams.toString()}`;
+        const response = await axios.post(
+          url,
+          requestBody,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        return response.data;
+      } catch (error) {
+        if (error.response?.status === 404) {
+          return { responseBody: { data: [], totalCount: 0 } };
+        }
+        throw error;
+      }
+    },
+
     // Get product list with advanced search
     list: async ({ page = 1, pageSize = 10, ...filters }, token) => {
       try {
@@ -186,6 +262,8 @@ const API = {
           }
           const requestBody = {};
 
+          if (filters.searchTerm && filters.searchTerm.trim() !== "")
+            requestBody.searchTerm = filters.searchTerm.trim();
           if (filters.subcategoryId && parseInt(filters.subcategoryId) !== 0)
             requestBody.subcategoryid = parseInt(filters.subcategoryId);
           if (filters.gender && parseInt(filters.gender) !== 0)
@@ -467,6 +545,63 @@ const API = {
           },
         }
       );
+    },
+
+    // Advanced product search — POST /api/Products/advanced-search
+    advancedSearch: async (filters = {}, token) => {
+      const { page = 1, pageSize = 12, isActive, includeDeleted, ...bodyFilters } = filters;
+
+      const queryParams = new URLSearchParams();
+      queryParams.append("page", page);
+      queryParams.append("pageSize", pageSize);
+      if (isActive === true || isActive === false) queryParams.append("isActive", isActive);
+      if (includeDeleted === true) queryParams.append("includeDeleted", true);
+
+      // Build body — only include fields with meaningful values
+      const body = {};
+      if (bodyFilters.searchTerm && bodyFilters.searchTerm.trim() !== "")
+        body.searchTerm = bodyFilters.searchTerm.trim();
+      if (bodyFilters.subcategoryid && parseInt(bodyFilters.subcategoryid) > 0)
+        body.subcategoryid = parseInt(bodyFilters.subcategoryid);
+      if (bodyFilters.gender !== undefined && bodyFilters.gender !== "" && bodyFilters.gender !== null)
+        body.gender = parseInt(bodyFilters.gender);
+      if (bodyFilters.fitType && bodyFilters.fitType.trim() !== "")
+        body.fitType = bodyFilters.fitType.trim();
+      if (bodyFilters.minPrice && parseFloat(bodyFilters.minPrice) > 0)
+        body.minPrice = parseFloat(bodyFilters.minPrice);
+      if (bodyFilters.maxPrice && parseFloat(bodyFilters.maxPrice) > 0)
+        body.maxPrice = parseFloat(bodyFilters.maxPrice);
+      if (bodyFilters.inStock === true) body.inStock = true;
+      else if (bodyFilters.inStock === false) body.inStock = false;
+      if (bodyFilters.onSale === true) body.onSale = true;
+      if (bodyFilters.sortBy && bodyFilters.sortBy !== "") body.sortBy = bodyFilters.sortBy;
+      if (bodyFilters.sortDescending !== undefined && bodyFilters.sortDescending !== null)
+        body.sortDescending = bodyFilters.sortDescending;
+      if (bodyFilters.color && bodyFilters.color !== "") body.color = bodyFilters.color;
+      if (bodyFilters.minSize && parseInt(bodyFilters.minSize) > 0)
+        body.minSize = parseInt(bodyFilters.minSize);
+      if (bodyFilters.maxSize && parseInt(bodyFilters.maxSize) > 0)
+        body.maxSize = parseInt(bodyFilters.maxSize);
+
+      try {
+        const response = await axios.post(
+          `${backendUrl}/api/Products/advanced-search?${queryParams.toString()}`,
+          body,
+          {
+            headers: {
+              accept: "text/plain",
+              "Content-Type": "application/json-patch+json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        return response.data;
+      } catch (error) {
+        if (error.response?.status === 404) {
+          return { responseBody: { data: [], totalCount: 0 } };
+        }
+        throw error;
+      }
     },
   },
 
@@ -826,14 +961,53 @@ const API = {
       }
     },
 
-    getByProductId: async (productId, token) => {
+    getByProductId: async (productId, filters = {}, token) => {
       try {
+        const params = {};
+        if (filters.color) params.color = filters.color;
+        if (filters.size) params.size = filters.size;
+        if (filters.waist && Number(filters.waist) > 0) params.waist = Number(filters.waist);
+        if (filters.length && Number(filters.length) > 0) params.length = Number(filters.length);
+        if (filters.isActive !== undefined && filters.isActive !== '') params.isActive = filters.isActive;
+        if (filters.deletedOnly === true) params.deletedOnly = true;
         const response = await axios.get(
           `${backendUrl}/api/Products/${productId}/Variants`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${token}` }, params }
         );
         return response.data;
       } catch (error) {
+        if (error.response?.status === 404) return { responseBody: { data: [] } };
+        throw error;
+      }
+    },
+
+    update: async (productId, variantId, variantData, token) => {
+      try {
+        const payload = {};
+        if (variantData.color !== undefined) payload.color = variantData.color;
+        if (variantData.size !== undefined) payload.size = variantData.size;
+        if (variantData.waist !== '' && variantData.waist !== undefined) payload.waist = Number(variantData.waist);
+        if (variantData.length !== '' && variantData.length !== undefined) payload.length = Number(variantData.length);
+        if (variantData.chest !== '' && variantData.chest !== undefined) payload.chest = Number(variantData.chest);
+        if (variantData.hip !== '' && variantData.hip !== undefined) payload.hip = Number(variantData.hip);
+        if (variantData.sleeveLength !== '' && variantData.sleeveLength !== undefined) payload.sleeveLength = Number(variantData.sleeveLength);
+        if (variantData.isFreeSize !== undefined) payload.isFreeSize = Boolean(variantData.isFreeSize);
+        console.log('[variants.update] PUT payload:', JSON.stringify(payload, null, 2));
+        const response = await axios.put(
+          `${backendUrl}/api/Products/${productId}/Variants/${variantId}`,
+          payload,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+              Accept: 'text/plain',
+            },
+          }
+        );
+        console.log('[variants.update] SUCCESS response:', response);
+        return response.data;
+      } catch (error) {
+        console.error('[variants.update] ERROR:', error?.response?.status, error?.response?.data, error);
         throw error;
       }
     },

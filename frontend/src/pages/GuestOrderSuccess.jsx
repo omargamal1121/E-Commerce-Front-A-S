@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { getGuestOrderByNumber } from "../services/guestCheckoutService";
+import { ShopContext } from "../context/ShopContext";
+import ProductImage from "../components/common/ProductImage";
 
 /* ─── animation variants ────────────────────────────────────────────────── */
 const fadeUp = { hidden: { opacity: 0, y: 40 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } } };
@@ -32,6 +34,7 @@ const CheckCircle = () => (
    GuestOrderSuccess
    ════════════════════════════════════════════════════════════════════════════ */
 const GuestOrderSuccess = () => {
+  const { currency = "EGP " } = useContext(ShopContext) || {};
   const { orderNumber: orderNumberParam } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -79,7 +82,7 @@ const GuestOrderSuccess = () => {
         initial="hidden"
         animate="visible"
         variants={stagger}
-        className="w-full max-w-lg text-center"
+        className="w-full max-w-2xl text-center"
       >
         {/* ── animated check ── */}
         <motion.div variants={itemFade} className="flex justify-center mb-6">
@@ -104,20 +107,120 @@ const GuestOrderSuccess = () => {
           </motion.p>
         )}
 
-        {/* ── order number card ── */}
+        {/* ── order number & snapshot receipt card ── */}
         {orderNumber && (
           <motion.div
             variants={itemFade}
-            className="bg-gray-50 border border-gray-100 rounded-2xl px-6 py-5 mb-8 mx-auto"
+            className="bg-gray-50 border border-gray-100 rounded-3xl p-6 sm:p-8 mb-8 text-left shadow-sm"
           >
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">
-              Order Number
-            </p>
-            <p className="text-xl font-bold text-gray-900 font-mono tracking-wide break-all">
-              {orderNumber}
-            </p>
-            <p className="text-xs text-gray-400 mt-2">
-              Save this number for your records.
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200/60 pb-5 mb-5">
+              <div>
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">
+                  Order Number
+                </p>
+                <p className="text-xl sm:text-2xl font-black text-gray-900 font-mono tracking-wide break-all">
+                  #{orderNumber}
+                </p>
+              </div>
+              {orderData?.statusDisplay && (
+                <span className="text-xs font-black uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">
+                  {orderData.statusDisplay}
+                </span>
+              )}
+            </div>
+
+            {/* Order Items with Snapshot data */}
+            {orderData?.items && orderData.items.length > 0 && (
+              <div className="mb-6">
+                <p className="text-xs font-black uppercase tracking-widest text-gray-400 mb-3">
+                  Purchased Items ({orderData.items.length})
+                </p>
+                <div className="space-y-3">
+                  {orderData.items.map((item, idx) => {
+                    const isAvailable = (item.isProductAvailable === undefined || item.isProductAvailable) && 
+                                        (item.isVariantAvailable === undefined || item.isVariantAvailable);
+                    const itemImage = item.imageUrl || item.product?.mainImageUrl || '/api/placeholder/150/150';
+                    const itemName = item.productName || item.product?.name || "Order Item";
+                    const itemColor = item.color || item.product?.productVariantForCartDto?.color;
+                    const itemSize = item.size || item.product?.productVariantForCartDto?.size;
+
+                    return (
+                      <div key={item.id || idx} className="flex gap-4 p-3 bg-white rounded-2xl border border-gray-100 shadow-sm items-center">
+                        <div className="relative w-16 h-16 shrink-0 overflow-hidden rounded-xl border border-gray-100 bg-gray-50">
+                          <ProductImage
+                            src={itemImage}
+                            alt={itemName}
+                            width={100}
+                            height={100}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <h4 className="font-bold text-sm text-gray-900 truncate">{itemName}</h4>
+                            {!isAvailable && (
+                              <span className="text-[9px] font-bold text-red-500 bg-red-50 border border-red-100 px-2 py-0.5 rounded-full whitespace-nowrap">
+                                No longer available
+                              </span>
+                            )}
+                          </div>
+                          {(itemSize || itemColor) && (
+                            <p className="text-xs text-gray-400 mt-0.5">
+                              {[itemSize && `Size: ${itemSize}`, itemColor && `Color: ${itemColor}`].filter(Boolean).join(' • ')}
+                            </p>
+                          )}
+                          <div className="flex justify-between items-center mt-1 text-xs">
+                            <span className="text-gray-500 font-medium">Qty: {item.quantity} × {currency}{item.unitPrice}</span>
+                            <span className="font-black text-gray-900">{currency}{item.totalPrice}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Latest Payment info & Bill Breakdown */}
+            {orderData && (
+              <div className="bg-white rounded-2xl p-4 border border-gray-100 space-y-2 text-xs">
+                {(() => {
+                  const latestPay = Array.isArray(orderData.payment) ? orderData.payment[0] : orderData.payment;
+                  if (!latestPay) return null;
+                  return (
+                    <div className="flex justify-between items-center pb-2 border-b border-gray-100">
+                      <span className="text-gray-500 font-medium">Payment ({latestPay.paymentMethod || 'Method'})</span>
+                      <span className="font-bold uppercase tracking-wider text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
+                        {latestPay.status || 'Pending'}
+                      </span>
+                    </div>
+                  );
+                })()}
+                <div className="flex justify-between text-gray-500">
+                  <span>Subtotal</span>
+                  <span>{currency}{orderData.subtotal}</span>
+                </div>
+                {orderData.shippingCost > 0 && (
+                  <div className="flex justify-between text-gray-500">
+                    <span>Shipping</span>
+                    <span>{currency}{orderData.shippingCost}</span>
+                  </div>
+                )}
+                {orderData.discountAmount > 0 && (
+                  <div className="flex justify-between text-emerald-600 font-semibold">
+                    <span>Discount</span>
+                    <span>-{currency}{orderData.discountAmount}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-base font-black text-gray-900 pt-2 border-t border-gray-100">
+                  <span>Total</span>
+                  <span>{currency}{orderData.total}</span>
+                </div>
+              </div>
+            )}
+
+            <p className="text-xs text-gray-400 text-center mt-4">
+              Save your order number for reference and tracking.
             </p>
           </motion.div>
         )}
