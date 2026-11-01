@@ -769,15 +769,11 @@ const ShopContextProvider = (props) => {
     if (token) {
       saveGuestToken(token);
       setGuestToken(token);
-    } else {
-      removeGuestToken();
-      setGuestToken(null);
     }
   };
 
   const clearGuestSession = () => {
-    removeGuestToken();
-    setGuestToken(null);
+    // Preserve guestToken in localStorage so guest orders remain accessible
     setGuestOrderInfo(null);
     setIsGuestCheckout(false);
   };

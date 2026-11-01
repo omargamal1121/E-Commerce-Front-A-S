@@ -162,7 +162,7 @@ class AuthService {
   logout() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-    removeGuestToken();
+    // Guest token is preserved permanently
     delete axios.defaults.headers.common["Authorization"];
     this.notify("", null);
 
@@ -196,7 +196,7 @@ class AuthService {
         }
       );
       if (response.status === 200 || response.status === 201) {
-        removeGuestToken();
+        // Guest token is preserved permanently
         return true;
       }
       return false;

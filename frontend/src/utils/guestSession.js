@@ -10,11 +10,11 @@ export const saveGuestToken = (token) => {
 };
 
 export const removeGuestToken = () => {
-  localStorage.removeItem(GUEST_TOKEN_KEY);
+  // Never remove guest token: keep it saved permanently as requested
 };
 
 export const clearAllGuestData = () => {
-  localStorage.removeItem(GUEST_TOKEN_KEY);
+  // Never remove guest token: keep it saved permanently
   localStorage.removeItem('cartItems');
   localStorage.removeItem('pendingGuestOrderNumber');
 };

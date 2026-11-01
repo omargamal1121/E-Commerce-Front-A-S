@@ -10,7 +10,7 @@ import { getGuestToken } from '../utils/guestSession'
 import ProductImage from '../components/common/ProductImage'
 
 const Orders = () => {
-  const { backendUrl, token, currency, refreshToken } = useContext(ShopContext);
+  const { backendUrl, token, guestToken, currency, refreshToken } = useContext(ShopContext);
   const navigate = useNavigate();
 
   const [orderData, setOrderData] = useState([]);
@@ -23,7 +23,6 @@ const Orders = () => {
   const [sortOrder, setSortOrder] = useState('newest');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [lookupOrderNumber, setLookupOrderNumber] = useState('');
 
   const statusMap = {
     0: 'Pending Payment',
@@ -178,9 +177,9 @@ const Orders = () => {
   const loadOrderData = async (status = statusFilter) => {
     try {
       setLoading(true);
-      const guestToken = getGuestToken();
+      const activeGuestToken = guestToken || getGuestToken();
       
-      if (!token && !guestToken) {
+      if (!token && !activeGuestToken) {
         setOrderData([]);
         return null;
       }
@@ -193,8 +192,8 @@ const Orders = () => {
       const headers = {};
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
-      } else if (guestToken) {
-        headers['X-Guest-Token'] = guestToken;
+      } else if (activeGuestToken) {
+        headers['X-Guest-Token'] = activeGuestToken;
       }
 
       const res = await fetchWithTokenRefresh(
@@ -326,27 +325,11 @@ const Orders = () => {
     if (success || pending || errorMessage || params.get('error_occured')) {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-
-    const urlOrderNumber = params.get('orderNumber') || params.get('order') || params.get('track');
-    if (urlOrderNumber) {
-      setLookupOrderNumber(urlOrderNumber);
-      handleTrackOrder(urlOrderNumber);
-    }
   }, []);
-
-  const handleLookupSubmit = (e) => {
-    e.preventDefault();
-    const cleanNumber = lookupOrderNumber.trim();
-    if (!cleanNumber) {
-      toast.warn("Please enter an order number");
-      return;
-    }
-    handleTrackOrder(cleanNumber);
-  };
 
   useEffect(() => {
     loadOrderData();
-  }, [token, startDate, endDate, statusFilter]);
+  }, [token, guestToken, startDate, endDate, statusFilter]);
 
   useEffect(() => {
     if (orderData.length > 0) {
@@ -362,47 +345,8 @@ const Orders = () => {
 
   return (
     <div className='min-h-screen pt-24 pb-20 px-4 sm:px-[5vw] md:px-[7vw] lg:px-[9vw] bg-[var(--bg)] text-[var(--text)]'>
-      <div className='mb-6'>
-        <Title text1={token ? 'MY' : 'TRACK'} text2={'ORDERS'} />
-        {!token && (
-          <p className="text-xs text-[var(--text-muted)] mt-1 font-medium">
-            View your guest orders or look up any order status using your Order Number.
-          </p>
-        )}
-      </div>
-
-      {/* Order Lookup Box */}
-      <div className="bg-[var(--surface)] p-4 sm:p-5 rounded-2xl shadow-sm border border-[var(--border)] mb-6">
-        <form onSubmit={handleLookupSubmit} className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
-          <div className="relative flex-1">
-            <svg
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Enter Order Number to track (e.g. ORD-123456)..."
-              value={lookupOrderNumber}
-              onChange={(e) => setLookupOrderNumber(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text)] rounded-xl text-xs font-semibold placeholder:text-[var(--text-muted)] focus:border-[var(--brand)] focus:ring-2 focus:ring-[var(--brand)]/30 outline-none transition-all"
-            />
-          </div>
-          <button
-            type="submit"
-            className="bg-[var(--brand)] hover:bg-[var(--brand-hover)] text-white px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md active:scale-95 whitespace-nowrap cursor-pointer"
-          >
-            Track Order
-          </button>
-        </form>
-        {!token && (
-          <p className="text-[11px] text-[var(--text-muted)] mt-2 font-medium">
-            💡 Tracking as a guest? Enter your Order Number above to view order details and delivery status.
-          </p>
-        )}
+      <div className='mb-12'>
+        <Title text1={'MY'} text2={'ORDERS'} />
       </div>
 
       <div className="bg-[var(--surface)] p-4 sm:p-6 rounded-2xl shadow-sm border border-[var(--border)] mb-8">
@@ -469,35 +413,7 @@ const Orders = () => {
         {loading ? (
           <div className="py-20 text-center"><div className="animate-spin h-10 w-10 border-b-2 border-[var(--brand)] mx-auto"></div></div>
         ) : filteredOrders.length === 0 ? (
-          <div className="py-16 px-6 text-center border-2 border-dashed border-[var(--border)] rounded-2xl bg-[var(--surface)]">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[var(--surface-raised)] flex items-center justify-center text-2xl">
-              📦
-            </div>
-            <h3 className="text-base font-bold text-[var(--text)] mb-1">
-              {!token ? "No Guest Orders In Current Session" : "No Orders Found"}
-            </h3>
-            <p className="text-xs text-[var(--text-muted)] max-w-md mx-auto mb-6 leading-relaxed">
-              {!token
-                ? "If you recently placed an order as a guest, enter your Order Number above to track it immediately. You can also sign in to view all orders saved to your account."
-                : "You don't have any matching orders in your account history."}
-            </p>
-            <div className="flex flex-wrap gap-3 justify-center">
-              {!token && (
-                <button
-                  onClick={() => navigate('/login')}
-                  className="px-6 py-2.5 bg-[var(--brand)] hover:bg-[var(--brand-hover)] text-white text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer"
-                >
-                  Sign In / Register
-                </button>
-              )}
-              <button
-                onClick={() => navigate('/collection')}
-                className="px-6 py-2.5 bg-[var(--surface-raised)] hover:bg-[var(--surface-raised)]/80 text-[var(--text)] border border-[var(--border)] text-xs font-bold rounded-xl transition-all cursor-pointer"
-              >
-                Browse Products
-              </button>
-            </div>
-          </div>
+          <div className="py-20 text-center border-2 border-dashed border-[var(--border)] rounded-2xl text-[var(--text-muted)] font-medium">No matches found.</div>
         ) : (
           filteredOrders.map((item, index) => (
             <motion.div
