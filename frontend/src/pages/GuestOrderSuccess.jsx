@@ -249,8 +249,14 @@ const GuestOrderSuccess = () => {
         {/* ── CTAs ── */}
         <motion.div variants={itemFade} className="flex flex-col sm:flex-row gap-3 justify-center">
           <button
+            onClick={() => navigate(orderNumber ? `/orders?orderNumber=${orderNumber}` : '/orders')}
+            className="px-8 py-3 bg-[var(--brand,#000)] text-white rounded-xl font-semibold hover:opacity-90 transition-opacity shadow-lg"
+          >
+            Track Order
+          </button>
+          <button
             onClick={() => navigate("/")}
-            className="px-8 py-3 bg-black text-white rounded-xl font-semibold hover:bg-gray-900 transition-colors shadow-lg shadow-black/10"
+            className="px-8 py-3 bg-white text-gray-700 border border-gray-200 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
           >
             Continue Shopping
           </button>

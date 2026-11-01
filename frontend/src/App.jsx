@@ -205,7 +205,7 @@ const App = () => {
         <Route path="/signup" element={<SignUp />} />
         <Route path="/google-callback" element={<GoogleCallback />} />
         <Route path="/google-callback/auth-success" element={<GoogleCallback />} />
-        <Route path="/orders" element={<OrdersRoute />} />
+        <Route path="/orders" element={<Orders />} />
         <Route path="/payment/:orderNumber" element={<PaymentRoute />} />
         <Route path="/place-order" element={<PrivateRoute><PlaceOrder /></PrivateRoute>} />
         <Route path="/product/:productId" element={<Product />} />

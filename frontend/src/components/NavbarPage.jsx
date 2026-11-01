@@ -206,6 +206,14 @@ const NavbarPage = () => {
         >
           <p>{t("POLICY")}</p>
         </NavLink>
+        <NavLink
+          to="/orders"
+          className={({ isActive }) =>
+            `flex flex-col items-center gap-1 ${isActive ? "font-bold" : ""}`
+          }
+        >
+          <p>{t("ORDERS")}</p>
+        </NavLink>
       </ul>
 
       <div className="flex-1 flex justify-center">
@@ -378,6 +386,13 @@ const NavbarPage = () => {
             className="py-2 pl-6 border-b-2"
           >
             {t("CONTACT")}
+          </NavLink>
+          <NavLink
+            onClick={() => setvisible(false)}
+            to="/orders"
+            className="py-2 pl-6 border-b-2"
+          >
+            {t("ORDERS")}
           </NavLink>
         </div>
       </div>

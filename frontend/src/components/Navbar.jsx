@@ -273,18 +273,15 @@ const Navbar = () => {
             <span className="w-2/4 h-[2px] transition-all duration-300 bg-[var(--accent)] group-hover:w-full group-hover:bg-[var(--accent)] opacity-0 group-hover:opacity-100"></span>
           </NavLink>
 
-          {(user || guestToken) && (
-            /* Authenticated: go to full order history */
-            <NavLink
-              to="/orders"
-              className={({ isActive }) =>
-                `flex flex-col items-center gap-1 group ${isActive ? "font-bold text-[var(--accent)]" : ""}`
-              }
-            >
-              <p>{t("ORDERS")}</p>
-              <span className="w-2/4 h-[2px] transition-all duration-300 bg-[var(--accent)] group-hover:w-full group-hover:bg-[var(--accent)] opacity-0 group-hover:opacity-100" />
-            </NavLink>
-          )}
+          <NavLink
+            to="/orders"
+            className={({ isActive }) =>
+              `flex flex-col items-center gap-1 group ${isActive ? "font-bold text-[var(--accent)]" : ""}`
+            }
+          >
+            <p>{t("ORDERS")}</p>
+            <span className="w-2/4 h-[2px] transition-all duration-300 bg-[var(--accent)] group-hover:w-full group-hover:bg-[var(--accent)] opacity-0 group-hover:opacity-100" />
+          </NavLink>
         </ul>
 
         {/* --- اللوجو --- */}
@@ -581,15 +578,13 @@ const Navbar = () => {
             >
               {t("POLICY")}
             </NavLink>
-            {(user || guestToken) && (
-              <NavLink
-                onClick={() => setvisible(false)}
-                to="/orders"
-                className="py-3 pl-6 border-b border-[var(--border)] hover:bg-[var(--surface-raised)] transition-colors text-xs font-bold uppercase tracking-wider"
-              >
-                {t("ORDERS")}
-              </NavLink>
-            )}
+            <NavLink
+              onClick={() => setvisible(false)}
+              to="/orders"
+              className="py-3 pl-6 border-b border-[var(--border)] hover:bg-[var(--surface-raised)] transition-colors text-xs font-bold uppercase tracking-wider"
+            >
+              {t("ORDERS")}
+            </NavLink>
             <NavLink
               onClick={() => setvisible(false)}
               to="/wishlist"
