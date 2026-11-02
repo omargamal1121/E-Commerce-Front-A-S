@@ -11,7 +11,7 @@ import MostWanted from "../components/MostWanted";
 import ProductItem from "../components/ProductItem";
 import ProductImage from "../components/common/ProductImage";
 import { getImageUrl } from "../utils/imageUtils";
-import { FaChevronLeft, FaChevronRight, FaPlus, FaMinus, FaRulerCombined, FaTruck, FaShieldAlt, FaUndo, FaTimes } from "react-icons/fa";
+import { FaChevronLeft, FaChevronRight, FaPlus, FaMinus, FaTruck, FaShieldAlt, FaUndo, FaTimes } from "react-icons/fa";
 
 const OPTION_KEYS = [
   { key: "size", label: "Size", isNumeric: false },
@@ -33,7 +33,6 @@ const Product = () => {
   const [size, setSize] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [isZoomOpen, setIsZoomOpen] = useState(false);
-  const [showSizeGuide, setShowSizeGuide] = useState(false);
 
   const [variants, setVariants] = useState([]);
   const [variantsLoaded, setVariantsLoaded] = useState(false);
@@ -141,9 +140,12 @@ const Product = () => {
   const applyClick = (allVariants, currentSelections, clickedKey, clickedValue) => {
     let nextSel = { ...currentSelections };
 
-    // 1. Toggle off if already selected
+    // 1. Toggle off if already selected, but only if there are multiple options for this key
+    const distinctValsForKey = [...new Set(allVariants.map(v => getOptValue(v, clickedKey)).filter(Boolean))];
     if (nextSel[clickedKey] === clickedValue) {
-      delete nextSel[clickedKey];
+      if (distinctValsForKey.length > 1) {
+        delete nextSel[clickedKey];
+      }
     } else {
       nextSel[clickedKey] = clickedValue;
     }
@@ -220,10 +222,8 @@ const Product = () => {
         distinctVals = [...new Set(rawValues)];
       }
 
-      // If no color variant exists on product, display size and other options even if 1 value exists
-      const minRequired = (!hasColorVariants || opt.key === "size") ? 1 : 2;
-
-      if (distinctVals.length >= minRequired) {
+      // Display any option (size, measurements, color) that exists (has at least 1 value) across variants
+      if (distinctVals.length >= 1) {
         sections.push({ ...opt, options: distinctVals });
       }
     });
@@ -258,20 +258,20 @@ const Product = () => {
       const match = variants.find(v => v.id === selections.variantId);
       if (match) return match;
     }
-    // If user has chosen selections, match variant that satisfies all chosen options
-    const activeKeys = Object.keys(selections).filter(k => selections[k]);
-    if (activeKeys.length > 0) {
-      const exactMatch = variants.find(v => {
-        return activeKeys.every(k => getOptValue(v, k) === selections[k]);
-      });
-      if (exactMatch) return exactMatch;
-    }
     // If no option sections exist to choose from, default to first variant
     if (variants.length > 0 && derivedSections.length === 0) {
       return variants[0];
     }
     return null;
   }, [matchingVariants, variants, selections, derivedSections]);
+
+  // Helper to get translated section title
+  const getSectionTitle = (sec) => {
+    const transKey = sec.key === 'sleeveLength' ? 'SLEEVE_LENGTH' : sec.key.toUpperCase();
+    const translated = t(transKey);
+    const baseTitle = (translated && translated !== transKey) ? translated : sec.label.replace(/\s*\(cm\)/i, '');
+    return sec.isNumeric ? `${baseTitle} (cm)` : baseTitle;
+  };
 
   // Auto-select single choices on load or when variants change
   useEffect(() => {
@@ -707,13 +707,8 @@ const Product = () => {
                     >
                       <div className="flex justify-between items-center mb-2.5">
                         <h4 className="text-[10px] font-black uppercase tracking-[0.25em] text-[var(--text-muted)]">
-                          {sec.label} {sec.unit ? `(${sec.unit})` : ''}
+                          {getSectionTitle(sec)}
                         </h4>
-                        {sec.key === 'size' && (
-                          <button type="button" onClick={() => setShowSizeGuide(true)} className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)] hover:text-[var(--text)]">
-                            <FaRulerCombined /> Size Map
-                          </button>
-                        )}
                       </div>
 
                       <div className="flex flex-wrap gap-2.5">
@@ -907,49 +902,56 @@ const Product = () => {
             </div>
 
             {/* Variant Measurements */}
-            {selectedVariant && (selectedVariant.waist || selectedVariant.length || selectedVariant.chest || selectedVariant.hip || selectedVariant.sleeveLength || selectedVariant.isFreeSize) && (
-              <div className="p-6 rounded-3xl bg-[var(--surface)] border border-[var(--border)]">
-                <h5 className="text-[10px] font-black uppercase tracking-[0.3em] mb-4 text-[var(--text)]">{t('VARIANT_DETAILS')}</h5>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  {selectedVariant.waist && (
-                    <div className="flex flex-col items-center p-3 bg-[var(--surface-raised)] rounded-2xl border border-[var(--border)] shadow-sm">
-                      <span className="text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-1">{t('WAIST')}</span>
-                      <span className="text-lg font-black text-[var(--text)]">{selectedVariant.waist}<span className="text-xs font-bold text-[var(--text-muted)] ml-0.5">cm</span></span>
-                    </div>
-                  )}
-                  {selectedVariant.length && (
-                    <div className="flex flex-col items-center p-3 bg-[var(--surface-raised)] rounded-2xl border border-[var(--border)] shadow-sm">
-                      <span className="text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-1">{t('LENGTH')}</span>
-                      <span className="text-lg font-black text-[var(--text)]">{selectedVariant.length}<span className="text-xs font-bold text-[var(--text-muted)] ml-0.5">cm</span></span>
-                    </div>
-                  )}
-                  {selectedVariant.chest && (
-                    <div className="flex flex-col items-center p-3 bg-[var(--surface-raised)] rounded-2xl border border-[var(--border)] shadow-sm">
-                      <span className="text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-1">{t('CHEST')}</span>
-                      <span className="text-lg font-black text-[var(--text)]">{selectedVariant.chest}<span className="text-xs font-bold text-[var(--text-muted)] ml-0.5">cm</span></span>
-                    </div>
-                  )}
-                  {selectedVariant.hip && (
-                    <div className="flex flex-col items-center p-3 bg-[var(--surface-raised)] rounded-2xl border border-[var(--border)] shadow-sm">
-                      <span className="text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-1">{t('HIP')}</span>
-                      <span className="text-lg font-black text-[var(--text)]">{selectedVariant.hip}<span className="text-xs font-bold text-[var(--text-muted)] ml-0.5">cm</span></span>
-                    </div>
-                  )}
-                  {selectedVariant.sleeveLength && (
-                    <div className="flex flex-col items-center p-3 bg-[var(--surface-raised)] rounded-2xl border border-[var(--border)] shadow-sm">
-                      <span className="text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-1">{t('SLEEVE_LENGTH') || 'SLEEVE LENGTH'}</span>
-                      <span className="text-lg font-black text-[var(--text)]">{selectedVariant.sleeveLength}<span className="text-xs font-bold text-[var(--text-muted)] ml-0.5">cm</span></span>
-                    </div>
-                  )}
-                  {selectedVariant.isFreeSize && (
-                    <div className="flex flex-col items-center p-3 bg-[var(--brand)] text-[var(--text)] rounded-2xl border border-[var(--brand)] shadow-sm">
-                      <span className="text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-1">{t('SIZE')}</span>
-                      <span className="text-xs font-black uppercase tracking-wider">{t('FREE_SIZE') || 'FREE SIZE'}</span>
-                    </div>
-                  )}
+            {(() => {
+              const activeVariant = selectedVariant || (matchingVariants.length > 0 ? matchingVariants[0] : (variants.length > 0 ? variants[0] : null));
+              if (!activeVariant) return null;
+              const hasMeasurements = activeVariant.waist || activeVariant.length || activeVariant.chest || activeVariant.hip || activeVariant.sleeveLength || activeVariant.isFreeSize;
+              if (!hasMeasurements) return null;
+
+              return (
+                <div className="p-6 rounded-3xl bg-[var(--surface)] border border-[var(--border)]">
+                  <h5 className="text-[10px] font-black uppercase tracking-[0.3em] mb-4 text-[var(--text)]">{t('VARIANT_DETAILS')}</h5>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    {activeVariant.waist && (
+                      <div className="flex flex-col items-center p-3 bg-[var(--surface-raised)] rounded-2xl border border-[var(--border)] shadow-sm">
+                        <span className="text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-1">{t('WAIST')}</span>
+                        <span className="text-lg font-black text-[var(--text)]">{activeVariant.waist}<span className="text-xs font-bold text-[var(--text-muted)] ml-0.5">cm</span></span>
+                      </div>
+                    )}
+                    {activeVariant.length && (
+                      <div className="flex flex-col items-center p-3 bg-[var(--surface-raised)] rounded-2xl border border-[var(--border)] shadow-sm">
+                        <span className="text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-1">{t('LENGTH')}</span>
+                        <span className="text-lg font-black text-[var(--text)]">{activeVariant.length}<span className="text-xs font-bold text-[var(--text-muted)] ml-0.5">cm</span></span>
+                      </div>
+                    )}
+                    {activeVariant.chest && (
+                      <div className="flex flex-col items-center p-3 bg-[var(--surface-raised)] rounded-2xl border border-[var(--border)] shadow-sm">
+                        <span className="text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-1">{t('CHEST')}</span>
+                        <span className="text-lg font-black text-[var(--text)]">{activeVariant.chest}<span className="text-xs font-bold text-[var(--text-muted)] ml-0.5">cm</span></span>
+                      </div>
+                    )}
+                    {activeVariant.hip && (
+                      <div className="flex flex-col items-center p-3 bg-[var(--surface-raised)] rounded-2xl border border-[var(--border)] shadow-sm">
+                        <span className="text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-1">{t('HIP')}</span>
+                        <span className="text-lg font-black text-[var(--text)]">{activeVariant.hip}<span className="text-xs font-bold text-[var(--text-muted)] ml-0.5">cm</span></span>
+                      </div>
+                    )}
+                    {activeVariant.sleeveLength && (
+                      <div className="flex flex-col items-center p-3 bg-[var(--surface-raised)] rounded-2xl border border-[var(--border)] shadow-sm">
+                        <span className="text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-1">{t('SLEEVE_LENGTH') || 'SLEEVE LENGTH'}</span>
+                        <span className="text-lg font-black text-[var(--text)]">{activeVariant.sleeveLength}<span className="text-xs font-bold text-[var(--text-muted)] ml-0.5">cm</span></span>
+                      </div>
+                    )}
+                    {activeVariant.isFreeSize && (
+                      <div className="flex flex-col items-center p-3 bg-[var(--brand)] text-[var(--text)] rounded-2xl border border-[var(--brand)] shadow-sm">
+                        <span className="text-[8px] font-black uppercase tracking-widest text-[var(--text-muted)] mb-1">{t('SIZE')}</span>
+                        <span className="text-xs font-black uppercase tracking-wider">{t('FREE_SIZE') || 'FREE SIZE'}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Details & Specs */}
             <div className="grid grid-cols-1 gap-4 pt-10">
@@ -1052,38 +1054,7 @@ const Product = () => {
         )}
       </AnimatePresence>
 
-      {/* SIZE GUIDE MODAL */}
-      <AnimatePresence>
-        {showSizeGuide && (
-          <motion.div className="fixed inset-0 z-[200] flex items-center justify-center p-6">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} onClick={() => setShowSizeGuide(false)} className="absolute inset-0 bg-black/80 backdrop-blur-md" />
-            <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="relative bg-[var(--surface)] w-full max-w-2xl rounded-[3rem] p-12 shadow-2xl border border-[var(--border)]">
-              <h2 className="text-4xl font-black tracking-tighter mb-8 uppercase text-[var(--text)]">AESTHETIC MAP</h2>
-              <div className="overflow-hidden rounded-3xl border border-[var(--border)]">
-                <table className="w-full text-xs">
-                  <thead className="bg-[var(--brand)] text-[var(--text)] px-4">
-                    <tr>
-                      <th className="py-5 px-6 text-left font-black uppercase tracking-widest">Size</th>
-                      <th className="py-5 px-6 text-left font-black uppercase tracking-widest">{t('WAIST')} (cm)</th>
-                      <th className="py-5 px-6 text-left font-black uppercase tracking-widest">{t('LENGTH')} (cm)</th>
-                      <th className="py-5 px-6 text-left font-black uppercase tracking-widest">{t('CHEST')} (cm)</th>
-                      <th className="py-5 px-6 text-left font-black uppercase tracking-widest">{t('HIP')} (cm)</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[var(--border)] font-bold text-[var(--text)]">
-                    <tr><td className="py-5 px-6">S</td><td className="py-5 px-6 text-[var(--text-muted)]">72–76</td><td className="py-5 px-6 text-[var(--text-muted)]">98–100</td><td className="py-5 px-6 text-[var(--text-muted)]">86–90</td><td className="py-5 px-6 text-[var(--text-muted)]">90–94</td></tr>
-                    <tr><td className="py-5 px-6">M</td><td className="py-5 px-6 text-[var(--text-muted)]">80–84</td><td className="py-5 px-6 text-[var(--text-muted)]">102–104</td><td className="py-5 px-6 text-[var(--text-muted)]">94–98</td><td className="py-5 px-6 text-[var(--text-muted)]">98–102</td></tr>
-                    <tr><td className="py-5 px-6">L</td><td className="py-5 px-6 text-[var(--text-muted)]">88–92</td><td className="py-5 px-6 text-[var(--text-muted)]">104–106</td><td className="py-5 px-6 text-[var(--text-muted)]">102–106</td><td className="py-5 px-6 text-[var(--text-muted)]">106–110</td></tr>
-                    <tr><td className="py-5 px-6">XL</td><td className="py-5 px-6 text-[var(--text-muted)]">96–100</td><td className="py-5 px-6 text-[var(--text-muted)]">106–108</td><td className="py-5 px-6 text-[var(--text-muted)]">110–114</td><td className="py-5 px-6 text-[var(--text-muted)]">114–118</td></tr>
-                    <tr><td className="py-5 px-6">XXL</td><td className="py-5 px-6 text-[var(--text-muted)]">104–110</td><td className="py-5 px-6 text-[var(--text-muted)]">108–110</td><td className="py-5 px-6 text-[var(--text-muted)]">118–124</td><td className="py-5 px-6 text-[var(--text-muted)]">122–128</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <button onClick={() => setShowSizeGuide(false)} className="w-full mt-8 py-5 bg-[var(--brand)] text-[var(--text)] rounded-[2rem] font-black uppercase text-xs tracking-widest shadow-xl">Dismiss Gallery</button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
 
       {/* PRODUCT IMAGE ZOOM LIGHTBOX */}
       <AnimatePresence>
