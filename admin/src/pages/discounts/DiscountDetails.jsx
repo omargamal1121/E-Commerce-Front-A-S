@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import API from "../../services/api";
@@ -149,11 +149,11 @@ const DiscountDetails = ({ token }) => {
                   <div className="grid grid-cols-1 gap-6">
                     <div className="flex flex-col">
                       <span className="text-[9px] font-bold uppercase text-gray-500 tracking-widest">Start Date</span>
-                      <span className="text-sm font-black">{new Date(data.startDate).toLocaleString('en-GB', { timeZone: 'Africa/Cairo' })}</span>
+                      <span className="text-sm font-black">{new Date(data.startDate).toLocaleString('en-GB')}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-[9px] font-bold uppercase text-gray-500 tracking-widest">End Date</span>
-                      <span className="text-sm font-black text-rose-400">{new Date(data.endDate).toLocaleString('en-GB', { timeZone: 'Africa/Cairo' })}</span>
+                      <span className="text-sm font-black text-rose-400">{new Date(data.endDate).toLocaleString('en-GB')}</span>
                     </div>
                   </div>
                 </div>

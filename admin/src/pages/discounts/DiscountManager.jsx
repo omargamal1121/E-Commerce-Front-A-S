@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import API from "../../services/api";
@@ -31,6 +31,49 @@ const DiscountManager = ({ token }) => {
     } catch (e) {
       console.error("Error converting to Cairo local:", e);
       return "";
+    }
+  };
+
+  // Helper to convert a Cairo local datetime string (from datetime-local input) to a UTC ISO string
+  const cairoLocalToUTC = (localString) => {
+    if (!localString) return "";
+    try {
+      // Interpret the datetime-local value as Africa/Cairo time and convert to UTC.
+      // Strategy: probe the UTC offset for Africa/Cairo at the given local moment.
+      const [datePart, timePart] = localString.split('T');
+      const [year, month, day] = datePart.split('-').map(Number);
+      const [hours, minutes] = timePart.split(':').map(Number);
+
+      // Create a probe date treating the input as UTC, then compare
+      // against what Africa/Cairo says it looks like at that UTC moment.
+      const probe = new Date(Date.UTC(year, month - 1, day, hours, minutes));
+      const cairoStr = new Intl.DateTimeFormat('sv-SE', {
+        timeZone: 'Africa/Cairo',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }).format(probe).replace(' ', 'T');
+
+      const [cDatePart, cTimePart] = cairoStr.split('T');
+      const [cYear, cMonth, cDay] = cDatePart.split('-').map(Number);
+      const [cHours, cMinutes] = cTimePart.split(':').map(Number);
+
+      // Difference in minutes between the user's Cairo input and what UTC probe showed in Cairo
+      const diffMinutes =
+        (year - cYear) * 525960 +
+        (month - cMonth) * 43800 +
+        (day - cDay) * 1440 +
+        (hours - cHours) * 60 +
+        (minutes - cMinutes);
+
+      // Adjust probe by the offset to get the true UTC moment
+      return new Date(probe.getTime() + diffMinutes * 60000).toISOString();
+    } catch (e) {
+      console.error("Error converting Cairo local to UTC:", e);
+      return new Date(localString).toISOString();
     }
   };
 
@@ -270,8 +313,8 @@ const DiscountManager = ({ token }) => {
                 e.preventDefault();
                 try {
                   const payload = { ...formData };
-                  if (payload.startDate) payload.startDate = new Date(payload.startDate).toISOString();
-                  if (payload.endDate) payload.endDate = new Date(payload.endDate).toISOString();
+                  if (payload.startDate) payload.startDate = cairoLocalToUTC(payload.startDate);
+                  if (payload.endDate) payload.endDate = cairoLocalToUTC(payload.endDate);
 
                   if (editId) await API.discounts.update(editId, payload, token);
                   else await API.discounts.create(payload, token);

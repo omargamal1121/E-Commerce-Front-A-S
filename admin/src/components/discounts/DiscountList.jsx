@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { useTranslation } from "react-i18next";
 
 const DiscountList = ({
@@ -70,11 +70,11 @@ const DiscountList = ({
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                      <span className="text-[10px] font-bold text-gray-600">{new Date(d.startDate).toLocaleDateString('en-GB', { timeZone: 'Africa/Cairo' })}</span>
+                      <span className="text-[10px] font-bold text-gray-600">{new Date(d.startDate).toLocaleString('en-GB')}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-                      <span className="text-[10px] font-bold text-gray-600">{new Date(d.endDate).toLocaleDateString('en-GB', { timeZone: 'Africa/Cairo' })}</span>
+                      <span className="text-[10px] font-bold text-gray-600">{new Date(d.endDate).toLocaleString('en-GB')}</span>
                     </div>
                   </div>
                 </td>
