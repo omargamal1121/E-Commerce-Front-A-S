@@ -26,3 +26,4 @@ export const trackEvent = (name, data = {}) => {
     window.fbq("track", name, data);
   }
 };
+
