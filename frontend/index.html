@@ -18,12 +18,14 @@
     'https://connect.facebook.net/en_US/fbevents.js');
     fbq('init', '29383373751255977');
   </script>
-  <noscript><img height="1" width="1" style="display:none"
-    src="https://www.facebook.com/tr?id=29383373751255977&ev=PageView&noscript=1"></noscript>
   <!-- End Meta Pixel Code -->
 </head>
 
 <body>
+  <!-- Meta Pixel noscript fallback -->
+  <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=29383373751255977&ev=PageView&noscript=1"></noscript>
+  <!-- End Meta Pixel noscript fallback -->
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
 </body>
