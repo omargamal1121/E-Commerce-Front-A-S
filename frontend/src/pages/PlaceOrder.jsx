@@ -29,7 +29,7 @@ const PlaceOrder = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState(null);
   const [paymentMethods, setPaymentMethods] = useState([]);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(1); // COD only
   const [walletPhoneNumber, setWalletPhoneNumber] = useState("");
   const [paymentNotes, setPaymentNotes] = useState("");
 
@@ -194,10 +194,6 @@ const PlaceOrder = () => {
       toast.error("Please select a delivery address");
       return;
     }
-    if (!selectedPaymentMethod) {
-      toast.error("Please select a payment method");
-      return;
-    }
 
     // Check if user has items in cart
     const cartCount = getCartCount();
@@ -214,11 +210,7 @@ const PlaceOrder = () => {
     }
 
     // Resolve method value from already-loaded list – no second network call needed
-    const methodValue = Number(selectedPaymentMethod);
-    if (!Number.isFinite(methodValue)) {
-      toast.error("Invalid payment method selected. Please try again.");
-      return;
-    }
+    const methodValue = 1; // Cash on Delivery only
 
     setIsLoading(true);
     try {
@@ -249,12 +241,12 @@ const PlaceOrder = () => {
 
         toast.success("Order created successfully! Processing payment...");
 
-        // Step 2: Process Payment
+        // Step 2: Process Payment (COD)
         const paymentPayload = {
           orderNumber: orderNumber,
           paymentDetails: {
-            walletPhoneNumber: walletPhoneNumber || "",
-            paymentMethod: methodValue,
+            walletPhoneNumber: "",
+            paymentMethod: 1, // Cash on Delivery
             currency: "EGP",
             notes: paymentNotes || ""
           }
@@ -498,63 +490,19 @@ const PlaceOrder = () => {
 
         {/* Right - Order Summary */}
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.3 }} variants={paymentVariants} className="mt-8 p-3">
-          {/* Payment Method Selection */}
+          {/* Payment Method - COD Only */}
           <motion.div variants={sectionVariants} className="mb-8">
             <Title text1={"PAYMENT"} text2={"METHOD"} />
-            <div className="mt-4 space-y-3">
-              {paymentMethods.map((method) => (
-                <div
-                  key={method.id}
-                  className={`border rounded-md p-3 cursor-pointer transition-colors ${selectedPaymentMethod === method.id
-                    ? "border-[var(--success)] bg-[var(--success)]/10"
-                    : "border-[var(--border)] hover:border-gray-400"
-                    }`}
-                >
-                  <div
-                    onClick={() => setSelectedPaymentMethod(method.id)}
-                    className="cursor-pointer"
-                  >
-                    <p className="font-medium">{method.name}</p>
-                    <p className="text-sm text-gray-500">{method.paymentMethod}</p>
-                  </div>
-                  <div className={`w-4 h-4 rounded-full border-2 ${selectedPaymentMethod === method.id
-                    ? "border-[var(--success)] bg-[var(--success)]/100"
-                    : "border-[var(--border)]"
-                    }`}>
-                    {selectedPaymentMethod === method.id && (
-                      <div className="w-full h-full rounded-full bg-white scale-50"></div>
-                    )}
-                  </div>
+            <div className="mt-4">
+              <div className="border rounded-md p-4 border-[var(--success)] bg-[var(--success)]/10 flex items-center gap-3">
+                <div className="w-5 h-5 rounded-full border-2 border-[var(--success)] bg-[var(--success)] flex items-center justify-center flex-shrink-0">
+                  <div className="w-2 h-2 rounded-full bg-white" />
                 </div>
-              ))}
-            </div>
-
-            {/* Wallet Phone Number (if needed) */}
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-[var(--text)] mb-2">
-                Wallet Phone Number (Optional)
-              </label>
-              <input
-                type="tel"
-                value={walletPhoneNumber}
-                onChange={(e) => setWalletPhoneNumber(e.target.value)}
-                className="border border-[var(--border)] rounded-md px-3.5 py-1.5 w-full"
-                placeholder="Enter wallet phone number"
-              />
-            </div>
-
-            {/* Payment Notes */}
-            <div className="mt-4">
-              <label className="block text-sm font-medium text-[var(--text)] mb-2">
-                Payment Notes (Optional)
-              </label>
-              <textarea
-                value={paymentNotes}
-                onChange={(e) => setPaymentNotes(e.target.value)}
-                className="border border-[var(--border)] rounded-md px-3.5 py-1.5 w-full"
-                placeholder="Add any payment notes"
-                rows="2"
-              />
+                <div>
+                  <p className="font-semibold text-[var(--text)]">Cash on Delivery (COD)</p>
+                  <p className="text-sm text-[var(--text-muted)]">Pay when your order arrives</p>
+                </div>
+              </div>
             </div>
           </motion.div>
 
@@ -568,13 +516,12 @@ const PlaceOrder = () => {
                 whileHover={{ scale: selectedAddressId ? 1.01 : 1 }}
                 whileTap={{ scale: selectedAddressId ? 0.95 : 1 }}
                 onClick={onSubmitHandler}
-                disabled={!selectedAddressId || !selectedPaymentMethod || isLoading}
-                className={`px-16 py-3 uppercase font-medium transition-all duration-300 ${selectedAddressId && selectedPaymentMethod && !isLoading ? "bg-[var(--brand)] text-[var(--text)] cursor-pointer hover:bg-white hover:text-black border border-black" : "bg-gray-300 text-gray-500 cursor-not-allowed border border-[var(--border)]"}`}
+                disabled={!selectedAddressId || isLoading}
+                className={`px-16 py-3 uppercase font-medium transition-all duration-300 ${selectedAddressId && !isLoading ? "bg-[var(--brand)] text-[var(--text)] cursor-pointer hover:bg-white hover:text-black border border-black" : "bg-gray-300 text-gray-500 cursor-not-allowed border border-[var(--border)]"}`}
               >
-                {isLoading ? "Processing..." : "Place Order & Pay"}
+                {isLoading ? "Processing..." : "Place Order"}
               </motion.button>
               {!selectedAddressId && <p className="text-red-500 text-sm mt-2">Please select a delivery address</p>}
-              {!selectedPaymentMethod && <p className="text-red-500 text-sm mt-2">Please select a payment method</p>}
             </motion.div>
           </motion.div>
         </motion.div>

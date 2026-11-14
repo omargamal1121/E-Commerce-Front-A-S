@@ -896,7 +896,7 @@ const Product = () => {
                         ? 'SELECT OPTIONS'
                         : getEffectiveQty(selectedVariant) <= 0
                           ? 'OUT OF STOCK'
-                          : 'ADD TO PRIVATE COLLECTION'}
+                          : 'ADD TO CART'}
                 </button>
               </div>
             </div>
