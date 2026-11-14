@@ -41,6 +41,7 @@ import WebsiteClosed from "./pages/WebsiteClosed";
 import GuestCheckout from "./pages/GuestCheckout";
 import GuestOrderSuccess from "./pages/GuestOrderSuccess";
 import { getGuestToken } from "./utils/guestSession";
+import MetaPixelTracker from "./components/MetaPixelTracker";
 
 
 // Component to scroll to top on route change
@@ -164,6 +165,7 @@ const App = () => {
             theme={theme === "light" ? "light" : "dark"}
             style={{ marginTop: '80px', zIndex: 9999 }}
           />
+          <MetaPixelTracker />
           <Routes>
             <Route path="/orders" element={<Orders />} />
             <Route path="*" element={<Navigate to="/orders" replace />} />
@@ -192,6 +194,7 @@ const App = () => {
         style={{ marginTop: '80px', zIndex: 9999 }}
       />
       <SearchBar />
+      <MetaPixelTracker />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/error" element={<Erroe404 />} />
