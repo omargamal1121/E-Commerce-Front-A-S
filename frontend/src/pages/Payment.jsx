@@ -6,6 +6,13 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { getGuestToken } from '../utils/guestSession';
 
+const isCOD = (method) => {
+    if (!method) return false;
+    if (method.id === 1) return true;
+    const name = String(method.name || method.paymentMethod || "").toLowerCase().replace(/[\s_-]/g, "");
+    return name.includes("cash") || name.includes("cod");
+};
+
 const Payment = () => {
     const { orderNumber } = useParams();
     const { backendUrl, token, currency } = useContext(ShopContext);
@@ -61,12 +68,20 @@ const Payment = () => {
             const response = await axios.get(`${backendUrl}/api/Enums/PaymentMethods`);
             const methods = response.data.responseBody?.data || [];
             setPaymentMethods(methods);
-            if (methods.length > 0) {
+            const cod = methods.find(isCOD) || methods.find(m => m.id === 1);
+            if (cod) {
+                setSelectedPaymentMethod(cod.id);
+            } else if (methods.length > 0) {
                 setSelectedPaymentMethod(methods[0].id);
             }
         } catch (error) {
             console.error("Error fetching payment methods:", error);
-            toast.error("Failed to load payment methods");
+            setPaymentMethods([
+                { id: 1, name: "Cash on Delivery", paymentMethod: "COD" },
+                { id: 2, name: "Credit / Debit Card", paymentMethod: "Visa / Mastercard" },
+                { id: 4, name: "Mobile Wallet", paymentMethod: "Vodafone / Orange / Etisalat" }
+            ]);
+            setSelectedPaymentMethod(1);
         }
     };
 
@@ -241,29 +256,53 @@ const Payment = () => {
                         <h3 className="text-xl font-medium mb-4">Select Payment Method</h3>
 
                         <div className="space-y-3 mb-6">
-                            {paymentMethods.map((method) => (
-                                <div
-                                    key={method.id}
-                                    onClick={() => setSelectedPaymentMethod(method.id)}
-                                    className={`border rounded-md p-4 cursor-pointer flex items-center justify-between transition-all ${selectedPaymentMethod === method.id
-                                        ? 'border-green-500 bg-green-50 ring-1 ring-green-500'
-                                        : 'border-gray-200 hover:border-gray-300'
+                            {(paymentMethods.length > 0 ? paymentMethods : [
+                                { id: 1, name: "Cash on Delivery", paymentMethod: "COD" },
+                                { id: 2, name: "Credit / Debit Card", paymentMethod: "Visa / Mastercard" },
+                                { id: 4, name: "Mobile Wallet", paymentMethod: "Vodafone / Orange / Etisalat" }
+                            ]).map((method) => {
+                                const isMethodCOD = isCOD(method);
+                                const isSelected = selectedPaymentMethod === method.id;
+
+                                return (
+                                    <div
+                                        key={method.id}
+                                        onClick={() => {
+                                            if (isMethodCOD) setSelectedPaymentMethod(method.id);
+                                        }}
+                                        className={`border rounded-xl p-4 flex items-center justify-between transition-all ${
+                                            isMethodCOD
+                                                ? isSelected
+                                                    ? 'border-green-500 bg-green-50 ring-1 ring-green-500 cursor-pointer'
+                                                    : 'border-gray-200 hover:border-gray-300 cursor-pointer'
+                                                : 'border-gray-200 bg-gray-50/70 opacity-50 cursor-not-allowed select-none'
                                         }`}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${selectedPaymentMethod === method.id ? 'border-green-500' : 'border-gray-300'
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                                                isMethodCOD && isSelected ? 'border-green-500' : 'border-gray-300'
                                             }`}>
-                                            {selectedPaymentMethod === method.id && (
-                                                <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <p className="font-medium text-gray-800">{method.name}</p>
-                                            <p className="text-xs text-gray-500">{method.paymentMethod}</p>
+                                                {isMethodCOD && isSelected && (
+                                                    <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
+                                                )}
+                                            </div>
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <p className={`font-semibold text-sm ${isMethodCOD ? 'text-gray-800' : 'text-gray-500'}`}>{method.name}</p>
+                                                    {!isMethodCOD && (
+                                                        <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full border border-amber-200">
+                                                            Soon
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-xs text-gray-500 mt-0.5">
+                                                    {isMethodCOD ? "Pay in cash upon delivery" : "Available soon"}
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
 
                         {/* Wallet Phone Number */}

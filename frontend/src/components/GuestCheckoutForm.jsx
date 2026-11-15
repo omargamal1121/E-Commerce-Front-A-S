@@ -4,6 +4,13 @@ import { placeGuestOrder } from '../services/guestCheckoutService';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 
+const isCOD = (method) => {
+  if (!method) return false;
+  if (method.id === 1) return true;
+  const name = String(method.name || method.paymentMethod || "").toLowerCase().replace(/[\s_-]/g, "");
+  return name.includes("cash") || name.includes("cod");
+};
+
 const GuestCheckoutForm = () => {
   const { 
     navigate, 
@@ -21,7 +28,7 @@ const GuestCheckoutForm = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [paymentMethods, setPaymentMethods] = useState([]);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(1);
   const [walletPhoneNumber, setWalletPhoneNumber] = useState('');
   const [paymentNotes, setPaymentNotes] = useState('');
 
@@ -43,15 +50,24 @@ const GuestCheckoutForm = () => {
   const fetchPaymentMethods = async () => {
     try {
       const response = await fetch(`${backendUrl}/api/Enums/PaymentMethods`);
-      const methods = response.data?.responseBody?.data || [];
+      const data = await response.json();
+      const methods = data?.responseBody?.data || data?.data || [];
       setPaymentMethods(methods);
 
-      if (methods.length > 0) {
+      const cod = methods.find(isCOD) || methods.find(m => m.id === 1);
+      if (cod) {
+        setSelectedPaymentMethod(cod.id);
+      } else if (methods.length > 0) {
         setSelectedPaymentMethod(methods[0].id);
       }
     } catch (error) {
       console.error('Error fetching payment methods:', error);
-      toast.error('Failed to load payment methods');
+      setPaymentMethods([
+        { id: 1, name: 'Cash on Delivery', paymentMethod: 'COD' },
+        { id: 2, name: 'Credit / Debit Card', paymentMethod: 'Visa / Mastercard' },
+        { id: 4, name: 'Mobile Wallet', paymentMethod: 'Vodafone / Orange / Etisalat' }
+      ]);
+      setSelectedPaymentMethod(1);
     }
   };
 
@@ -161,12 +177,8 @@ const GuestCheckoutForm = () => {
 
         toast.success('Order placed successfully!');
         
-        // Navigate to payment or success page
-        if (selectedPaymentMethod) {
-          navigate(`/payment/${result.orderNumber}`);
-        } else {
-          navigate(`/guest-order-success/${result.orderNumber}`);
-        }
+        // Navigate to success page
+        navigate(`/checkout/success?orderNumber=${encodeURIComponent(result.orderNumber)}`);
       } else {
         toast.error(result.message || 'Failed to place order');
       }
@@ -356,19 +368,54 @@ const GuestCheckoutForm = () => {
         <h3 className="text-lg font-black mb-4">Payment Method</h3>
         
         <div className="space-y-3">
-          {paymentMethods.map(method => (
-            <label key={method.id} className="flex items-center p-4 border border-gray-200 rounded-xl cursor-pointer hover:border-black transition-all">
-              <input
-                type="radio"
-                name="paymentMethod"
-                value={method.id}
-                checked={selectedPaymentMethod === method.id}
-                onChange={(e) => setSelectedPaymentMethod(Number(e.target.value))}
-                className="w-4 h-4 text-black focus:ring-black"
-              />
-              <span className="ml-3 font-semibold">{method.name}</span>
-            </label>
-          ))}
+          {(paymentMethods.length > 0 ? paymentMethods : [
+            { id: 1, name: 'Cash on Delivery' },
+            { id: 2, name: 'Credit / Debit Card' },
+            { id: 4, name: 'Mobile Wallet' }
+          ]).map(method => {
+            const isMethodCOD = isCOD(method);
+            const isSelected = selectedPaymentMethod === method.id;
+
+            return (
+              <label
+                key={method.id}
+                className={`flex items-center justify-between p-4 border rounded-xl transition-all ${
+                  isMethodCOD
+                    ? isSelected
+                      ? 'border-black bg-gray-50 cursor-pointer shadow-sm'
+                      : 'border-gray-200 hover:border-black cursor-pointer'
+                    : 'border-gray-200 bg-gray-50/70 opacity-50 cursor-not-allowed select-none'
+                }`}
+              >
+                <div className="flex items-center">
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value={method.id}
+                    disabled={!isMethodCOD}
+                    checked={isMethodCOD && isSelected}
+                    onChange={(e) => {
+                      if (isMethodCOD) setSelectedPaymentMethod(Number(e.target.value));
+                    }}
+                    className="w-4 h-4 text-black focus:ring-black cursor-pointer disabled:cursor-not-allowed"
+                  />
+                  <div className="ml-3">
+                    <span className={`font-semibold ${isMethodCOD ? 'text-gray-900' : 'text-gray-500'}`}>
+                      {method.name}
+                    </span>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {isMethodCOD ? 'Pay in cash upon delivery' : 'Available soon'}
+                    </p>
+                  </div>
+                </div>
+                {!isMethodCOD && (
+                  <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full border border-amber-200">
+                    Soon
+                  </span>
+                )}
+              </label>
+            );
+          })}
         </div>
 
         {selectedPaymentMethod && paymentMethods.find(m => m.id === selectedPaymentMethod)?.name?.toLowerCase().includes('wallet') && (

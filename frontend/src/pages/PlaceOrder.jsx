@@ -8,6 +8,13 @@ import { motion } from "framer-motion";
 import { toast } from "react-toastify";
 import axios from "axios";
 
+const isCOD = (method) => {
+  if (!method) return false;
+  if (method.id === 1) return true;
+  const name = String(method.name || method.paymentMethod || "").toLowerCase().replace(/[\s_-]/g, "");
+  return name.includes("cash") || name.includes("cod");
+};
+
 const PlaceOrder = () => {
   const {
     navigate,
@@ -72,13 +79,19 @@ const PlaceOrder = () => {
       const methods = response.data.responseBody?.data || [];
       setPaymentMethods(methods);
 
-      // Auto-select first payment method
-      if (methods.length > 0) {
-        setSelectedPaymentMethod(methods[0].id);
+      // Auto-select COD method
+      const codMethod = methods.find(isCOD) || methods.find(m => m.id === 1);
+      if (codMethod) {
+        setSelectedPaymentMethod(codMethod.id);
       }
     } catch (error) {
       console.error("Error fetching payment methods:", error);
-      toast.error("Failed to load payment methods");
+      setPaymentMethods([
+        { id: 1, name: "Cash on Delivery", paymentMethod: "COD" },
+        { id: 2, name: "Credit / Debit Card", paymentMethod: "Visa / Mastercard" },
+        { id: 4, name: "Mobile Wallet", paymentMethod: "Vodafone / Orange / Etisalat" },
+      ]);
+      setSelectedPaymentMethod(1);
     }
   };
 
@@ -490,19 +503,70 @@ const PlaceOrder = () => {
 
         {/* Right - Order Summary */}
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.3 }} variants={paymentVariants} className="mt-8 p-3">
-          {/* Payment Method - COD Only */}
+          {/* Payment Method Selection */}
           <motion.div variants={sectionVariants} className="mb-8">
             <Title text1={"PAYMENT"} text2={"METHOD"} />
-            <div className="mt-4">
-              <div className="border rounded-md p-4 border-[var(--success)] bg-[var(--success)]/10 flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full border-2 border-[var(--success)] bg-[var(--success)] flex items-center justify-center flex-shrink-0">
-                  <div className="w-2 h-2 rounded-full bg-white" />
-                </div>
-                <div>
-                  <p className="font-semibold text-[var(--text)]">Cash on Delivery (COD)</p>
-                  <p className="text-sm text-[var(--text-muted)]">Pay when your order arrives</p>
-                </div>
-              </div>
+            <div className="mt-4 space-y-3">
+              {(paymentMethods.length > 0
+                ? paymentMethods
+                : [
+                    { id: 1, name: "Cash on Delivery", paymentMethod: "COD" },
+                    { id: 2, name: "Credit / Debit Card", paymentMethod: "Visa / Mastercard" },
+                    { id: 4, name: "Mobile Wallet", paymentMethod: "Vodafone / Orange / Etisalat" }
+                  ]
+              ).map((method) => {
+                const isMethodCOD = isCOD(method);
+                const isSelected = selectedPaymentMethod === method.id;
+
+                return (
+                  <div
+                    key={method.id}
+                    onClick={() => {
+                      if (isMethodCOD) {
+                        setSelectedPaymentMethod(method.id);
+                      }
+                    }}
+                    className={`border rounded-xl p-4 flex items-center justify-between transition-all ${
+                      isMethodCOD
+                        ? isSelected
+                          ? "border-[var(--success)] bg-[var(--success)]/10 cursor-pointer shadow-sm"
+                          : "border-[var(--border)] hover:border-gray-400 cursor-pointer"
+                        : "border-[var(--border)] bg-gray-50/70 dark:bg-gray-800/30 opacity-50 cursor-not-allowed select-none"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                          isMethodCOD && isSelected
+                            ? "border-[var(--success)] bg-[var(--success)]"
+                            : "border-gray-300"
+                        }`}
+                      >
+                        {isMethodCOD && isSelected && (
+                          <div className="w-2 h-2 rounded-full bg-white" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className={`font-semibold text-sm ${isMethodCOD ? "text-[var(--text)]" : "text-gray-500"}`}>
+                            {method.name}
+                          </p>
+                          {!isMethodCOD && (
+                            <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-700">
+                              Soon
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                          {isMethodCOD
+                            ? "Pay in cash when your order arrives"
+                            : "Available soon"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </motion.div>
 

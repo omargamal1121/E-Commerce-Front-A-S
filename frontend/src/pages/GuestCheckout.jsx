@@ -16,6 +16,13 @@ const stagger = { hidden: {}, visible: { transition: { staggerChildren: 0.07 } }
 const itemFade = { hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0, transition: { duration: 0.38 } } };
 
 /* ─── helper ──────────────────────────────────────────────────────────────── */
+const isCOD = (method) => {
+  if (!method) return false;
+  if (method.id === 1) return true;
+  const name = String(method.name || method.paymentMethod || "").toLowerCase().replace(/[\s_-]/g, "");
+  return name.includes("cash") || name.includes("cod");
+};
+
 const EMPTY_FORM = {
   customerName: "",
   phoneNumber: "",
@@ -88,7 +95,7 @@ const GuestCheckout = () => {
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
   const [paymentMethods, setPaymentMethods] = useState([]);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(1);
   const [walletPhone, setWalletPhone] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resolvingVariants, setResolvingVariants] = useState(false);
@@ -100,9 +107,19 @@ const GuestCheckout = () => {
       .then((res) => {
         const methods = res.data.responseBody?.data || res.data?.data || [];
         setPaymentMethods(methods);
-        if (methods.length > 0) setSelectedPaymentMethod(methods[0].id);
+        const cod = methods.find(isCOD) || methods.find((m) => m.id === 1);
+        if (cod) setSelectedPaymentMethod(cod.id);
+        else if (methods.length > 0) setSelectedPaymentMethod(methods[0].id);
       })
-      .catch(() => toast.error("Failed to load payment methods."));
+      .catch(() => {
+        toast.error("Failed to load payment methods.");
+        setPaymentMethods([
+          { id: 1, name: "Cash on Delivery", paymentMethod: "COD" },
+          { id: 2, name: "Credit / Debit Card", paymentMethod: "Visa / Mastercard" },
+          { id: 4, name: "Mobile Wallet", paymentMethod: "Vodafone / Orange / Etisalat" }
+        ]);
+        setSelectedPaymentMethod(1);
+      });
   }, [backendUrl]);
 
   /* ── derive flat cart list from cartItems + products ── */
@@ -494,42 +511,61 @@ const GuestCheckout = () => {
                 Payment Method
               </h2>
 
-              {paymentMethods.length === 0 ? (
-                <div className="flex items-center gap-2 text-sm text-gray-400 py-2">
-                  <div className="w-4 h-4 rounded-full border-2 border-gray-300 border-t-gray-600 animate-spin" />
-                  Loading payment methods…
-                </div>
-              ) : (
-                <div className="flex flex-col gap-3">
-                  {paymentMethods.map((method) => {
-                    const active = selectedPaymentMethod === method.id;
-                    return (
-                      <button
-                        key={method.id}
-                        type="button"
-                        onClick={() => setSelectedPaymentMethod(method.id)}
-                        className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl border-2 text-left transition-all duration-200 ${active
-                            ? "border-black bg-[var(--bg)] shadow-sm"
-                            : "border-[var(--border)] hover:border-gray-300"
-                          }`}
-                      >
+              <div className="flex flex-col gap-3">
+                {(paymentMethods.length > 0
+                  ? paymentMethods
+                  : [
+                      { id: 1, name: "Cash on Delivery", paymentMethod: "COD" },
+                      { id: 2, name: "Credit / Debit Card", paymentMethod: "Visa / Mastercard" },
+                      { id: 4, name: "Mobile Wallet", paymentMethod: "Vodafone / Orange / Etisalat" }
+                    ]
+                ).map((method) => {
+                  const isMethodCOD = isCOD(method);
+                  const active = selectedPaymentMethod === method.id;
+                  return (
+                    <button
+                      key={method.id}
+                      type="button"
+                      disabled={!isMethodCOD}
+                      onClick={() => {
+                        if (isMethodCOD) setSelectedPaymentMethod(method.id);
+                      }}
+                      className={`flex items-center justify-between w-full px-4 py-3 rounded-xl border-2 text-left transition-all duration-200 ${
+                        isMethodCOD
+                          ? active
+                            ? "border-black bg-[var(--bg)] shadow-sm cursor-pointer"
+                            : "border-[var(--border)] hover:border-gray-300 cursor-pointer"
+                          : "border-[var(--border)] bg-gray-50/70 dark:bg-gray-800/30 opacity-50 cursor-not-allowed select-none"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
                         <div
-                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200 ${active ? "border-black" : "border-gray-300"
-                            }`}
+                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200 ${
+                            isMethodCOD && active ? "border-black bg-black" : "border-gray-300"
+                          }`}
                         >
-                          {active && <div className="w-2.5 h-2.5 rounded-full bg-black" />}
+                          {isMethodCOD && active && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-[var(--text)]">{method.name}</p>
-                          {method.paymentMethod && method.paymentMethod !== method.name && (
-                            <p className="text-xs text-gray-400">{method.paymentMethod}</p>
-                          )}
+                          <div className="flex items-center gap-2">
+                            <p className={`text-sm font-semibold ${isMethodCOD ? "text-[var(--text)]" : "text-gray-500"}`}>
+                              {method.name}
+                            </p>
+                            {!isMethodCOD && (
+                              <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-700">
+                                Soon
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {isMethodCOD ? "Pay in cash upon delivery" : "Available soon"}
+                          </p>
                         </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
 
               {/* Wallet phone – conditional */}
               <AnimatePresence>
