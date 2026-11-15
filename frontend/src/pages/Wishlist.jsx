@@ -104,6 +104,7 @@ const Wishlist = () => {
                       discountName={item.discountName}
                       quantity={item.quantity}
                       isInWishlist={item.isInWishlist ?? item.IsLiked ?? item.isLiked}
+                      wishlistCount={item.wishlistCount ?? item.totalSoldQuantity}
                     />
                   );
                 })}

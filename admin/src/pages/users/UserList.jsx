@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import axios from 'axios'
 import { backendUrl } from '../../App'
 import { toast } from 'react-toastify'
@@ -8,27 +8,40 @@ import { useTranslation } from 'react-i18next'
 const PAGE_SIZE = 10;
 
 // ─── Small helper badge ───────────────────────────────────────────────────────
-const RoleBadge = ({ role, onRemove, removing }) => {
+const RoleBadge = ({ role, onRemove, removing, disabled, isSuperAdminRole }) => {
   const r = String(role).toLowerCase();
-  const isAdmin = r === 'admin';
+  const isSuperAdmin = r === 'superadmin' || r === 'super admin' || isSuperAdminRole;
   const colorMap = {
-    admin:    'bg-purple-100 text-purple-800 border-purple-200',
-    delivery: 'bg-amber-100 text-amber-800 border-amber-200',
+    superadmin: 'bg-indigo-100 text-indigo-900 border-indigo-300',
+    admin:      'bg-purple-100 text-purple-800 border-purple-200',
+    delivery:   'bg-amber-100 text-amber-800 border-amber-200',
   };
   const color = colorMap[r] || 'bg-blue-100 text-blue-800 border-blue-200';
+
   return (
     <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${color}`}>
       {role}
-      {!isAdmin && onRemove && (
-        <button
-          type="button"
-          disabled={removing}
-          onClick={onRemove}
-          aria-label={`Remove ${role} role`}
-          className="ml-0.5 text-current opacity-60 hover:opacity-100 disabled:opacity-30 leading-none"
+      {isSuperAdmin ? (
+        <span
+          title="The SuperAdmin role cannot be removed."
+          className="ml-0.5 text-gray-400 cursor-not-allowed text-[10px]"
+          aria-label="The SuperAdmin role cannot be removed."
         >
-          {removing ? '…' : '×'}
-        </button>
+          🔒
+        </span>
+      ) : (
+        onRemove && (
+          <button
+            type="button"
+            disabled={removing || disabled}
+            onClick={onRemove}
+            title={disabled ? 'Action not allowed' : `Remove ${role} role`}
+            aria-label={`Remove ${role} role`}
+            className="ml-0.5 text-current opacity-60 hover:opacity-100 disabled:opacity-30 leading-none cursor-pointer disabled:cursor-not-allowed"
+          >
+            {removing ? '…' : '×'}
+          </button>
+        )
       )}
     </span>
   );
@@ -41,6 +54,7 @@ const UserList = ({ token }) => {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedRole, setSelectedRole] = useState('all')
+  const [selectedStatus, setSelectedStatus] = useState('all') // 'all' | 'active' | 'locked' | 'deleted'
   const [page, setPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   const [availableRoles, setAvailableRoles] = useState(['admin', 'user', 'delivery'])
@@ -66,6 +80,33 @@ const UserList = ({ token }) => {
   // Debounce helper
   const debounceRef = useRef(null)
 
+  // Extract currently logged-in Admin user ID from JWT
+  const currentAdminId = useMemo(() => {
+    if (!token) return null;
+    try {
+      const base64Url = token.split('.')[1];
+      if (!base64Url) return null;
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      const payload = JSON.parse(jsonPayload);
+      return (
+        payload?.nameid ||
+        payload?.sub ||
+        payload?.['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] ||
+        payload?.userId ||
+        payload?.id ||
+        null
+      );
+    } catch {
+      return null;
+    }
+  }, [token]);
+
   // ── Fetch helpers ─────────────────────────────────────────────────────────
   const formatLastVisit = (v) => {
     if (!v) return 'Never';
@@ -73,6 +114,14 @@ const UserList = ({ token }) => {
     const d = new Date(v);
     if (isNaN(d)) return 'Never';
     return d.toLocaleString();
+  };
+
+  const formatDate = (v) => {
+    if (!v) return '—';
+    if (typeof v === 'string' && v.startsWith('0001-01-01')) return '—';
+    const d = new Date(v);
+    if (isNaN(d)) return '—';
+    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
   const fetchRoles = async () => {
@@ -85,11 +134,24 @@ const UserList = ({ token }) => {
     } catch { /* silent — fallback defaults already set */ }
   }
 
-  const fetchUsers = useCallback(async (searchOverride, roleOverride, pageOverride) => {
+  const fetchUsers = useCallback(async (searchOverride, roleOverride, statusOverride, pageOverride) => {
     setLoading(true)
-    const term = searchOverride !== undefined ? searchOverride : searchTerm
-    const role = roleOverride  !== undefined ? roleOverride  : selectedRole
-    const pg   = pageOverride  !== undefined ? pageOverride  : page
+    const term   = searchOverride !== undefined ? searchOverride : searchTerm
+    const role   = roleOverride   !== undefined ? roleOverride   : selectedRole
+    const status = statusOverride !== undefined ? statusOverride : selectedStatus
+    const pg     = pageOverride   !== undefined ? pageOverride   : page
+
+    // Map status filter to backend query params
+    let isActiveParam = undefined;
+    let isDeletedParam = undefined;
+    if (status === 'active') {
+      isActiveParam = true;
+      isDeletedParam = false;
+    } else if (status === 'locked') {
+      isActiveParam = false;
+    } else if (status === 'deleted') {
+      isDeletedParam = true;
+    }
 
     try {
       const response = await axios.get(`${backendUrl}/api/UserManagement/users`, {
@@ -100,6 +162,8 @@ const UserList = ({ token }) => {
           name:  term || undefined,
           email: term || undefined,
           role:  role !== 'all' ? role : undefined,
+          isActive: isActiveParam,
+          isDeleted: isDeletedParam,
         },
       })
 
@@ -128,7 +192,7 @@ const UserList = ({ token }) => {
     } finally {
       setLoading(false)
     }
-  }, [token, searchTerm, selectedRole, page])
+  }, [token, searchTerm, selectedRole, selectedStatus, page])
 
   // Debounced search: reset to page 1 on new search
   const handleSearchChange = (value) => {
@@ -136,19 +200,25 @@ const UserList = ({ token }) => {
     setPage(1)
     clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
-      fetchUsers(value, undefined, 1)
+      fetchUsers(value, undefined, undefined, 1)
     }, 400)
   }
 
   const handleRoleFilterChange = (value) => {
     setSelectedRole(value)
     setPage(1)
-    fetchUsers(undefined, value, 1)
+    fetchUsers(undefined, value, undefined, 1)
+  }
+
+  const handleStatusFilterChange = (value) => {
+    setSelectedStatus(value)
+    setPage(1)
+    fetchUsers(undefined, undefined, value, 1)
   }
 
   const handlePageChange = (newPage) => {
     setPage(newPage)
-    fetchUsers(undefined, undefined, newPage)
+    fetchUsers(undefined, undefined, undefined, newPage)
   }
 
   // ── Initial load ──────────────────────────────────────────────────────────
@@ -212,8 +282,8 @@ const UserList = ({ token }) => {
           )
           if (res.data?.statuscode === 200 && res.data?.responseBody?.data === true) {
             toast.success('User locked')
-            setUsers(prev => prev.map(u => u.id === userId ? { ...u, isActive: false } : u))
-            setSelectedUser(prev => prev?.id === userId ? { ...prev, isActive: false } : prev)
+            setUsers(prev => prev.map(u => u.id === userId ? { ...u, isActive: false, isLock: true } : u))
+            setSelectedUser(prev => prev?.id === userId ? { ...prev, isActive: false, isLock: true } : prev)
           } else {
             toast.error(res.data?.responseBody?.message || 'Failed to lock user')
           }
@@ -237,8 +307,8 @@ const UserList = ({ token }) => {
       )
       if (res.data?.statuscode === 200 && res.data?.responseBody?.data === true) {
         toast.success('User unlocked')
-        setUsers(prev => prev.map(u => u.id === userId ? { ...u, isActive: true } : u))
-        setSelectedUser(prev => prev?.id === userId ? { ...prev, isActive: true } : prev)
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, isActive: true, isLock: false } : u))
+        setSelectedUser(prev => prev?.id === userId ? { ...prev, isActive: true, isLock: false } : prev)
       } else {
         toast.error(res.data?.responseBody?.message || 'Failed to unlock user')
       }
@@ -279,6 +349,9 @@ const UserList = ({ token }) => {
     const role = roleInput.trim()
     if (!userId) return toast.error('Invalid user id')
     if (!role) return toast.error('Please choose a role')
+    if (currentAdminId && String(currentAdminId) === String(userId)) {
+      return toast.error('You cannot modify your own roles')
+    }
     const currentRoles = selectedUser?.roles || []
     if (currentRoles.map(r => r.toLowerCase()).includes(role.toLowerCase())) {
       return toast.info('User already has this role')
@@ -299,14 +372,27 @@ const UserList = ({ token }) => {
         toast.error(res.data?.responseBody?.message || 'Failed to add role')
       }
     } catch (err) {
-      if (err?.response?.status === 400) toast.error(err?.response?.data?.responseBody?.message || 'Bad request')
-      else toast.error('Error adding role')
+      if (err?.response?.status === 403) {
+        toast.error(err?.response?.data?.responseBody?.message || err?.response?.data?.message || 'The SuperAdmin role cannot be removed / Self-role modification blocked')
+      } else if (err?.response?.status === 400) {
+        toast.error(err?.response?.data?.responseBody?.message || err?.response?.data?.message || 'Bad request')
+      } else {
+        toast.error('Error adding role')
+      }
     } finally {
       setRoleSubmitting(false)
     }
   }
 
   const handleRemoveRole = async (userId, role) => {
+    const rLower = String(role).toLowerCase()
+    if (rLower === 'superadmin' || rLower === 'super admin') {
+      return toast.error('The SuperAdmin role cannot be removed')
+    }
+    if (currentAdminId && String(currentAdminId) === String(userId)) {
+      return toast.error('You cannot modify your own roles')
+    }
+
     const key = `${userId}:${role}`
     try {
       setRemovingRole(key)
@@ -324,14 +410,24 @@ const UserList = ({ token }) => {
         toast.error(res.data?.responseBody?.message || 'Failed to remove role')
       }
     } catch (err) {
-      if (err?.response?.status === 400) toast.error(err?.response?.data?.responseBody?.message || 'Bad request')
-      else toast.error('Error removing role')
+      if (err?.response?.status === 403) {
+        toast.error(err?.response?.data?.responseBody?.message || err?.response?.data?.message || 'The SuperAdmin role cannot be removed')
+      } else if (err?.response?.status === 400) {
+        toast.error(err?.response?.data?.responseBody?.message || err?.response?.data?.message || 'Bad request')
+      } else {
+        toast.error('Error removing role')
+      }
     } finally {
       setRemovingRole(null)
     }
   }
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE))
+
+  // Check if selected modal user is the currently logged-in SuperAdmin
+  const isSelectedUserSelf = Boolean(
+    currentAdminId && selectedUser && String(currentAdminId) === String(selectedUser.id)
+  )
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -392,6 +488,17 @@ const UserList = ({ token }) => {
           <option value="all">All Roles</option>
           {availableRoles.map(r => <option key={r} value={r}>{r}</option>)}
         </select>
+        {/* Status filter */}
+        <select
+          className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-100 transition-all min-w-[140px]"
+          value={selectedStatus}
+          onChange={(e) => handleStatusFilterChange(e.target.value)}
+        >
+          <option value="all">All Statuses</option>
+          <option value="active">Active</option>
+          <option value="locked">Locked</option>
+          <option value="deleted">Deleted</option>
+        </select>
       </div>
 
       {/* ── Table ── */}
@@ -429,89 +536,117 @@ const UserList = ({ token }) => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {users.map(user => (
-                  <tr key={user.id} className="hover:bg-gray-50/60 transition-colors">
-                    {/* Name */}
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                          {(user.name || user.userName || '?')[0].toUpperCase()}
+                {users.map(user => {
+                  const isLocked = Boolean(user.isLock || (!user.isActive && !user.isDeleted));
+                  const isDeleted = Boolean(user.isDeleted);
+                  const isActive = Boolean(user.isActive && !user.isDeleted && !user.isLock);
+                  const isSelf = Boolean(currentAdminId && String(currentAdminId) === String(user.id));
+
+                  return (
+                    <tr key={user.id} className="hover:bg-gray-50/60 transition-colors">
+                      {/* Name */}
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                            {(user.name || user.userName || '?')[0].toUpperCase()}
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-semibold text-gray-900">{user.name || 'N/A'}</span>
+                            {isSelf && (
+                              <span className="text-[10px] text-blue-600 font-bold tracking-tight">You</span>
+                            )}
+                          </div>
                         </div>
-                        <span className="text-sm font-semibold text-gray-900">{user.name || 'N/A'}</span>
-                      </div>
-                    </td>
-                    {/* Email */}
-                    <td className="px-5 py-4 text-sm text-gray-500">{user.email || 'N/A'}</td>
-                    {/* Phone */}
-                    <td className="px-5 py-4 text-sm text-gray-500">{user.phoneNumber || '—'}</td>
-                    {/* Status */}
-                    <td className="px-5 py-4">
-                      <div className="flex flex-col gap-1">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${user.isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${user.isActive ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                          {user.isActive ? 'Active' : 'Locked'}
-                        </span>
-                        {user.isDeleted && (
-                          <span className="inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold bg-gray-100 text-gray-600 border border-gray-200">Deleted</span>
-                        )}
-                      </div>
-                    </td>
-                    {/* Roles */}
-                    <td className="px-5 py-4">
-                      <div className="flex flex-wrap gap-1">
-                        {user.roles?.length
-                          ? user.roles.map((role, i) => <RoleBadge key={i} role={role} />)
-                          : <span className="text-xs text-gray-400">No roles</span>}
-                      </div>
-                    </td>
-                    {/* Last Visit */}
-                    <td className="px-5 py-4 text-xs text-gray-400 whitespace-nowrap">{formatLastVisit(user.lastVisit)}</td>
-                    {/* Actions */}
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-2">
-                        {/* View */}
-                        <button
-                          onClick={() => handleViewUser(user.id)}
-                          aria-label={`View ${user.name || 'user'} details`}
-                          className="px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-100 transition-all"
-                        >
-                          View
-                        </button>
-                        {/* Lock / Unlock */}
-                        {user.isActive ? (
+                      </td>
+                      {/* Email */}
+                      <td className="px-5 py-4 text-sm text-gray-500">{user.email || 'N/A'}</td>
+                      {/* Phone */}
+                      <td className="px-5 py-4 text-sm text-gray-500">{user.phoneNumber || '—'}</td>
+                      {/* Status */}
+                      <td className="px-5 py-4">
+                        <div className="flex flex-wrap gap-1 items-center">
+                          {isDeleted ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-gray-100 text-gray-700 border border-gray-300">
+                              Deleted
+                            </span>
+                          ) : isLocked ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                              Locked
+                            </span>
+                          ) : isActive ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                              Active
+                            </span>
+                          ) : null}
+                        </div>
+                      </td>
+                      {/* Roles */}
+                      <td className="px-5 py-4">
+                        <div className="flex flex-wrap gap-1">
+                          {user.roles?.length
+                            ? user.roles.map((role, i) => (
+                                <RoleBadge
+                                  key={i}
+                                  role={role}
+                                  isSuperAdminRole={String(role).toLowerCase() === 'superadmin' || String(role).toLowerCase() === 'super admin'}
+                                />
+                              ))
+                            : <span className="text-xs text-gray-400">No roles</span>}
+                        </div>
+                      </td>
+                      {/* Last Visit */}
+                      <td className="px-5 py-4 text-xs text-gray-400 whitespace-nowrap">{formatLastVisit(user.lastVisit)}</td>
+                      {/* Actions */}
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-2">
+                          {/* View */}
                           <button
-                            onClick={() => handleLockUser(user.id, user.name || user.userName)}
-                            disabled={lockingId === user.id}
-                            aria-label={`Lock ${user.name || 'user'}`}
-                            className="px-3 py-1.5 text-xs font-semibold text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-lg border border-amber-100 transition-all disabled:opacity-50"
+                            onClick={() => handleViewUser(user.id)}
+                            aria-label={`View ${user.name || 'user'} details`}
+                            className="px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-100 transition-all cursor-pointer"
                           >
-                            {lockingId === user.id ? '…' : 'Lock'}
+                            View
                           </button>
-                        ) : (
-                          <button
-                            onClick={() => handleUnlockUser(user.id)}
-                            disabled={unlockingId === user.id}
-                            aria-label={`Unlock ${user.name || 'user'}`}
-                            className="px-3 py-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-100 transition-all disabled:opacity-50"
-                          >
-                            {unlockingId === user.id ? '…' : 'Unlock'}
-                          </button>
-                        )}
-                        {/* Delete (not for admins) */}
-                        {!user.roles?.map(r => r.toLowerCase()).includes('admin') && (
-                          <button
-                            onClick={() => handleDeleteUser(user.id, user.name || user.userName)}
-                            disabled={deletingId === user.id}
-                            aria-label={`Delete ${user.name || 'user'}`}
-                            className="px-3 py-1.5 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-100 transition-all disabled:opacity-50"
-                          >
-                            {deletingId === user.id ? '…' : 'Delete'}
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          {/* Lock / Unlock (blocked for self) */}
+                          {!isSelf && !isDeleted && (
+                            isLocked ? (
+                              <button
+                                onClick={() => handleUnlockUser(user.id)}
+                                disabled={unlockingId === user.id}
+                                aria-label={`Unlock ${user.name || 'user'}`}
+                                className="px-3 py-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-100 transition-all disabled:opacity-50 cursor-pointer"
+                              >
+                                {unlockingId === user.id ? '…' : 'Unlock'}
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleLockUser(user.id, user.name || user.userName)}
+                                disabled={lockingId === user.id}
+                                aria-label={`Lock ${user.name || 'user'}`}
+                                className="px-3 py-1.5 text-xs font-semibold text-amber-600 bg-amber-50 hover:bg-amber-100 rounded-lg border border-amber-100 transition-all disabled:opacity-50 cursor-pointer"
+                              >
+                                {lockingId === user.id ? '…' : 'Lock'}
+                              </button>
+                            )
+                          )}
+                          {/* Delete (not for self, not for users with admin role) */}
+                          {!isSelf && !user.roles?.map(r => r.toLowerCase()).includes('admin') && !user.roles?.map(r => r.toLowerCase()).includes('superadmin') && (
+                            <button
+                              onClick={() => handleDeleteUser(user.id, user.name || user.userName)}
+                              disabled={deletingId === user.id}
+                              aria-label={`Delete ${user.name || 'user'}`}
+                              className="px-3 py-1.5 text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg border border-rose-100 transition-all disabled:opacity-50 cursor-pointer"
+                            >
+                              {deletingId === user.id ? '…' : 'Delete'}
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -563,7 +698,7 @@ const UserList = ({ token }) => {
               <button
                 onClick={() => setViewOpen(false)}
                 aria-label="Close modal"
-                className="p-2 rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-all"
+                className="p-2 rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-all cursor-pointer"
               >
                 ✕
               </button>
@@ -581,83 +716,157 @@ const UserList = ({ token }) => {
                 <p className="text-sm text-gray-400 text-center py-10">No user data.</p>
               )}
 
-              {!viewLoading && selectedUser && (
-                <div className="flex flex-col gap-6">
-                  {/* Avatar + Name */}
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-xl font-black">
-                      {(selectedUser.name || selectedUser.userName || '?')[0].toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="font-black text-gray-900 text-lg">{selectedUser.name || 'N/A'}</p>
-                      <p className="text-sm text-gray-400">@{selectedUser.userName || 'N/A'}</p>
-                    </div>
-                    {/* Status pill */}
-                    <span className={`ml-auto px-3 py-1 rounded-full text-xs font-bold border ${selectedUser.isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
-                      {selectedUser.isActive ? 'Active' : 'Locked'}
-                    </span>
-                  </div>
+              {!viewLoading && selectedUser && (() => {
+                const isModalLocked = Boolean(selectedUser.isLock || (!selectedUser.isActive && !selectedUser.isDeleted));
+                const isModalDeleted = Boolean(selectedUser.isDeleted);
+                const isModalActive = Boolean(selectedUser.isActive && !selectedUser.isDeleted && !selectedUser.isLock);
 
-                  {/* Info grid */}
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    {[
-                      { label: 'Email',      value: selectedUser.email },
-                      { label: 'Phone',      value: selectedUser.phoneNumber },
-                      { label: 'Last Visit', value: formatLastVisit(selectedUser.lastVisit) },
-                      { label: 'User ID',    value: selectedUser.id, mono: true },
-                    ].map(({ label, value, mono }) => (
-                      <div key={label} className="bg-gray-50 rounded-2xl px-4 py-3">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">{label}</p>
-                        <p className={`text-gray-800 font-semibold truncate ${mono ? 'font-mono text-xs' : ''}`}>{value || 'N/A'}</p>
+                return (
+                  <div className="flex flex-col gap-6">
+                    {/* Avatar + Name */}
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center text-white text-xl font-black">
+                        {(selectedUser.name || selectedUser.userName || '?')[0].toUpperCase()}
                       </div>
-                    ))}
-                  </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-black text-gray-900 text-lg">{selectedUser.name || 'N/A'}</p>
+                          {isSelectedUserSelf && (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700">You</span>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-400">@{selectedUser.userName || 'N/A'}</p>
+                      </div>
+                      {/* Status pill */}
+                      <div className="ml-auto flex items-center">
+                        {isModalDeleted ? (
+                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700 border border-gray-300">
+                            Deleted
+                          </span>
+                        ) : isModalLocked ? (
+                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                            Locked
+                          </span>
+                        ) : isModalActive ? (
+                          <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            Active
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
 
-                  {/* Roles management */}
-                  <div className="bg-gray-50 rounded-2xl px-5 py-4 flex flex-col gap-4">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Roles</p>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedUser.roles?.length ? (
-                        selectedUser.roles.map((r, i) => (
-                          <RoleBadge
-                            key={i}
-                            role={r}
-                            removing={removingRole === `${selectedUser.id}:${r}`}
-                            onRemove={() => handleRemoveRole(selectedUser.id, r)}
-                          />
-                        ))
+                    {/* Self-role modification warning */}
+                    {isSelectedUserSelf && (
+                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-center gap-2">
+                        <svg className="w-4 h-4 shrink-0 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <span>Self-role modification is blocked. You cannot modify your own roles.</span>
+                      </div>
+                    )}
+
+                    {/* Info grid */}
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      {[
+                        { label: 'Email',      value: selectedUser.email },
+                        { label: 'Phone',      value: selectedUser.phoneNumber },
+                        { label: 'Created At', value: formatDate(selectedUser.createAt) },
+                        { label: 'Last Visit', value: formatLastVisit(selectedUser.lastVisit) },
+                        { label: 'User ID',    value: selectedUser.id, mono: true, colSpan: 2 },
+                      ].map(({ label, value, mono, colSpan }) => (
+                        <div key={label} className={`bg-gray-50 rounded-2xl px-4 py-3 ${colSpan === 2 ? 'col-span-2' : ''}`}>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">{label}</p>
+                          <p className={`text-gray-800 font-semibold truncate ${mono ? 'font-mono text-xs' : ''}`}>{value || 'N/A'}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Customer Addresses */}
+                    <div className="bg-gray-50 rounded-2xl px-5 py-4 flex flex-col gap-3">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                        Saved Addresses ({selectedUser.customerAddresses?.length || 0})
+                      </p>
+                      {selectedUser.customerAddresses && selectedUser.customerAddresses.length > 0 ? (
+                        <div className="flex flex-col gap-2.5 max-h-48 overflow-y-auto pr-1">
+                          {selectedUser.customerAddresses.map((addr) => (
+                            <div key={addr.id} className="p-3 bg-white border border-gray-200/80 rounded-xl text-xs flex flex-col gap-1 shadow-2xs">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-semibold text-gray-800 flex items-center gap-1.5">
+                                  <span>📍 {addr.addressType || 'Address'}</span>
+                                  {addr.isDefault && (
+                                    <span className="px-1.5 py-0.5 text-[10px] font-bold bg-blue-50 text-blue-600 rounded border border-blue-200">
+                                      Default
+                                    </span>
+                                  )}
+                                </span>
+                                {addr.phoneNumber && (
+                                  <span className="text-gray-500 font-mono text-[11px]">{addr.phoneNumber}</span>
+                                )}
+                              </div>
+                              <p className="text-gray-600 leading-relaxed">
+                                {addr.fullAddress || [addr.streetAddress, addr.apartmentSuite, addr.city, addr.state, addr.country, addr.postalCode].filter(Boolean).join(', ')}
+                              </p>
+                              {addr.additionalNotes && (
+                                <p className="text-gray-400 italic text-[11px]">Note: {addr.additionalNotes}</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       ) : (
-                        <span className="text-xs text-gray-400">No roles assigned</span>
+                        <p className="text-xs text-gray-400 italic">No addresses saved</p>
                       )}
                     </div>
-                    {/* Add role */}
-                    <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
-                      <select
-                        className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
-                        value={roleInput}
-                        onChange={(e) => setRoleInput(e.target.value)}
-                      >
-                        <option value="">Select role…</option>
-                        {availableRoles.map(r => <option key={r} value={r}>{r}</option>)}
-                      </select>
-                      <button
-                        onClick={() => handleAddRole(selectedUser?.id)}
-                        disabled={roleSubmitting || !roleInput}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
-                      >
-                        {roleSubmitting ? '…' : 'Add'}
-                      </button>
+
+                    {/* Roles management */}
+                    <div className="bg-gray-50 rounded-2xl px-5 py-4 flex flex-col gap-4">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Roles</p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedUser.roles?.length ? (
+                          selectedUser.roles.map((r, i) => (
+                            <RoleBadge
+                              key={i}
+                              role={r}
+                              disabled={isSelectedUserSelf}
+                              isSuperAdminRole={String(r).toLowerCase() === 'superadmin' || String(r).toLowerCase() === 'super admin'}
+                              removing={removingRole === `${selectedUser.id}:${r}`}
+                              onRemove={isSelectedUserSelf ? undefined : () => handleRemoveRole(selectedUser.id, r)}
+                            />
+                          ))
+                        ) : (
+                          <span className="text-xs text-gray-400">No roles assigned</span>
+                        )}
+                      </div>
+                      {/* Add role (disabled for self) */}
+                      {!isSelectedUserSelf && (
+                        <div className="flex items-center gap-2 pt-2 border-t border-gray-200">
+                          <select
+                            className="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
+                            value={roleInput}
+                            onChange={(e) => setRoleInput(e.target.value)}
+                          >
+                            <option value="">Select role…</option>
+                            {availableRoles.map(r => <option key={r} value={r}>{r}</option>)}
+                          </select>
+                          <button
+                            onClick={() => handleAddRole(selectedUser?.id)}
+                            disabled={roleSubmitting || !roleInput}
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-all disabled:opacity-50 cursor-pointer"
+                          >
+                            {roleSubmitting ? '…' : 'Add'}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
             </div>
 
             {/* Modal footer */}
             <div className="flex justify-end px-8 py-4 border-t border-gray-100">
               <button
                 onClick={() => setViewOpen(false)}
-                className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-semibold transition-all"
+                className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-semibold transition-all cursor-pointer"
               >
                 Close
               </button>

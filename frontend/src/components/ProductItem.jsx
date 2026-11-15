@@ -16,6 +16,7 @@ const ProductItem = ({
   quantity,
   isInWishlist,
   hidePrice = false,
+  wishlistCount,
 }) => {
   const { currency } = useContext(ShopContext);
   const productId = id || _id || propProductId;
@@ -114,7 +115,14 @@ const ProductItem = ({
         {/* 🏷️ Product Info - Enclosed padding */}
         <div className="p-5 flex flex-col flex-grow justify-between bg-[var(--surface)]">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)] mb-1 font-bold">R&S Essential</p>
+            <div className="flex items-center justify-between gap-1 mb-1">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)] font-bold">R&S Essential</p>
+              {wishlistCount !== undefined && wishlistCount !== null && (
+                <span className="text-[11px] font-semibold text-rose-500 flex items-center gap-1" title={`${wishlistCount} wishlists`}>
+                  <span>❤️</span> {wishlistCount}
+                </span>
+              )}
+            </div>
             <p className="text-sm font-bold text-[var(--text)] group-hover:text-[var(--accent)] transition-colors line-clamp-2 leading-snug">{name}</p>
           </div>
 
