@@ -273,30 +273,30 @@ const Payment = () => {
                                         className={`border rounded-xl p-4 flex items-center justify-between transition-all ${
                                             isMethodCOD
                                                 ? isSelected
-                                                    ? 'border-green-500 bg-green-50 ring-1 ring-green-500 cursor-pointer'
-                                                    : 'border-gray-200 hover:border-gray-300 cursor-pointer'
-                                                : 'border-gray-200 bg-gray-50/70 opacity-50 cursor-not-allowed select-none'
+                                                    ? 'border-[var(--success)] bg-[var(--success)]/10 cursor-pointer shadow-sm'
+                                                    : 'border-[var(--border)] hover:border-gray-400 cursor-pointer'
+                                                : 'border-[var(--border)] bg-gray-50/70 dark:bg-gray-800/30 opacity-50 cursor-not-allowed select-none'
                                         }`}
                                     >
                                         <div className="flex items-center gap-3">
                                             <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                                                isMethodCOD && isSelected ? 'border-green-500' : 'border-gray-300'
+                                                isMethodCOD && isSelected ? 'border-[var(--success)] bg-[var(--success)]' : 'border-[var(--border)]'
                                             }`}>
                                                 {isMethodCOD && isSelected && (
-                                                    <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
+                                                    <div className="w-2 h-2 rounded-full bg-white"></div>
                                                 )}
                                             </div>
                                             <div>
                                                 <div className="flex items-center gap-2">
-                                                    <p className={`font-semibold text-sm ${isMethodCOD ? 'text-gray-800' : 'text-gray-500'}`}>{method.name}</p>
+                                                    <p className={`font-semibold text-sm ${isMethodCOD ? 'text-[var(--text)]' : 'text-[var(--text-muted)]'}`}>{method.name}</p>
                                                     {!isMethodCOD && (
-                                                        <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full border border-amber-200">
+                                                        <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-700">
                                                             Soon
                                                         </span>
                                                     )}
                                                 </div>
-                                                <p className="text-xs text-gray-500 mt-0.5">
-                                                    {isMethodCOD ? "Pay in cash upon delivery" : "Available soon"}
+                                                <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                                                    {isMethodCOD ? "Pay in cash when your order arrives" : "Available soon"}
                                                 </p>
                                             </div>
                                         </div>

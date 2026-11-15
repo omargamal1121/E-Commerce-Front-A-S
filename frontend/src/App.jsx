@@ -1,6 +1,7 @@
 import React, { useEffect, useContext } from "react";
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import authService from "./services/authService";
 import Home from "./pages/Home";
 import Cart from "./pages/Cart";
@@ -163,7 +164,7 @@ const App = () => {
             draggable
             pauseOnHover
             theme={theme === "light" ? "light" : "dark"}
-            style={{ marginTop: '80px', zIndex: 9999 }}
+            style={{ marginTop: '80px', zIndex: 999999999 }}
           />
           <MetaPixelTracker />
           <Routes>
@@ -191,7 +192,7 @@ const App = () => {
         draggable
         pauseOnHover
         theme={theme === "light" ? "light" : "dark"}
-        style={{ marginTop: '80px', zIndex: 9999 }}
+        style={{ marginTop: '80px', zIndex: 999999999 }}
       />
       <SearchBar />
       <MetaPixelTracker />

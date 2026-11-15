@@ -196,129 +196,129 @@ const GuestCheckoutForm = () => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <h3 className="text-lg font-black mb-4">Contact Information</h3>
+      <div className="bg-[var(--surface)] text-[var(--text)] p-6 rounded-2xl shadow-sm border border-[var(--border)]">
+        <h3 className="text-lg font-black mb-4 text-[var(--text)]">Contact Information</h3>
         
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">Full Name *</label>
+            <label className="block text-sm font-bold text-[var(--text)] mb-2">Full Name *</label>
             <input
               type="text"
               name="customerName"
               value={formData.customerName}
               onChange={handleInputChange}
               required
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+              className="w-full px-4 py-3 border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] rounded-xl focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent outline-none transition-all"
               placeholder="Enter your full name"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">Email *</label>
+            <label className="block text-sm font-bold text-[var(--text)] mb-2">Email *</label>
             <input
               type="email"
               name="email"
               value={formData.email}
               onChange={handleInputChange}
               required
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+              className="w-full px-4 py-3 border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] rounded-xl focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent outline-none transition-all"
               placeholder="Enter your email"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">Phone Number *</label>
+            <label className="block text-sm font-bold text-[var(--text)] mb-2">Phone Number *</label>
             <input
               type="tel"
               name="phoneNumber"
               value={formData.phoneNumber}
               onChange={handleInputChange}
               required
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+              className="w-full px-4 py-3 border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] rounded-xl focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent outline-none transition-all"
               placeholder="Enter your phone number"
             />
           </div>
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <h3 className="text-lg font-black mb-4">Shipping Address</h3>
+      <div className="bg-[var(--surface)] text-[var(--text)] p-6 rounded-2xl shadow-sm border border-[var(--border)]">
+        <h3 className="text-lg font-black mb-4 text-[var(--text)]">Shipping Address</h3>
         
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Governorate *</label>
+              <label className="block text-sm font-bold text-[var(--text)] mb-2">Governorate *</label>
               <input
                 type="text"
                 name="governorate"
                 value={formData.governorate}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                className="w-full px-4 py-3 border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] rounded-xl focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent outline-none transition-all"
                 placeholder="Governorate"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">City *</label>
+              <label className="block text-sm font-bold text-[var(--text)] mb-2">City *</label>
               <input
                 type="text"
                 name="city"
                 value={formData.city}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                className="w-full px-4 py-3 border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] rounded-xl focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent outline-none transition-all"
                 placeholder="City"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">Street Address *</label>
+            <label className="block text-sm font-bold text-[var(--text)] mb-2">Street Address *</label>
             <input
               type="text"
               name="street"
               value={formData.street}
               onChange={handleInputChange}
               required
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+              className="w-full px-4 py-3 border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] rounded-xl focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent outline-none transition-all"
               placeholder="Street address"
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Building</label>
+              <label className="block text-sm font-bold text-[var(--text)] mb-2">Building</label>
               <input
                 type="text"
                 name="building"
                 value={formData.building}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                className="w-full px-4 py-3 border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] rounded-xl focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent outline-none transition-all"
                 placeholder="Building number"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Floor</label>
+              <label className="block text-sm font-bold text-[var(--text)] mb-2">Floor</label>
               <input
                 type="text"
                 name="floor"
                 value={formData.floor}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                className="w-full px-4 py-3 border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] rounded-xl focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent outline-none transition-all"
                 placeholder="Floor number"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Apartment</label>
+              <label className="block text-sm font-bold text-[var(--text)] mb-2">Apartment</label>
               <input
                 type="text"
                 name="apartment"
                 value={formData.apartment}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                className="w-full px-4 py-3 border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] rounded-xl focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent outline-none transition-all"
                 placeholder="Apartment number"
               />
             </div>
@@ -326,118 +326,123 @@ const GuestCheckoutForm = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">State/Region</label>
+              <label className="block text-sm font-bold text-[var(--text)] mb-2">State/Region</label>
               <input
                 type="text"
                 name="state"
                 value={formData.state}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                className="w-full px-4 py-3 border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] rounded-xl focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent outline-none transition-all"
                 placeholder="State or region"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">Postal Code</label>
+              <label className="block text-sm font-bold text-[var(--text)] mb-2">Postal Code</label>
               <input
                 type="text"
                 name="postalCode"
                 value={formData.postalCode}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+                className="w-full px-4 py-3 border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] rounded-xl focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent outline-none transition-all"
                 placeholder="Postal code"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">Order Notes</label>
+            <label className="block text-sm font-bold text-[var(--text)] mb-2">Order Notes</label>
             <textarea
               name="notes"
               value={formData.notes}
               onChange={handleInputChange}
               rows="3"
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all resize-none"
+              className="w-full px-4 py-3 border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] rounded-xl focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent outline-none transition-all resize-none"
               placeholder="Any special instructions for your order"
             />
           </div>
         </div>
       </div>
 
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <h3 className="text-lg font-black mb-4">Payment Method</h3>
+      <div className="bg-[var(--surface)] text-[var(--text)] p-6 rounded-2xl shadow-sm border border-[var(--border)]">
+        <h3 className="text-lg font-black mb-4 text-[var(--text)]">Payment Method</h3>
         
         <div className="space-y-3">
           {(paymentMethods.length > 0 ? paymentMethods : [
-            { id: 1, name: 'Cash on Delivery' },
-            { id: 2, name: 'Credit / Debit Card' },
-            { id: 4, name: 'Mobile Wallet' }
+            { id: 1, name: 'Cash on Delivery', paymentMethod: 'COD' },
+            { id: 2, name: 'Credit / Debit Card', paymentMethod: 'Visa / Mastercard' },
+            { id: 4, name: 'Mobile Wallet', paymentMethod: 'Vodafone / Orange / Etisalat' }
           ]).map(method => {
             const isMethodCOD = isCOD(method);
             const isSelected = selectedPaymentMethod === method.id;
 
             return (
-              <label
+              <div
                 key={method.id}
-                className={`flex items-center justify-between p-4 border rounded-xl transition-all ${
+                onClick={() => {
+                  if (isMethodCOD) setSelectedPaymentMethod(method.id);
+                }}
+                className={`border rounded-xl p-4 flex items-center justify-between transition-all ${
                   isMethodCOD
                     ? isSelected
-                      ? 'border-black bg-gray-50 cursor-pointer shadow-sm'
-                      : 'border-gray-200 hover:border-black cursor-pointer'
-                    : 'border-gray-200 bg-gray-50/70 opacity-50 cursor-not-allowed select-none'
+                      ? "border-[var(--success)] bg-[var(--success)]/10 cursor-pointer shadow-sm"
+                      : "border-[var(--border)] hover:border-gray-400 cursor-pointer"
+                    : "border-[var(--border)] bg-gray-50/70 dark:bg-gray-800/30 opacity-50 cursor-not-allowed select-none"
                 }`}
               >
-                <div className="flex items-center">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value={method.id}
-                    disabled={!isMethodCOD}
-                    checked={isMethodCOD && isSelected}
-                    onChange={(e) => {
-                      if (isMethodCOD) setSelectedPaymentMethod(Number(e.target.value));
-                    }}
-                    className="w-4 h-4 text-black focus:ring-black cursor-pointer disabled:cursor-not-allowed"
-                  />
-                  <div className="ml-3">
-                    <span className={`font-semibold ${isMethodCOD ? 'text-gray-900' : 'text-gray-500'}`}>
-                      {method.name}
-                    </span>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {isMethodCOD ? 'Pay in cash upon delivery' : 'Available soon'}
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                      isMethodCOD && isSelected
+                        ? "border-[var(--success)] bg-[var(--success)]"
+                        : "border-[var(--border)]"
+                    }`}
+                  >
+                    {isMethodCOD && isSelected && (
+                      <div className="w-2 h-2 rounded-full bg-white" />
+                    )}
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className={`font-semibold text-sm ${isMethodCOD ? "text-[var(--text)]" : "text-[var(--text-muted)]"}`}>
+                        {method.name}
+                      </p>
+                      {!isMethodCOD && (
+                        <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-700">
+                          Soon
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                      {isMethodCOD ? "Pay in cash when your order arrives" : "Available soon"}
                     </p>
                   </div>
                 </div>
-                {!isMethodCOD && (
-                  <span className="text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full border border-amber-200">
-                    Soon
-                  </span>
-                )}
-              </label>
+              </div>
             );
           })}
         </div>
 
         {selectedPaymentMethod && paymentMethods.find(m => m.id === selectedPaymentMethod)?.name?.toLowerCase().includes('wallet') && (
           <div className="mt-4">
-            <label className="block text-sm font-bold text-gray-700 mb-2">Wallet Phone Number</label>
+            <label className="block text-sm font-bold text-[var(--text)] mb-2">Wallet Phone Number</label>
             <input
               type="tel"
               value={walletPhoneNumber}
               onChange={(e) => setWalletPhoneNumber(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all"
+              className="w-full px-4 py-3 border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] rounded-xl focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent outline-none transition-all"
               placeholder="Enter wallet phone number"
             />
           </div>
         )}
 
         <div className="mt-4">
-          <label className="block text-sm font-bold text-gray-700 mb-2">Payment Notes (Optional)</label>
+          <label className="block text-sm font-bold text-[var(--text)] mb-2">Payment Notes (Optional)</label>
           <textarea
             value={paymentNotes}
             onChange={(e) => setPaymentNotes(e.target.value)}
             rows="2"
-            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all resize-none"
+            className="w-full px-4 py-3 border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] rounded-xl focus:ring-2 focus:ring-[var(--brand)] focus:border-transparent outline-none transition-all resize-none"
             placeholder="Any additional payment notes"
           />
         </div>
@@ -446,12 +451,12 @@ const GuestCheckoutForm = () => {
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full bg-black text-white py-4 rounded-xl font-black uppercase tracking-widest hover:bg-gray-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full bg-[var(--brand)] text-[var(--text)] py-4 rounded-xl font-black uppercase tracking-widest hover:bg-[var(--brand-hover)] transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
       >
         {isLoading ? 'Processing Order...' : 'Place Order as Guest'}
       </button>
 
-      <p className="text-center text-sm text-gray-500">
+      <p className="text-center text-sm text-[var(--text-muted)]">
         By placing this order as a guest, you can later create an account with the same email to view your order history.
       </p>
     </form>

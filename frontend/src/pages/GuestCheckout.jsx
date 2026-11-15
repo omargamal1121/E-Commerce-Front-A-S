@@ -521,34 +521,39 @@ const GuestCheckout = () => {
                     ]
                 ).map((method) => {
                   const isMethodCOD = isCOD(method);
-                  const active = selectedPaymentMethod === method.id;
+                  const isSelected = selectedPaymentMethod === method.id;
+
                   return (
-                    <button
+                    <div
                       key={method.id}
-                      type="button"
-                      disabled={!isMethodCOD}
                       onClick={() => {
-                        if (isMethodCOD) setSelectedPaymentMethod(method.id);
+                        if (isMethodCOD) {
+                          setSelectedPaymentMethod(method.id);
+                        }
                       }}
-                      className={`flex items-center justify-between w-full px-4 py-3 rounded-xl border-2 text-left transition-all duration-200 ${
+                      className={`border rounded-xl p-4 flex items-center justify-between transition-all ${
                         isMethodCOD
-                          ? active
-                            ? "border-black bg-[var(--bg)] shadow-sm cursor-pointer"
-                            : "border-[var(--border)] hover:border-gray-300 cursor-pointer"
+                          ? isSelected
+                            ? "border-[var(--success)] bg-[var(--success)]/10 cursor-pointer shadow-sm"
+                            : "border-[var(--border)] hover:border-gray-400 cursor-pointer"
                           : "border-[var(--border)] bg-gray-50/70 dark:bg-gray-800/30 opacity-50 cursor-not-allowed select-none"
                       }`}
                     >
                       <div className="flex items-center gap-3">
                         <div
-                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all duration-200 ${
-                            isMethodCOD && active ? "border-black bg-black" : "border-gray-300"
+                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                            isMethodCOD && isSelected
+                              ? "border-[var(--success)] bg-[var(--success)]"
+                              : "border-[var(--border)]"
                           }`}
                         >
-                          {isMethodCOD && active && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
+                          {isMethodCOD && isSelected && (
+                            <div className="w-2 h-2 rounded-full bg-white" />
+                          )}
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <p className={`text-sm font-semibold ${isMethodCOD ? "text-[var(--text)]" : "text-gray-500"}`}>
+                            <p className={`font-semibold text-sm ${isMethodCOD ? "text-[var(--text)]" : "text-[var(--text-muted)]"}`}>
                               {method.name}
                             </p>
                             {!isMethodCOD && (
@@ -557,12 +562,14 @@ const GuestCheckout = () => {
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-gray-400 mt-0.5">
-                            {isMethodCOD ? "Pay in cash upon delivery" : "Available soon"}
+                          <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                            {isMethodCOD
+                              ? "Pay in cash when your order arrives"
+                              : "Available soon"}
                           </p>
                         </div>
                       </div>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
