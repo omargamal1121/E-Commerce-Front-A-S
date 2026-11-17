@@ -632,7 +632,7 @@ const GuestCheckout = () => {
               By placing an order you agree to our{" "}
               <button
                 type="button"
-                onClick={() => navigate("/policy")}
+                onClick={() => navigate("/privacy-policy")}
                 className="underline hover:text-gray-700 transition-colors"
               >
                 Privacy Policy

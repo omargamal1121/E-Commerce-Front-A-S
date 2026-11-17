@@ -23,6 +23,7 @@ import ResetPassword from "./pages/ResetPassword";
 import DenimCollection from "./pages/DenimCollection";
 import Collection from "./pages/Collection";
 import Policy from "./pages/Policy";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import ApiTest from "./components/ApiTest";
 import ChangeEmail from "./pages/ChangeEmail";
 import ChangePassword from "./pages/ChangePassword";
@@ -220,6 +221,7 @@ const App = () => {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/denim-collection" element={<DenimCollection />} />
         <Route path="/policy" element={<Policy />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         <Route path="/api-test" element={<ApiTest />} />
         <Route path="/guest-checkout" element={<GuestCheckout />} />
         <Route path="/checkout/success" element={<GuestOrderSuccess />} />

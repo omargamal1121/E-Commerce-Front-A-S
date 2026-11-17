@@ -46,6 +46,7 @@ const Footer = () => {
             <ul className="space-y-1 text-[11px] text-[var(--text-muted)]">
               <li><Link to="/policy" className="hover:text-[var(--text)] transition-colors">Return &amp; Exchange Policy</Link></li>
               <li><Link to="/policy" className="hover:text-[var(--text)] transition-colors">Shipping & Delivery</Link></li>
+              <li><Link to="/privacy-policy" className="hover:text-[var(--text)] transition-colors">Privacy Policy</Link></li>
               <li><Link to="/contact" className="hover:text-[var(--text)] transition-colors">Contact Support</Link></li>
             </ul>
           </div>
