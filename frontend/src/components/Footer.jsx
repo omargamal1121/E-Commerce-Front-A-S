@@ -56,6 +56,10 @@ const Footer = () => {
             <p className="uppercase tracking-[0.2em] text-[9px] font-bold text-[var(--accent)]">Get In Touch</p>
             <div className="space-y-1 text-[11px] text-[var(--text-muted)]">
               <p className="flex items-center gap-2">
+                <span className="text-[var(--accent)]">Address:</span>
+                <span>Cairo, Egypt</span>
+              </p>
+              <p className="flex items-center gap-2">
                 <span className="text-[var(--accent)]">Phone:</span>
                 <a href="tel:01555522161" className="hover:text-[var(--text)] font-semibold">01555522161</a>
               </p>

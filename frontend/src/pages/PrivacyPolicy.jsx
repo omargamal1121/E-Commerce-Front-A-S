@@ -96,6 +96,10 @@ const PrivacyPolicy = () => {
           <h2 className="text-lg sm:text-xl font-bold text-[var(--text)] font-serif-title">Contact</h2>
           <div className="space-y-2 text-base sm:text-lg pl-2">
             <p className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+              <span className="font-semibold text-[var(--text-muted)]">Address:</span>
+              <span className="font-semibold text-[var(--text)]">Cairo, Egypt</span>
+            </p>
+            <p className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
               <span className="font-semibold text-[var(--text-muted)]">Email:</span>
               <a
                 href="mailto:r.s.store.0012@gmail.com"

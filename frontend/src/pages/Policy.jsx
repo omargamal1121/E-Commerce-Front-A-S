@@ -126,6 +126,10 @@ const Policy = () => {
           </p>
           <div className="space-y-3 text-base sm:text-lg pl-2">
             <p className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+              <span className="font-semibold text-[var(--text-muted)]">Address:</span>
+              <span className="font-semibold text-[var(--text)]">Cairo, Egypt</span>
+            </p>
+            <p className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
               <span className="font-semibold text-[var(--text-muted)]">Phone:</span>
               <a href="tel:01555522161" className="font-semibold text-[var(--text)] hover:text-[var(--accent)] transition-colors">
                 01555522161
