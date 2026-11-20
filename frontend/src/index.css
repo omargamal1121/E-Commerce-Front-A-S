@@ -6,6 +6,55 @@
    Dark Theme (Default)
    ============================================ */
 :root,
+html.light,
+[data-theme="light"] {
+  color-scheme: light;
+
+  /* --- Core Palette (Default Light Theme - Soothing Eye-Comfort) --- */
+  --bg: #ECEEE9;
+  --surface: #F5F6F2;
+  --surface-raised: #E1E5DF;
+  --border: #CCD3CB;
+  --brand: #005b5c;
+  --brand-hover: #007375;
+  --text: #192420;
+  --text-muted: #576860;
+  --accent: #A68037;
+  --success: #198754;
+  --danger: #DC3545;
+
+  --header-bg: rgba(245, 246, 242, 0.94);
+  --header-border: #CCD3CB;
+  --nav-icon-filter: brightness(0);
+  --card-shadow: 0 4px 18px rgba(25, 36, 32, 0.06);
+  --bg-contrast: #192420;
+  --text-contrast: #F5F6F2;
+
+  /* --- Legacy mappings for compatibility --- */
+  --olive-main: var(--brand);
+  --olive-dark: var(--surface-raised);
+  --cream: var(--bg);
+  --soft-white: var(--text);
+  --dark-brown: var(--bg);
+  --warm-beige: var(--text-muted);
+  --gold-accent: var(--accent);
+
+  --mono-50: #192420;
+  --mono-100: #576860;
+  --mono-200: #E1E5DF;
+  --mono-300: #F5F6F2;
+  --mono-400: #A68037;
+  --mono-500: #005b5c;
+  --mono-600: #E1E5DF;
+  --mono-700: #ECEEE9;
+  --mono-800: #F5F6F2;
+  --mono-900: #F5F6F2;
+}
+
+/* ============================================
+   R&S FASHION WEAR DESIGN SYSTEM
+   Dark Theme
+   ============================================ */
 html.dark,
 [data-theme="dark"] {
   color-scheme: dark;
@@ -49,55 +98,6 @@ html.dark,
   --mono-700: var(--surface);
   --mono-800: var(--bg);
   --mono-900: var(--bg);
-}
-
-/* ============================================
-   R&S FASHION WEAR DESIGN SYSTEM
-   Light Theme (Soft Eye-Comfort Luxury Palette)
-   ============================================ */
-html.light,
-[data-theme="light"] {
-  color-scheme: light;
-
-  /* --- Core Palette (Soothing Eye-Comfort) --- */
-  --bg: #ECEEE9;
-  --surface: #F5F6F2;
-  --surface-raised: #E1E5DF;
-  --border: #CCD3CB;
-  --brand: #005b5c;
-  --brand-hover: #007375;
-  --text: #192420;
-  --text-muted: #576860;
-  --accent: #A68037;
-  --success: #198754;
-  --danger: #DC3545;
-
-  --header-bg: rgba(245, 246, 242, 0.94);
-  --header-border: #CCD3CB;
-  --nav-icon-filter: brightness(0);
-  --card-shadow: 0 4px 18px rgba(25, 36, 32, 0.06);
-  --bg-contrast: #192420;
-  --text-contrast: #F5F6F2;
-
-  /* --- Legacy mappings for compatibility --- */
-  --olive-main: var(--brand);
-  --olive-dark: var(--surface-raised);
-  --cream: var(--bg);
-  --soft-white: var(--text);
-  --dark-brown: var(--bg);
-  --warm-beige: var(--text-muted);
-  --gold-accent: var(--accent);
-
-  --mono-50: #192420;
-  --mono-100: #576860;
-  --mono-200: #E1E5DF;
-  --mono-300: #F5F6F2;
-  --mono-400: #A68037;
-  --mono-500: #005b5c;
-  --mono-600: #E1E5DF;
-  --mono-700: #ECEEE9;
-  --mono-800: #F5F6F2;
-  --mono-900: #F5F6F2;
 }
 
 * {
