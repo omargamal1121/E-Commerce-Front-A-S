@@ -54,13 +54,14 @@ const AuthExample = () => {
   const handleTestRefreshEndpoint = async () => {
     try {
       console.log("🧪 Testing refresh endpoint directly...");
-      const currentToken = authService.getCurrentToken();
+      const storedRefreshToken = sessionStorage.getItem("refreshToken") || localStorage.getItem("refreshToken");
       const backendUrl = import.meta.env.VITE_BACKEND_URL || "https://rands-api.runasp.net";
       const response = await fetch(`${backendUrl}/api/Account/refresh-token`, {
-        method: "GET",
+        method: "POST",
         headers: {
-          Authorization: `Bearer ${currentToken}`,
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify({ refreshToken: storedRefreshToken }),
       });
       
       if (response.ok) {

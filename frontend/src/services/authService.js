@@ -115,11 +115,19 @@ class AuthService {
 
   async refreshToken() {
     try {
+      const storedRefreshToken = localStorage.getItem("refreshToken");
+      if (!storedRefreshToken) {
+        throw new Error("No refresh token available");
+      }
+
       const backendUrl = import.meta.env.VITE_BACKEND_URL;
-      // Cookie-based refresh, no Authorization header; include cookies
-      const response = await axios.get(
+      const response = await axios.post(
         `${backendUrl}/api/Account/refresh-token`,
+        { refreshToken: storedRefreshToken },
         {
+          headers: {
+            "Content-Type": "application/json",
+          },
           withCredentials: true,
           timeout: 10000,
         }
@@ -131,16 +139,19 @@ class AuthService {
       }
 
       const data = response?.data;
+      const tokenData = data?.responseBody?.data || data?.data || data;
       const newToken =
-        data?.token ||
-        data?.accessToken ||
-        data?.data?.token ||
-        data?.data?.accessToken ||
-        data?.responseBody?.data?.token ||
-        data?.responseBody?.data?.accessToken ||
-        (typeof data === "string" ? data : null);
+        tokenData?.token ||
+        tokenData?.Token ||
+        tokenData?.accessToken ||
+        (typeof tokenData === "string" ? tokenData : null);
+      const newRefreshToken = tokenData?.refreshToken || tokenData?.RefreshToken;
 
       if (newToken && typeof newToken === "string" && newToken.length > 20) {
+        localStorage.setItem("token", newToken);
+        if (newRefreshToken) {
+          localStorage.setItem("refreshToken", newRefreshToken);
+        }
         console.log("✅ Token refreshed successfully");
         return newToken;
       }
@@ -161,6 +172,7 @@ class AuthService {
 
   logout() {
     localStorage.removeItem("token");
+    localStorage.removeItem("refreshToken");
     localStorage.removeItem("user");
     // Guest token is preserved permanently
     delete axios.defaults.headers.common["Authorization"];

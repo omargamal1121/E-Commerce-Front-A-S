@@ -12,8 +12,8 @@ const GoogleCallback = () => {
         const processLogin = async () => {
             const searchParams = new URLSearchParams(location.search);
             // Check for both token and accessToken
-            const token = searchParams.get('token') || searchParams.get('accessToken');
-            const refreshToken = searchParams.get('refreshToken');
+            const token = searchParams.get('token') || searchParams.get('accessToken') || searchParams.get('Token');
+            const refreshToken = searchParams.get('refreshToken') || searchParams.get('RefreshToken');
             const error = searchParams.get('remoteError');
             const userJson = searchParams.get('user');
 

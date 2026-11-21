@@ -17,7 +17,7 @@ class AuthService {
     axios.interceptors.request.use(
       (config) => {
         const token = sessionStorage.getItem("token");
-        if (token) {
+        if (token && !config.url?.includes("/api/Account/refresh-token")) {
           config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
@@ -126,16 +126,20 @@ class AuthService {
 
   async refreshToken() {
     try {
-      const currentToken = sessionStorage.getItem("token");
-      if (!currentToken) {
-        throw new Error("No token to refresh");
+      const storedRefreshToken = sessionStorage.getItem("refreshToken");
+      if (!storedRefreshToken) {
+        throw new Error("No refresh token available to refresh");
       }
 
       const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
-      const response = await axios.get(
+      const response = await axios.post(
         `${backendUrl}/api/Account/refresh-token`,
+        { refreshToken: storedRefreshToken },
         {
+          headers: {
+            "Content-Type": "application/json",
+          },
           timeout: 10000,
           withCredentials: true,
           skipAuthRefresh: true,
@@ -159,16 +163,23 @@ class AuthService {
         throw authError;
       }
 
+      const tokenData = data?.responseBody?.data || data?.data || data;
       const newToken =
-        data?.token ||
-        data?.accessToken ||
-        data?.data?.token ||
-        data?.data?.accessToken ||
-        data?.responseBody?.data?.token ||
-        data?.responseBody?.data?.accessToken ||
-        (typeof data === "string" ? data : null);
+        tokenData?.token ||
+        tokenData?.Token ||
+        tokenData?.accessToken ||
+        (typeof tokenData === "string" ? tokenData : null);
+      const newRefreshToken = tokenData?.refreshToken || tokenData?.RefreshToken;
+      const newRoles = tokenData?.roles || tokenData?.Roles;
 
       if (newToken && typeof newToken === "string" && newToken.length > 10) {
+        sessionStorage.setItem("token", newToken);
+        if (newRefreshToken) {
+          sessionStorage.setItem("refreshToken", newRefreshToken);
+        }
+        if (newRoles && Array.isArray(newRoles)) {
+          sessionStorage.setItem("roles", JSON.stringify(newRoles));
+        }
         return newToken;
       } else {
         throw new Error("Invalid token response format");

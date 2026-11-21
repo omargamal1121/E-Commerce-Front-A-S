@@ -51,8 +51,10 @@ const Login = () => {
           const tokenData = data.responseBody.data;
 
           // ✅ Save tokens + user info
-          localStorage.setItem("token", tokenData.token);
-          localStorage.setItem("refreshToken", tokenData.refreshToken);
+          const accessToken = tokenData.token || tokenData.Token;
+          const refToken = tokenData.refreshToken || tokenData.RefreshToken;
+          if (accessToken) localStorage.setItem("token", accessToken);
+          if (refToken) localStorage.setItem("refreshToken", refToken);
 
           // Prefer full user from API; fallback to email-only
           const userData = tokenData.user || { email: formData.email };
