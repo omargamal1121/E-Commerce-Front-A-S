@@ -4,6 +4,7 @@ import CartTotal from "../components/CartTotal";
 import CheckoutModeSelector from "../components/CheckoutModeSelector";
 import GuestCheckoutForm from "../components/GuestCheckoutForm";
 import { ShopContext } from "../context/ShopContext";
+import { usePromo } from "../context/PromoContext";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
 import axios from "axios";
@@ -29,6 +30,7 @@ const PlaceOrder = () => {
     isGuestCheckout,
     setGuestCheckoutMode
   } = useContext(ShopContext);
+  const { appliedPromo, clearPromo } = usePromo();
 
   const [addresses, setAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
@@ -230,7 +232,8 @@ const PlaceOrder = () => {
       // Step 1: Create Order
       const orderPayload = {
         addressId: parseInt(selectedAddressId),
-        notes: paymentNotes || "Order placed via website"
+        notes: paymentNotes || "Order placed via website",
+        ...(appliedPromo ? { promoCode: appliedPromo.code } : {}),
       };
 
       const orderResponse = await axios.post(
@@ -251,6 +254,9 @@ const PlaceOrder = () => {
         if (!orderNumber) {
           throw new Error("Order number not received from server");
         }
+
+        // Clear promo after order created successfully
+        clearPromo();
 
         toast.success("Order created successfully! Processing payment...");
 
@@ -315,12 +321,18 @@ const PlaceOrder = () => {
       console.error("Error placing order:", error.response?.data || error.message);
       console.error("Full error object:", error);
 
-      if (error.response?.status === 403) {
+      // Promo code expired/invalid between apply and submit — clear it and let user retry
+      const errMsg = error.response?.data?.responseBody?.message || "";
+      const isPromoError = errMsg.toLowerCase().includes("promo") || errMsg.toLowerCase().includes("code");
+      if (isPromoError && appliedPromo) {
+        clearPromo();
+        toast.error("Your promo code is no longer valid. Please try another code or place the order without it.");
+      } else if (error.response?.status === 403) {
         toast.error("Authentication failed. Please login again.");
       } else if (error.response?.status === 400) {
-        toast.error("Invalid order data. Please check your information.");
+        toast.error(errMsg || "Invalid order data. Please check your information.");
       } else {
-        toast.error(error.response?.data?.responseBody?.message || "Failed to process order. Please try again.");
+        toast.error(errMsg || "Failed to process order. Please try again.");
       }
     } finally {
       setIsLoading(false);

@@ -4,13 +4,16 @@ import App from "./App.jsx";
 import { BrowserRouter } from "react-router-dom";
 import ShopContextProvider from "./context/ShopContext.jsx";
 import { ThemeProvider } from "./context/ThemeContext.jsx";
+import { PromoProvider } from "./context/PromoContext.jsx";
 import './i18n';
 
 createRoot(document.getElementById("root")).render(
   <BrowserRouter>
     <ThemeProvider>
       <ShopContextProvider>
-        <App />
+        <PromoProvider>
+          <App />
+        </PromoProvider>
       </ShopContextProvider>
     </ThemeProvider>
   </BrowserRouter>

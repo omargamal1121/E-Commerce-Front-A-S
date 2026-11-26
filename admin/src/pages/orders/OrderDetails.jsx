@@ -161,6 +161,36 @@ const OrderDetails = ({ token, isAdmin = false }) => {
         </div>
       </div>
 
+      {/* Promo Code Banner */}
+      {(order.promoCodeSnapshot || order.promoCode || order.hasPromo) && (
+        <div className="bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/30 p-6 md:p-8 rounded-[32px] flex flex-wrap items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-2xl font-bold shadow-md">
+              🏷️
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Promo Code Applied</p>
+              <p className="text-xl font-black text-gray-900 font-mono tracking-wider mt-0.5">
+                {order.promoCodeSnapshot || order.promoCode}
+                {(order.promoDiscountPercent ?? order.promoDiscountPercentage) && (
+                  <span className="ml-2 px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-700 border border-emerald-200">
+                    -{order.promoDiscountPercent ?? order.promoDiscountPercentage}%
+                  </span>
+                )}
+              </p>
+            </div>
+          </div>
+          {(order.promoDiscountAmount > 0 || order.discountAmount > 0) && (
+            <div className="text-right">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Total Promo Discount</p>
+              <p className="text-2xl font-black text-emerald-600">
+                -{currency} {(order.promoDiscountAmount ?? order.discountAmount)?.toFixed(2)}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Order Items Section */}
       <div className="bg-white p-6 md:p-10 rounded-[32px] border border-gray-100 shadow-sm">
         <div className="flex items-center justify-between mb-6 md:mb-8">
@@ -396,19 +426,39 @@ const OrderDetails = ({ token, isAdmin = false }) => {
             <h4 className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] text-blue-400 text-center">Payment Summary</h4>
             <div className="flex flex-col gap-4 md:gap-6">
               <div className="flex justify-between items-center border-b border-white/5 pb-4 md:pb-6">
-                <span className="text-[9px] md:text-[10px] font-bold uppercase text-gray-500 tracking-widest">Subtotal</span>
-                <span className="text-xs md:text-sm font-black text-white">{currency} {order.subtotal?.toFixed(2)}</span>
+                <span className="text-[9px] md:text-[10px] font-bold uppercase text-gray-500 tracking-widest">
+                  {order.subtotalBeforeDiscount ? "Subtotal (before discount)" : "Subtotal"}
+                </span>
+                <span className="text-xs md:text-sm font-black text-white">
+                  {currency} {(order.subtotalBeforeDiscount ?? order.subtotal)?.toFixed(2)}
+                </span>
               </div>
-              <div className="flex justify-between items-center border-b border-white/5 pb-4 md:pb-6">
-                <span className="text-[9px] md:text-[10px] font-bold uppercase text-gray-500 tracking-widest">Shipping</span>
-                <span className="text-xs md:text-sm font-black text-white">{currency} {order.shippingCost?.toFixed(2)}</span>
-              </div>
-              {order.discountAmount > 0 && (
+              {(order.promoCodeSnapshot || order.promoCode || order.hasPromo || order.promoDiscountAmount > 0) && (
+                <div className="flex justify-between items-center border-b border-white/5 pb-4 md:pb-6 text-emerald-400">
+                  <div className="flex flex-col">
+                    <span className="text-[9px] md:text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5">
+                      🏷️ Promo Discount
+                    </span>
+                    <span className="text-xs font-mono font-bold text-emerald-300">
+                      {order.promoCodeSnapshot || order.promoCode || "PROMO"}
+                      {(order.promoDiscountPercent ?? order.promoDiscountPercentage) ? ` (-${order.promoDiscountPercent ?? order.promoDiscountPercentage}%)` : ""}
+                    </span>
+                  </div>
+                  <span className="text-xs md:text-sm font-black text-emerald-400">
+                    -{currency} {(order.promoDiscountAmount ?? order.discountAmount ?? 0)?.toFixed(2)}
+                  </span>
+                </div>
+              )}
+              {!(order.promoCodeSnapshot || order.promoCode) && order.discountAmount > 0 && (
                 <div className="flex justify-between items-center border-b border-white/5 pb-4 md:pb-6">
                   <span className="text-[9px] md:text-[10px] font-bold uppercase text-gray-500 tracking-widest">Discount</span>
                   <span className="text-xs md:text-sm font-black text-emerald-400">-{currency} {order.discountAmount?.toFixed(2)}</span>
                 </div>
               )}
+              <div className="flex justify-between items-center border-b border-white/5 pb-4 md:pb-6">
+                <span className="text-[9px] md:text-[10px] font-bold uppercase text-gray-500 tracking-widest">Shipping</span>
+                <span className="text-xs md:text-sm font-black text-white">{currency} {order.shippingCost?.toFixed(2)}</span>
+              </div>
               <div className="flex justify-between items-center pt-2">
                 <div className="flex flex-col gap-1">
                   <span className="text-[9px] md:text-[10px] font-black uppercase tracking-[0.3em] text-blue-400">Grand Total</span>

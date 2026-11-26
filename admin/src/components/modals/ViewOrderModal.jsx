@@ -182,19 +182,39 @@ const ViewOrderModal = ({ selectedOrder, setShowViewModal }) => {
 
                 <div className="flex flex-col gap-4">
                   <div className="flex justify-between items-center text-gray-400">
-                    <span className="text-[10px] font-black uppercase tracking-widest">Subtotal Payload</span>
-                    <span className="font-bold">{currency} {financial.subtotal.toFixed(2)}</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest">
+                      {selectedOrder.subtotalBeforeDiscount ? "Subtotal (before promo)" : "Subtotal Payload"}
+                    </span>
+                    <span className="font-bold">
+                      {currency} {(selectedOrder.subtotalBeforeDiscount ?? financial.subtotal).toFixed(2)}
+                    </span>
                   </div>
-                  <div className="flex justify-between items-center text-gray-400">
-                    <span className="text-[10px] font-black uppercase tracking-widest">Logistic Cost</span>
-                    <span className="font-bold">{currency} {financial.shipping.toFixed(2)}</span>
-                  </div>
-                  {financial.discount > 0 && (
+                  {(selectedOrder.promoCodeSnapshot || selectedOrder.promoCode || selectedOrder.hasPromo || selectedOrder.promoDiscountAmount > 0) && (
+                    <div className="flex justify-between items-center text-emerald-400">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+                          🏷️ Promo Code
+                        </span>
+                        <span className="text-xs font-mono font-bold text-emerald-300">
+                          {selectedOrder.promoCodeSnapshot || selectedOrder.promoCode || "APPLIED"}
+                          {(selectedOrder.promoDiscountPercent ?? selectedOrder.promoDiscountPercentage) ? ` (-${selectedOrder.promoDiscountPercent ?? selectedOrder.promoDiscountPercentage}%)` : ""}
+                        </span>
+                      </div>
+                      <span className="font-bold">
+                        -{currency} {(selectedOrder.promoDiscountAmount ?? financial.discount)?.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                  {!(selectedOrder.promoCodeSnapshot || selectedOrder.promoCode) && financial.discount > 0 && (
                     <div className="flex justify-between items-center text-green-400">
                       <span className="text-[10px] font-black uppercase tracking-widest">Optimized Value</span>
                       <span className="font-bold">-{currency} {financial.discount.toFixed(2)}</span>
                     </div>
                   )}
+                  <div className="flex justify-between items-center text-gray-400">
+                    <span className="text-[10px] font-black uppercase tracking-widest">Logistic Cost</span>
+                    <span className="font-bold">{currency} {financial.shipping.toFixed(2)}</span>
+                  </div>
                   <div className="h-px bg-white/10 my-2" />
                   <div className="flex justify-between items-end">
                     <div className="flex flex-col gap-1">

@@ -163,6 +163,12 @@ const OrderTable = ({
                     <div className="text-sm font-medium">
                       {currency} {Number(amount || 0).toFixed(2)}
                     </div>
+                    {(order.promoCodeSnapshot || order.promoCode || order.hasPromo) && (
+                      <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 mt-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        🏷️ {order.promoCodeSnapshot || order.promoCode || "Promo"}
+                        {(order.promoDiscountPercent ?? order.promoDiscountPercentage) ? ` (-${order.promoDiscountPercent ?? order.promoDiscountPercentage}%)` : ""}
+                      </span>
+                    )}
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">

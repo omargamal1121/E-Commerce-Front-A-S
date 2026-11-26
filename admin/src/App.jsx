@@ -40,6 +40,7 @@ import Login from "./components/layout/Login";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import authService from "./services/authService";
+import PromoManager from "./pages/promo/PromoManager";
 
 export const currency = "EGP";
 
@@ -227,6 +228,7 @@ function App() {
                     <Route path="/users" element={<UserList token={token} />} />
                     <Route path="/admin-operations" element={<AdminOperations token={token} />} />
                     <Route path="/settings" element={<Settings token={token} />} />
+                    <Route path="/promo-codes" element={<PromoManager token={token} />} />
                     <Route path="/category/view/:categoryId" element={<CategoryManager token={token} backendUrl={backendUrl} />} />
                     <Route path="/category/edit/:categoryId" element={<CategoryManager token={token} backendUrl={backendUrl} />} />
                     <Route path="/collection-manager" element={<CollectionManager token={token} />} />

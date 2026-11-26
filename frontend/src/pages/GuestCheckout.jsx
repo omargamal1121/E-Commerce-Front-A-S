@@ -3,9 +3,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { ShopContext } from "../context/ShopContext";
+import { usePromo } from "../context/PromoContext";
 import Title from "../components/Title";
 import ProductImage from "../components/common/ProductImage";
 import { placeGuestOrder, initiateGuestPayment } from "../services/guestCheckoutService";
+import PromoCodeInput from "../components/PromoCodeInput";
+import { fmt2 } from "../utils/moneyMath";
 import axios from "axios";
 
 /* ─── animation variants ──────────────────────────────────────────────────── */
@@ -83,6 +86,7 @@ const GuestCheckout = () => {
     backendUrl,
     token,
   } = useContext(ShopContext);
+  const { appliedPromo, computeTotals, clearPromo } = usePromo();
 
   /* ── redirect authenticated users to the normal flow ── */
   useEffect(() => {
@@ -232,13 +236,21 @@ const GuestCheckout = () => {
         building: form.building.trim() || null,
         notes: form.notes.trim() || null,
         items: resolvedItems,
+        ...(appliedPromo ? { promoCode: appliedPromo.code } : {}),
       };
 
       const orderResult = await placeGuestOrder(orderPayload);
       console.log("[GuestCheckout] placeGuestOrder result:", orderResult);
 
       if (!orderResult.success) {
-        toast.error(orderResult.message || "Failed to place order. Please try again.");
+        // Check if failure is promo-related
+        const errMsg = (orderResult.message || "").toLowerCase();
+        if ((errMsg.includes("promo") || errMsg.includes("code")) && appliedPromo) {
+          clearPromo();
+          toast.error("Your promo code is no longer valid. Please try another code.");
+        } else {
+          toast.error(orderResult.message || "Failed to place order. Please try again.");
+        }
         setIsSubmitting(false);
         return;
       }
@@ -246,8 +258,9 @@ const GuestCheckout = () => {
       const { orderNumber } = orderResult;
       toast.success("Order placed successfully!");
 
-      /* 3. Clear guest cart */
+      /* 3. Clear guest cart AND promo */
       clearGuestCart();
+      clearPromo();
 
       /* 4. Always store the order number in localStorage so GuestOrderSuccess
             can retrieve it after Paymob redirects back (query params may be
@@ -493,15 +506,39 @@ const GuestCheckout = () => {
                   <span>Subtotal</span>
                   <span>{currency}{subtotal.toFixed(2)}</span>
                 </div>
+                {appliedPromo && (() => {
+                  const { discountAmount, total } = computeTotals(subtotal, 0);
+                  return (
+                    <>
+                      <div className="flex justify-between text-green-600 font-semibold">
+                        <span className="flex items-center gap-1.5">
+                          🏷️ {appliedPromo.code}
+                          <span className="text-[9px] font-black bg-green-600 text-white rounded-full px-1.5 py-0.5">
+                            -{appliedPromo.discountPercent}%
+                          </span>
+                        </span>
+                        <span>-{currency}{discountAmount.toFixed(2)}</span>
+                      </div>
+                    </>
+                  );
+                })()}
                 <div className="flex justify-between text-[var(--text-muted)]">
                   <span>Shipping</span>
                   <span className="text-green-600 font-medium">Calculated at delivery</span>
                 </div>
                 <div className="flex justify-between text-base font-bold text-[var(--text)] pt-2 border-t border-[var(--border)]">
                   <span>Total</span>
-                  <span>{currency}{subtotal.toFixed(2)}</span>
+                  <span>
+                    {appliedPromo
+                      ? `${currency}${computeTotals(subtotal, 0).total.toFixed(2)}`
+                      : `${currency}${subtotal.toFixed(2)}`
+                    }
+                  </span>
                 </div>
               </div>
+
+              {/* Promo code input */}
+              <PromoCodeInput />
             </div>
 
             {/* Payment Method card */}

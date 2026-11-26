@@ -245,7 +245,12 @@ const Orders = () => {
           quantity: order.itemCount || 1, // Summary count
           paymentMethod: order.paymentMethod || 'N/A',
           paymentStatus: order.paymentStatus !== undefined && order.paymentStatus !== null ? String(order.paymentStatus) : 'N/A',
-          canBeCancelled: order.canBeCancelled // Provided by new API
+          canBeCancelled: order.canBeCancelled, // Provided by new API
+          hasPromo: order.hasPromo ?? Boolean(order.promoCodeSnapshot || order.promoCode),
+          promoCodeSnapshot: order.promoCodeSnapshot || order.promoCode,
+          promoDiscountPercent: order.promoDiscountPercent,
+          promoDiscountAmount: order.promoDiscountAmount,
+          subtotalBeforeDiscount: order.subtotalBeforeDiscount
         };
       });
 
@@ -439,6 +444,12 @@ const Orders = () => {
                   <div className="flex flex-wrap items-center gap-1.5 mb-1">
                     <span className="text-[10px] bg-[var(--surface-raised)] border border-[var(--border)] text-[var(--text)] px-2.5 py-0.5 rounded-full font-black tracking-tighter">#{item.orderNumber}</span>
                     <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${getStatusColorClass(item.status)}`}>{item.statusDisplay}</span>
+                    {(item.hasPromo || item.promoCodeSnapshot) && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 flex items-center gap-1">
+                        🏷️ {item.promoCodeSnapshot || "Promo"}
+                        {item.promoDiscountPercent ? ` (-${item.promoDiscountPercent}%)` : ""}
+                      </span>
+                    )}
                   </div>
                   <h3 className='text-sm sm:text-base font-black text-[var(--text)] truncate'>{item.name}</h3>
                   <div className='flex flex-wrap items-center gap-2 sm:gap-4 text-xs font-semibold text-[var(--text-muted)] mt-1'>
@@ -540,6 +551,34 @@ const Orders = () => {
                         ))}
                       </div>
                     </div>
+
+                    {/* Promo Code Banner if applied */}
+                    {(selectedOrderDetails.promoCodeSnapshot || selectedOrderDetails.promoCode || selectedOrderDetails.hasPromo) && (
+                      <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-xl">🏷️</span>
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">Promo Code Applied</p>
+                            <p className="text-sm font-black text-[var(--text)] font-mono">
+                              {selectedOrderDetails.promoCodeSnapshot || selectedOrderDetails.promoCode}
+                              {(selectedOrderDetails.promoDiscountPercent ?? selectedOrderDetails.promoDiscountPercentage) && (
+                                <span className="ml-1.5 text-xs text-emerald-500">
+                                  (-{selectedOrderDetails.promoDiscountPercent ?? selectedOrderDetails.promoDiscountPercentage}%)
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                        {(selectedOrderDetails.promoDiscountAmount > 0 || selectedOrderDetails.discountAmount > 0) && (
+                          <div className="text-right">
+                            <span className="text-[10px] font-bold text-[var(--text-muted)] block">Total Savings</span>
+                            <span className="text-sm font-black text-emerald-500">
+                              -{currency}{selectedOrderDetails.promoDiscountAmount ?? selectedOrderDetails.discountAmount}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
                       {/* Left Column: Details */}
@@ -689,10 +728,25 @@ const Orders = () => {
                         <div className="p-6 rounded-3xl border border-[var(--border)] bg-[var(--surface-raised)]/40 text-[var(--text)]">
                           <h3 className="text-xs font-black uppercase tracking-[0.3em] mb-4 text-[var(--text-muted)]">Bill Summary</h3>
                           <div className="space-y-3 text-xs">
-                            <div className="flex justify-between text-[var(--text-muted)] font-bold"><span>Subtotal</span> <span className="text-[var(--text)]">{currency}{selectedOrderDetails.subtotal}</span></div>
+                            <div className="flex justify-between text-[var(--text-muted)] font-bold"><span>Subtotal (before discount)</span> <span className="text-[var(--text)]">{currency}{selectedOrderDetails.subtotalBeforeDiscount ?? selectedOrderDetails.subtotal}</span></div>
+                            {selectedOrderDetails.promoCodeSnapshot && (
+                              <>
+                                <div className="flex justify-between font-bold">
+                                  <span className="flex items-center gap-1.5 text-green-500">
+                                    🏷️ {selectedOrderDetails.promoCodeSnapshot}
+                                    {selectedOrderDetails.promoDiscountPercent && (
+                                      <span className="text-[9px] bg-green-600 text-white rounded-full px-1.5 py-0.5 font-black">
+                                        -{selectedOrderDetails.promoDiscountPercent}%
+                                      </span>
+                                    )}
+                                  </span>
+                                  <span className="text-green-500">-{currency}{selectedOrderDetails.promoDiscountAmount ?? 0}</span>
+                                </div>
+                              </>
+                            )}
                             <div className="flex justify-between text-[var(--text-muted)] font-bold"><span>Tax</span> <span className="text-[var(--text)]">{currency}{selectedOrderDetails.taxAmount || 0}</span></div>
                             <div className="flex justify-between text-[var(--text-muted)] font-bold"><span>Shipping</span> <span className="text-[var(--text)]">{currency}{selectedOrderDetails.shippingCost || 0}</span></div>
-                            {selectedOrderDetails.discountAmount > 0 && <div className="flex justify-between text-emerald-500 font-black"><span>Discount</span> <span>-{currency}{selectedOrderDetails.discountAmount}</span></div>}
+                            {!selectedOrderDetails.promoCodeSnapshot && selectedOrderDetails.discountAmount > 0 && <div className="flex justify-between text-emerald-500 font-black"><span>Discount</span> <span>-{currency}{selectedOrderDetails.discountAmount}</span></div>}
                             <div className="flex justify-between items-center text-lg font-black border-t border-[var(--border)] pt-3 mt-3"><span>TOTAL</span> <span className="text-[var(--accent)]">{currency}{selectedOrderDetails.total}</span></div>
                           </div>
                         </div>

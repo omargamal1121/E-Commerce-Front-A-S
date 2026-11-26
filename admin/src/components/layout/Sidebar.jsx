@@ -72,6 +72,7 @@ const Sidebar = ({ isOpen = false, onClose = () => {}, deliveryOnly = false, isA
         { to: "/orders", icon: assets.order_icon, iconAlt: "Orders", label: t('orders') },
         ...(!deliveryOnly
           ? [
+              { to: "/promo-codes", icon: assets.discount_icon, iconAlt: "Promo Codes", label: "Promo Codes" },
               { to: "/users",            icon: assets.users_icon, iconAlt: "Users",            label: t('users') },
               { to: "/admin-operations", icon: assets.order_icon, iconAlt: "Admin operations", label: t('adminOperations') },
             ]

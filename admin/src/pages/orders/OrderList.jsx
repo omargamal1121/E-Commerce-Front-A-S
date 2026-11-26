@@ -396,6 +396,12 @@ const OrderList = ({ token }) => {
                         {/* Updated to use order.total */}
                         <span className="font-black text-gray-900 text-lg">{currency} {order.total?.toFixed(2) || "0.00"}</span>
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Total Price</span>
+                        {(order.promoCodeSnapshot || order.promoCode || order.hasPromo) && (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 w-fit">
+                            🏷️ {order.promoCodeSnapshot || order.promoCode || "Promo"}
+                            {(order.promoDiscountPercent ?? order.promoDiscountPercentage) ? ` (-${order.promoDiscountPercent ?? order.promoDiscountPercentage}%)` : ""}
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="px-8 py-6 text-right">
