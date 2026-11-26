@@ -119,8 +119,12 @@ export async function initiateGuestPayment(orderNumber, paymentMethod, walletPho
       saveGuestToken(body.guestToken);
     }
 
-    if (success && body?.isRedirectRequired && body?.redirectUrl) {
-      return { success: true, redirectUrl: body.redirectUrl, message: data.message };
+    if (success) {
+      return {
+        success: true,
+        redirectUrl: (body?.isRedirectRequired && body?.redirectUrl) ? body.redirectUrl : null,
+        message: data?.message || data?.responseBody?.message || "Payment processed successfully.",
+      };
     }
 
     return {

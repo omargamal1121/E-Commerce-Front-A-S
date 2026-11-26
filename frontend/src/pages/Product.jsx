@@ -12,6 +12,7 @@ import ProductItem from "../components/ProductItem";
 import ProductImage from "../components/common/ProductImage";
 import { getImageUrl } from "../utils/imageUtils";
 import { FaChevronLeft, FaChevronRight, FaPlus, FaMinus, FaTruck, FaShieldAlt, FaUndo, FaTimes } from "react-icons/fa";
+import { MAX_PRODUCT_QUANTITY, getProductTotalQuantity, notifyB2BMaxQuantity } from "../utils/b2bValidation";
 
 const OPTION_KEYS = [
   { key: "size", label: "Size", isNumeric: false },
@@ -26,7 +27,7 @@ const OPTION_KEYS = [
 const Product = () => {
   const { t } = useTranslation();
   const { productId } = useParams();
-  const { products, addToCart, backendUrl, currency } = useContext(ShopContext);
+  const { products, addToCart, backendUrl, currency, cartItems } = useContext(ShopContext);
 
   const [productData, setProductData] = useState(null);
   const [activeImage, setActiveImage] = useState("");
@@ -508,6 +509,14 @@ const Product = () => {
       return;
     }
 
+    // Validate maximum 5 items per product
+    const pId = productData._id || productData.id;
+    const currentInCart = getProductTotalQuantity(cartItems, pId);
+    if (currentInCart + quantity > MAX_PRODUCT_QUANTITY) {
+      notifyB2BMaxQuantity(productData.name);
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await addToCart(productData._id || productData.id, targetSize, targetColor, quantity, targetVariant.id);
@@ -863,7 +872,13 @@ const Product = () => {
                   <span className="font-bold text-base w-6 text-center text-[var(--text)]">{quantity}</span>
                   <button
                     type="button"
-                    onClick={() => setQuantity(Math.min(getEffectiveQty(selectedVariant) || 1, quantity + 1))}
+                    onClick={() => {
+                      if (quantity >= MAX_PRODUCT_QUANTITY) {
+                        notifyB2BMaxQuantity(productData?.name);
+                        return;
+                      }
+                      setQuantity(Math.min(getEffectiveQty(selectedVariant) || 1, MAX_PRODUCT_QUANTITY, quantity + 1));
+                    }}
                     disabled={isProductSoldOut || !selectedVariant || quantity >= getEffectiveQty(selectedVariant)}
                     className="text-[var(--text-muted)] hover:text-[var(--text)] transition-colors disabled:opacity-30"
                   >

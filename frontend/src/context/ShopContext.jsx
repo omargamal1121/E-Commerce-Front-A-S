@@ -8,6 +8,7 @@ import authService from "../services/authService";
 import { getGuestToken, saveGuestToken, removeGuestToken } from "../utils/guestSession";
 import { useTheme } from "./ThemeContext";
 import { toast } from "react-toastify";
+import { MAX_PRODUCT_QUANTITY, getProductTotalQuantity, notifyB2BMaxQuantity } from "../utils/b2bValidation";
 export const ShopContext = createContext();
 
 const ShopContextProvider = (props) => {
@@ -139,6 +140,14 @@ const ShopContextProvider = (props) => {
     const effectiveSize = size || "Free Size";
     const effectiveColor = color || "default";
 
+    // Validate maximum 5 items per product
+    const currentQtyInCart = getProductTotalQuantity(cartItems, itemId);
+    if (currentQtyInCart + Number(quantity) > MAX_PRODUCT_QUANTITY) {
+      const productInfo = products.find(p => String(p._id) === String(itemId) || String(p.id) === String(itemId));
+      notifyB2BMaxQuantity(productInfo?.name);
+      return false;
+    }
+
     const itemKey = `${effectiveSize}_${effectiveColor}`; // Create unique key for size+color combination
 
     // Check if item with same ID, size, and color already exists in cart
@@ -243,6 +252,7 @@ const ShopContextProvider = (props) => {
   };
 
   const updataQuantity = async (itemId, size, color, quantity) => {
+    let numQty = Number(quantity);
     let cartData = structuredClone(cartItems);
     // Handle both old format (no color) and new format (with color)
     let itemKey = color ? `${size}_${color}` : size;
@@ -255,10 +265,32 @@ const ShopContextProvider = (props) => {
         if (matched) itemKey = matched;
       }
     }
+
+    // Validate maximum 5 items per product across variants
+    const otherVariantsQty = Object.entries(cartData[itemId] || {})
+      .filter(([k]) => k !== itemKey)
+      .reduce((sum, [_, q]) => sum + (Number(q) || 0), 0);
+
+    if (otherVariantsQty + numQty > MAX_PRODUCT_QUANTITY) {
+      const allowed = Math.max(0, MAX_PRODUCT_QUANTITY - otherVariantsQty);
+      const productInfo = products.find(p => String(p._id) === String(itemId) || String(p.id) === String(itemId));
+      notifyB2BMaxQuantity(productInfo?.name);
+      numQty = allowed;
+    }
+
     if (cartData[itemId]) {
-      cartData[itemId][itemKey] = quantity;
+      if (numQty > 0) {
+        cartData[itemId][itemKey] = numQty;
+      } else {
+        delete cartData[itemId][itemKey];
+        if (Object.keys(cartData[itemId]).length === 0) {
+          delete cartData[itemId];
+        }
+      }
     }
     setCartItems(cartData);
+
+    if (numQty <= 0) return;
 
     // Update cart in backend if user is logged in
     if (token) {
@@ -275,7 +307,7 @@ const ShopContextProvider = (props) => {
             method: "PUT",
             headers: getAuthHeaders(),
             withCredentials: true, // 🆕 Send cookies with request
-            body: JSON.stringify({ quantity: Number(quantity) }),
+            body: JSON.stringify({ quantity: Number(numQty) }),
           },
           refreshToken
         );

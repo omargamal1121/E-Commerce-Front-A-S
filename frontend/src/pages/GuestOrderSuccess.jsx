@@ -45,6 +45,17 @@ const GuestOrderSuccess = () => {
     orderNumberParam ||
     localStorage.getItem("pendingGuestOrderNumber");
   const paymentFailed = searchParams.get("paymentFailed") === "1";
+  const isCodParam = searchParams.get("cod") === "1";
+
+  // Check if order is Cash On Delivery
+  const latestPay = Array.isArray(orderData?.payment) ? orderData.payment[0] : orderData?.payment;
+  const paymentMethodText = String(
+    latestPay?.paymentMethod ||
+    orderData?.paymentMethod ||
+    orderData?.paymentMethodName ||
+    ""
+  ).toLowerCase();
+  const isCOD = isCodParam || paymentMethodText.includes("cash") || paymentMethodText.includes("cod") || orderData?.paymentMethodId === 1;
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -97,11 +108,24 @@ const GuestOrderSuccess = () => {
           Order Confirmed!
         </motion.h1>
 
-        <motion.p variants={itemFade} className="text-gray-500 text-sm sm:text-base mb-8">
+        <motion.p variants={itemFade} className="text-gray-500 text-sm sm:text-base mb-4">
           Thank you for your purchase. We'll start preparing your order right away. Our team will contact you shortly regarding your order.
         </motion.p>
 
-        {paymentFailed && (
+        {isCOD && (
+          <motion.div
+            variants={itemFade}
+            className="mb-8 inline-flex items-center gap-3 px-5 py-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-sm font-semibold shadow-sm text-left max-w-lg mx-auto"
+          >
+            <span className="text-2xl">💵</span>
+            <div>
+              <p className="font-bold text-amber-950">Cash on Delivery (الدفع عند الاستلام)</p>
+              <p className="text-xs text-amber-800 mt-0.5">Payment will be collected in cash upon arrival of your order.</p>
+            </div>
+          </motion.div>
+        )}
+
+        {paymentFailed && !isCOD && (
           <motion.p variants={itemFade} className="text-red-500 text-sm sm:text-base mb-6">
             Payment could not be initiated. Your order is confirmed, but please contact support to complete payment if needed.
           </motion.p>
@@ -186,12 +210,16 @@ const GuestOrderSuccess = () => {
               <div className="bg-white rounded-2xl p-4 border border-gray-100 space-y-2 text-xs">
                 {(() => {
                   const latestPay = Array.isArray(orderData.payment) ? orderData.payment[0] : orderData.payment;
-                  if (!latestPay) return null;
+                  if (!latestPay && !isCOD) return null;
+                  const methodName = isCOD ? "Cash on Delivery" : (latestPay?.paymentMethod || 'Method');
+                  const statusText = isCOD ? "Pay on Delivery" : (latestPay?.status || 'Pending');
                   return (
                     <div className="flex justify-between items-center pb-2 border-b border-gray-100">
-                      <span className="text-gray-500 font-medium">Payment ({latestPay.paymentMethod || 'Method'})</span>
-                      <span className="font-bold uppercase tracking-wider text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
-                        {latestPay.status || 'Pending'}
+                      <span className="text-gray-500 font-medium">Payment ({methodName})</span>
+                      <span className={`font-bold uppercase tracking-wider text-[10px] px-2.5 py-0.5 rounded-full ${
+                        isCOD ? "bg-amber-100 text-amber-800" : "bg-gray-100 text-gray-700"
+                      }`}>
+                        {statusText}
                       </span>
                     </div>
                   );

@@ -7,6 +7,7 @@ import ProductImage from "../components/common/ProductImage";
 import { motion } from "framer-motion";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { MAX_PRODUCT_QUANTITY, notifyB2BMaxQuantity } from "../utils/b2bValidation";
 
 const Cart = () => {
   const {
@@ -397,19 +398,33 @@ const isHexColor = (color) => {
                 <input
                   type="number"
                   min={1}
-                  max={99}
-                  defaultValue={item.quantity}
+                  max={MAX_PRODUCT_QUANTITY}
+                  value={item.quantity}
                   disabled={loading}
-                  onChange={(e) =>
-                    e.target.value === "" || e.target.value === "0"
-                      ? handleDeleteItem(item._id, item.variantId || item.size)
-                      : updataQuantity(
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "" || val === "0") {
+                      handleDeleteItem(item._id, item.variantId || item.size);
+                      return;
+                    }
+                    const num = Number(val);
+                    if (num > MAX_PRODUCT_QUANTITY) {
+                      notifyB2BMaxQuantity(item.productData?.name);
+                      updataQuantity(
                         item._id,
                         item.size || "Free Size",
                         isValidValue(item.color) ? item.color : undefined,
-                        Number(e.target.value)
-                      )
-                  }
+                        MAX_PRODUCT_QUANTITY
+                      );
+                      return;
+                    }
+                    updataQuantity(
+                      item._id,
+                      item.size || "Free Size",
+                      isValidValue(item.color) ? item.color : undefined,
+                      num
+                    );
+                  }}
                   className="input-field w-16 sm:max-w-20 px-2 py-1 sm:py-2 rounded text-center"
                 />
               </div>
@@ -450,6 +465,18 @@ const isHexColor = (color) => {
               onClick={async () => {
                 if (cartData.length === 0) {
                   toast.error("Your cart is empty. Please add items before checkout.");
+                  return;
+                }
+
+                // Check if any product exceeds max 5 items
+                const productTotals = {};
+                for (const item of cartData) {
+                  const pId = String(item._id);
+                  productTotals[pId] = (productTotals[pId] || 0) + (Number(item.quantity) || 0);
+                }
+                const overLimitItem = cartData.find(item => productTotals[String(item._id)] > MAX_PRODUCT_QUANTITY);
+                if (overLimitItem) {
+                  notifyB2BMaxQuantity(overLimitItem.productData?.name);
                   return;
                 }
 

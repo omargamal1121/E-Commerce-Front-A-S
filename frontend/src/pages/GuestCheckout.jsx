@@ -9,6 +9,7 @@ import ProductImage from "../components/common/ProductImage";
 import { placeGuestOrder, initiateGuestPayment } from "../services/guestCheckoutService";
 import PromoCodeInput from "../components/PromoCodeInput";
 import { fmt2 } from "../utils/moneyMath";
+import { MAX_PRODUCT_QUANTITY, notifyB2BMaxQuantity } from "../utils/b2bValidation";
 import axios from "axios";
 
 /* ─── animation variants ──────────────────────────────────────────────────── */
@@ -190,6 +191,18 @@ const GuestCheckout = () => {
       toast.error("Your cart is empty.");
       return;
     }
+
+    // Validate maximum 5 items per product
+    const productTotals = {};
+    for (const line of cartLines) {
+      productTotals[line.productId] = (productTotals[line.productId] || 0) + line.quantity;
+    }
+    const overLimitLine = cartLines.find(line => productTotals[line.productId] > MAX_PRODUCT_QUANTITY);
+    if (overLimitLine) {
+      notifyB2BMaxQuantity(overLimitLine.name);
+      return;
+    }
+
     if (!validate()) {
       toast.error("Please fix the highlighted fields.");
       return;
@@ -270,6 +283,9 @@ const GuestCheckout = () => {
 
       /* 5. Call the payment API for ALL methods — the backend decides whether
             a redirect is needed (online card/wallet) or not (COD). */
+      const currentMethod = paymentMethods.find((m) => m.id === Number(selectedPaymentMethod)) || { id: Number(selectedPaymentMethod) };
+      const isCash = isCOD(currentMethod);
+
       const payResult = await initiateGuestPayment(
         orderNumber,
         Number(selectedPaymentMethod),
@@ -278,7 +294,13 @@ const GuestCheckout = () => {
       );
 
       if (!payResult.success) {
-        // Payment API failed but the order exists — show success with a warning
+        if (isCash) {
+          // COD does not require payment gateway initiation — order is confirmed
+          toast.success("Order confirmed! Payment will be collected in cash upon delivery.");
+          navigate(`/checkout/success?orderNumber=${encodeURIComponent(orderNumber)}&cod=1`);
+          return;
+        }
+        // Payment API failed for online payment but the order exists — show success with a warning
         toast.error(payResult.message || "Payment initiation failed. Please contact support.");
         navigate(`/checkout/success?orderNumber=${encodeURIComponent(orderNumber)}&paymentFailed=1`);
         return;
@@ -293,8 +315,13 @@ const GuestCheckout = () => {
         window.location.href = `${payResult.redirectUrl}${sep}return_url=${encodeURIComponent(returnUrl)}`;
       } else {
         // COD or any non-redirect method: order + payment processed, go to success
-        toast.success("Order confirmed!");
-        navigate(`/checkout/success?orderNumber=${encodeURIComponent(orderNumber)}`);
+        if (isCash) {
+          toast.success("Order confirmed! Payment will be collected in cash upon delivery.");
+          navigate(`/checkout/success?orderNumber=${encodeURIComponent(orderNumber)}&cod=1`);
+        } else {
+          toast.success("Order confirmed!");
+          navigate(`/checkout/success?orderNumber=${encodeURIComponent(orderNumber)}`);
+        }
       }
     } catch (err) {
       console.error("[GuestCheckout] submit error:", err);

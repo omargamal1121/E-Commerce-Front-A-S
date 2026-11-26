@@ -7,6 +7,7 @@ import { ShopContext } from "../context/ShopContext";
 import { usePromo } from "../context/PromoContext";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
+import { MAX_PRODUCT_QUANTITY, notifyB2BMaxQuantity } from "../utils/b2bValidation";
 import axios from "axios";
 
 const isCOD = (method) => {
@@ -222,6 +223,17 @@ const PlaceOrder = () => {
       toast.error("Your cart is empty. Please add items before placing an order.");
       setIsLoading(false);
       return;
+    }
+
+    // Validate maximum 5 items per product
+    for (const [pId, variants] of Object.entries(cartItems || {})) {
+      const totalForProduct = Object.values(variants || {}).reduce((sum, q) => sum + (Number(q) || 0), 0);
+      if (totalForProduct > MAX_PRODUCT_QUANTITY) {
+        const productInfo = products.find(p => String(p._id) === String(pId) || String(p.id) === String(pId));
+        notifyB2BMaxQuantity(productInfo?.name);
+        setIsLoading(false);
+        return;
+      }
     }
 
     // Resolve method value from already-loaded list – no second network call needed

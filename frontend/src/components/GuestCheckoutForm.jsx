@@ -3,6 +3,7 @@ import { ShopContext } from '../context/ShopContext';
 import { placeGuestOrder } from '../services/guestCheckoutService';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
+import { MAX_PRODUCT_QUANTITY, notifyB2BMaxQuantity } from '../utils/b2bValidation';
 
 const isCOD = (method) => {
   if (!method) return false;
@@ -130,6 +131,16 @@ const GuestCheckoutForm = () => {
       return;
     }
 
+    // Validate maximum 5 items per product
+    for (const [pId, variants] of Object.entries(cartItems || {})) {
+      const totalForProduct = Object.values(variants || {}).reduce((sum, q) => sum + (Number(q) || 0), 0);
+      if (totalForProduct > MAX_PRODUCT_QUANTITY) {
+        const productInfo = products?.find(p => String(p._id) === String(pId) || String(p.id) === String(pId));
+        notifyB2BMaxQuantity(productInfo?.name);
+        return;
+      }
+    }
+
     setIsLoading(true);
 
     try {
@@ -175,10 +186,10 @@ const GuestCheckoutForm = () => {
         // Clear cart
         clearGuestCart();
 
-        toast.success('Order placed successfully!');
+        toast.success('Order placed successfully! Payment will be collected in cash upon delivery.');
         
         // Navigate to success page
-        navigate(`/checkout/success?orderNumber=${encodeURIComponent(result.orderNumber)}`);
+        navigate(`/checkout/success?orderNumber=${encodeURIComponent(result.orderNumber)}&cod=1`);
       } else {
         toast.error(result.message || 'Failed to place order');
       }
