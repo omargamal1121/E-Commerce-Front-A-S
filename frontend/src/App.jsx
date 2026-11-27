@@ -2,6 +2,7 @@ import React, { useEffect, useContext } from "react";
 import { Routes, Route, useLocation, Navigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import ToastPortal from "./components/ToastPortal";
 import authService from "./services/authService";
 import Home from "./pages/Home";
 import Cart from "./pages/Cart";
@@ -44,6 +45,7 @@ import GuestCheckout from "./pages/GuestCheckout";
 import GuestOrderSuccess from "./pages/GuestOrderSuccess";
 import { getGuestToken } from "./utils/guestSession";
 import MetaPixelTracker from "./components/MetaPixelTracker";
+import DiscountProducts from "./pages/DiscountProducts";
 
 
 // Component to scroll to top on route change
@@ -151,22 +153,10 @@ const App = () => {
   if (isDeliveryOnly) {
     return (
       <>
+        <ToastPortal theme={theme} />
         <div>
           <ScrollToTop />
           <ScrollAnimation />
-          <ToastContainer
-            position="top-right"
-            autoClose={3000}
-            hideProgressBar={false}
-            newestOnTop={false}
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-            theme={theme === "light" ? "light" : "dark"}
-            style={{ marginTop: '80px', zIndex: 999999999 }}
-          />
           <MetaPixelTracker />
           <Routes>
             <Route path="/orders" element={<Orders />} />
@@ -178,72 +168,57 @@ const App = () => {
   }
 
   return (
-    <div>
-      <ScrollToTop />
-      <ScrollAnimation />
-      <Navbar />
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme={theme === "light" ? "light" : "dark"}
-        style={{ marginTop: '80px', zIndex: 999999999 }}
-      />
-      <SearchBar />
-      <MetaPixelTracker />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/error" element={<Erroe404 />} />
-        <Route path="/closed" element={<WebsiteClosed />} />
-        <Route path="/maintenance" element={<WebsiteClosed />} />
-        <Route path="/collection" element={<Collection />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/cart" element={<Cart />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<SignUp />} />
-        <Route path="/google-callback" element={<GoogleCallback />} />
-        <Route path="/google-callback/auth-success" element={<GoogleCallback />} />
-        <Route path="/orders" element={<Orders />} />
-        <Route path="/payment/:orderNumber" element={<PaymentRoute />} />
-        <Route path="/place-order" element={<PrivateRoute><PlaceOrder /></PrivateRoute>} />
-        <Route path="/product/:productId" element={<Product />} />
-        <Route path="/verify-email" element={<VerifyEmail />} />
-        <Route path="/confirm-email" element={<ConfirmEmail />} />
-        <Route path="/request-password" element={<RequestPasswordReset />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/denim-collection" element={<DenimCollection />} />
-        <Route path="/policy" element={<Policy />} />
-        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-        <Route path="/api-test" element={<ApiTest />} />
-        <Route path="/guest-checkout" element={<GuestCheckout />} />
-        <Route path="/checkout/success" element={<GuestOrderSuccess />} />
-        <Route path="/change-email" element={<PrivateRoute><ChangeEmail /></PrivateRoute>} />
-        <Route path="/change-password" element={<PrivateRoute><ChangePassword /></PrivateRoute>} />
-        <Route path="/upload-photo" element={<PrivateRoute><UploadPhoto /></PrivateRoute>} />
-        <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
-        <Route path="/category/:categoryId" element={<CategoryPage />} />
-        <Route
-          path="/subcategory/:subcategoryId"
-          element={<SubcategoryPage />}
-        />
-        <Route
-          path="/collection-products/:collectionId"
-          element={<CollectionProducts />}
-        />
-        <Route path="/wishlist" element={<PrivateRoute><Wishlist /></PrivateRoute>} />
-        <Route path="*" element={<Erroe404 />} />
-      </Routes>
-      <Footer />
-      <ScrollToTopButton />
-    </div>
+    <>
+      <div>
+        <ScrollToTop />
+        <ScrollAnimation />
+        <Navbar />
+        <SearchBar />
+        <MetaPixelTracker />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/error" element={<Erroe404 />} />
+          <Route path="/closed" element={<WebsiteClosed />} />
+          <Route path="/maintenance" element={<WebsiteClosed />} />
+          <Route path="/collection" element={<Collection />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="/google-callback" element={<GoogleCallback />} />
+          <Route path="/google-callback/auth-success" element={<GoogleCallback />} />
+          <Route path="/orders" element={<Orders />} />
+          <Route path="/payment/:orderNumber" element={<PaymentRoute />} />
+          <Route path="/place-order" element={<PrivateRoute><PlaceOrder /></PrivateRoute>} />
+          <Route path="/product/:productId" element={<Product />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/confirm-email" element={<ConfirmEmail />} />
+          <Route path="/request-password" element={<RequestPasswordReset />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/denim-collection" element={<DenimCollection />} />
+          <Route path="/discount/:discountId" element={<DiscountProducts />} />
+          <Route path="/policy" element={<Policy />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/api-test" element={<ApiTest />} />
+          <Route path="/guest-checkout" element={<GuestCheckout />} />
+          <Route path="/checkout/success" element={<GuestOrderSuccess />} />
+          <Route path="/change-email" element={<PrivateRoute><ChangeEmail /></PrivateRoute>} />
+          <Route path="/change-password" element={<PrivateRoute><ChangePassword /></PrivateRoute>} />
+          <Route path="/upload-photo" element={<PrivateRoute><UploadPhoto /></PrivateRoute>} />
+          <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
+          <Route path="/category/:categoryId" element={<CategoryPage />} />
+          <Route path="/subcategory/:subcategoryId" element={<SubcategoryPage />} />
+          <Route path="/collection-products/:collectionId" element={<CollectionProducts />} />
+          <Route path="/wishlist" element={<PrivateRoute><Wishlist /></PrivateRoute>} />
+          <Route path="*" element={<Erroe404 />} />
+        </Routes>
+        <Footer />
+        <ScrollToTopButton />
+      </div>
+      <ToastPortal theme={theme} />
+    </>
   );
 };
 

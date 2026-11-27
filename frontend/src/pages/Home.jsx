@@ -12,6 +12,7 @@ import ReelBaggey from "../components/ReelBaggey";
 import TypeProduct from "../components/TypeProduct";
 import { useTranslation } from 'react-i18next';
 import HeroBanner from "../components/HeroBanner";
+import DiscountNewsBanner from "../components/DiscountNewsBanner";
 
 const Home = () => {
   const { t } = useTranslation();
@@ -22,6 +23,7 @@ const Home = () => {
 
   return (
     <div>
+      <DiscountNewsBanner />
       <motion.div
         initial="hidden"
         whileInView="visible"

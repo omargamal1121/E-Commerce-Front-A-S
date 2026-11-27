@@ -152,11 +152,12 @@ const PromoManager = ({ token }) => {
   const fetchPromos = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ page, pageSize });
+      const params = new URLSearchParams({ page, pageSize, _t: Date.now() });
       if (search) params.set("search", search);
       if (statusFilter) params.set("status", statusFilter);
       const res = await fetch(`${backendUrl}/api/admin/promo-codes?${params}`, {
         headers: authHeader,
+        cache: "no-store",
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();

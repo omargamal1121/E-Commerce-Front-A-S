@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import API from "../../services/api";
@@ -101,6 +101,7 @@ const DiscountManager = ({ token }) => {
       const params = {
         page,
         pageSize,
+        _t: Date.now(),
       };
 
       if (deletedFilter === "all") {
@@ -160,6 +161,9 @@ const DiscountManager = ({ token }) => {
       if (current) await API.discounts.deactivate(id, token);
       else await API.discounts.activate(id, token);
 
+      setDiscounts((prev) =>
+        prev.map((d) => (d.id === id ? { ...d, isActive: !current } : d))
+      );
       toast.success(`Discount ${!current ? 'activated' : 'deactivated'} successfully`);
       await fetchDiscounts();
     } catch (e) {
